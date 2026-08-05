@@ -3233,6 +3233,26 @@ async function sbSelect(table, params){
   }
   return all;
 }
+/* ---------- live individual-unit read (الصفقات + الحاسبة) ----------
+   unit_allocation_mirror carries one row per real unit (price, moh_price, status), replaced
+   in full on every daily upload. project_id on that table is optional/best-effort (per the raw
+   NHC file) — try it first, and if nothing comes back, fall back to an exact project_name match
+   against the catalog name. Both are real possibilities; callers must handle an empty result. */
+async function fetchAvailableUnits(project, unitType){
+  const base = { status:"eq.avail", select:"*", order:"price.asc" };
+  if(unitType) base.unit_type = `eq.${unitType}`;
+  let rows = await sbSelect("unit_allocation_mirror", {...base, project_id:`eq.${project.id}`});
+  if(!rows.length){
+    rows = await sbSelect("unit_allocation_mirror", {...base, project_name:`eq.${project.name.trim()}`});
+  }
+  return rows;
+}
+/* distinct unit types available for a project, from its own catalog product rows (segment-agnostic) — used to build the type picker before hitting the network */
+function projectUnitTypes(project){
+  const seen=new Set();
+  ["b","n"].forEach(seg=>{ const sg=project[seg]; if(sg&&sg.prods) sg.prods.forEach(pr=>seen.add(pr.type)); });
+  return [...seen];
+}
 function deriveBookProdstat(rows){
   const book={}, prodstat={};
   for(const r of rows){
