@@ -687,7 +687,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --nav-h:60px; --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
   --gold-soft2:#faf3e8; --gold-soft-border:#e8dcc4; --gold-text:#7d5426; --gold-text2:#6b5230; --gold-text3:#7d6134; --gold-text-lt:#8a7350;
   --green-soft-border:#cfe0cf; --rust-soft:#f6e3da; --rust-soft-border:#e6c3af;
-  --loc-bg:#EEF1F5; --loc-text:#44506b; --star-empty:#d4b483;
+  --loc-bg:#EEF1F5; --loc-text:#44506b; --star-empty:#d4b483; --purple-soft-border:#e0d5ef;
 }
 :root[data-theme="dark"]{
   --bg:#0f1620; --surface:#182236; --ink:#e7ecf3; --muted:#93a0b4; --line:#2a3548;
@@ -696,7 +696,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --navy2:#0d1626; --shadow:0 3px 14px rgba(0,0,0,.35); --overlay-soft:rgba(255,255,255,.08);
   --gold-soft2:#332912; --gold-soft-border:#4a3b22; --gold-text:#e0b979; --gold-text2:#e0b979; --gold-text3:#e0b979; --gold-text-lt:#c9a875;
   --green-soft-border:#2d4a33; --rust-soft:#3a2420; --rust-soft-border:#5a3428;
-  --loc-bg:#232c3d; --loc-text:#aab4c9; --star-empty:#8a7245;
+  --loc-bg:#232c3d; --loc-text:#aab4c9; --star-empty:#8a7245; --purple-soft-border:#3d3352;
 }
 :root[data-theme="dark"] body{background:var(--bg)}
 :root[data-theme="dark"] .leaflet-container{background:#1a2333}
@@ -754,7 +754,7 @@ header.top::after{content:"";position:absolute;inset:0;background:radial-gradien
 .segwrap{margin-top:12px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:13px;padding:4px;display:flex;gap:4px}
 .segbtn{flex:1;padding:9px 6px;border-radius:10px;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.75);transition:all .18s;text-align:center;line-height:1.25}
 .segbtn small{display:block;font-size:9.5px;font-weight:400;opacity:.8;margin-top:1px}
-.segbtn.on{color:var(--ink)}
+.segbtn.on{color:#1B2B44}
 .segbtn.on.b{background:#E7EEE7;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .segbtn.on.n{background:#F3EADC;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 
@@ -1189,6 +1189,9 @@ table.prods th{background:var(--bg);color:var(--muted);font-weight:600;padding:7
 table.prods td{padding:8px 6px;border-bottom:1px solid var(--bg);vertical-align:top}
 table.prods tr:last-child td{border:none}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+.tw table.prods td:first-child,.tw table.prods th:first-child{position:sticky;right:0;z-index:1}
+.tw table.prods td:first-child{background:var(--surface)}
+.tw table.prods th:first-child{background:var(--bg)}
 .uniq{background:linear-gradient(135deg,var(--green),#3d6b45 65%,#2c5535);color:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;position:relative;overflow:hidden;box-shadow:0 4px 16px rgba(46,82,51,.22)}
 .uniq::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 92% -20%,rgba(255,255,255,.16),transparent 55%);pointer-events:none}
 .uniq .tag{font-size:10px;letter-spacing:.4px;opacity:.88;font-weight:700;margin-bottom:5px;position:relative}
@@ -3670,7 +3673,7 @@ function runCalc(){
 
   let h = ``;
   if(calcMarketPrice){
-    h += `<div class="cwarn" style="background:var(--purple-soft);border-color:#e0d5ef;color:var(--purple)">
+    h += `<div class="cwarn" style="background:var(--purple-soft);border-color:var(--purple-soft-border);color:var(--purple)">
       سعر السوق المقارن لهذه الوحدة (غير المستفيدين): <b>${fmt(calcMarketPrice)} ريال</b> — دعم إضافي قدره ${fmt(calcMarketPrice-price)} ريال مقابل سعر الوزارة أعلاه.</div>`;
   }
   h += `<div class="cresblock">
