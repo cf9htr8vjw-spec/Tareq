@@ -1203,6 +1203,10 @@ table.prods tr:last-child td{border:none}
 .gitem{flex:none;width:190px;scroll-snap-align:start;cursor:pointer}
 .gitem img{width:190px;height:130px;object-fit:cover;border-radius:12px;border:1px solid var(--line);display:block;box-shadow:var(--shadow)}
 .glab{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.4}
+.galEmpty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;background:var(--bg);border:1px dashed var(--line);border-radius:13px;padding:22px 16px}
+.galEmpty i{font-size:26px;opacity:.55;font-style:normal}
+.galEmpty b{font-size:12.5px;color:var(--ink);font-weight:700;font-family:"Noto Kufi Arabic"}
+.galEmpty span{font-size:11px;color:var(--muted);line-height:1.6;max-width:280px}
 #lightbox{position:fixed;inset:0;background:rgba(10,14,22,.94);z-index:3000;display:none;align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:12px}
 #lightbox.on{display:flex}
 #lightbox img{max-width:100%;max-height:78vh;border-radius:10px;object-fit:contain}
@@ -1267,6 +1271,8 @@ table.prods tr:last-child td{border:none}
 .progtag{flex:none;font-weight:700;color:var(--green);min-width:104px}
 .pill.pr8{background:var(--green);color:#fff}
 .constrbadge{display:inline-block;font-size:12px;font-weight:600;padding:5px 13px;border-radius:99px;background:var(--green-soft);color:var(--green)}
+.constrbadge.pending{background:var(--loc-bg);color:var(--loc-text)}
+.constrbadge.progress{background:var(--gold-soft);color:var(--gold-text)}
 .otherseg{margin-top:9px;font-size:11.5px;color:var(--muted);background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:8px 12px}
 
 /* ===== Desktop ===== */
@@ -2313,15 +2319,19 @@ function openDetail(id){
     h+=`</div>`;
   }
 
-  /* photo gallery — from project brochures, where available */
+  /* photo gallery — from project brochures, where available; shown even when empty so its absence never reads as a glitch */
   const gallery = GAL ? GAL[p.id] : null;
+  h+=`<div class="sect"><h3>صور المشروع</h3>`;
   if(gallery && gallery.length){
-    h+=`<div class="sect"><h3>صور المشروع</h3><div class="gscroll">`;
+    h+=`<div class="gscroll">`;
     gallery.forEach((g,i)=>{
       h+=`<div class="gitem" data-gi="${i}"><img src="${g.src}" alt="${g.label}" loading="lazy"><div class="glab">${g.label}</div></div>`;
     });
-    h+=`</div><div class="src">من كتيب المشروع الرسمي.</div></div>`;
+    h+=`</div><div class="src">من كتيب المشروع الرسمي.</div>`;
+  }else{
+    h+=`<div class="galEmpty"><i>🖼️</i><b>لا تتوفر صور رسمية لهذا المشروع بعد</b><span>سنضيفها فور توفرها من كتيب المشروع — استخدم الخريطة والمميزات المكتوبة أدناه بالمقابل</span></div>`;
   }
+  h+=`</div>`;
 
   /* booking / contract pipeline — full picture including reserved (shown, not hidden) and contracted (sold) */
   const bk = BOOK ? BOOK[p.id] : null;
@@ -2343,8 +2353,9 @@ function openDetail(id){
       <div class="src">إجمالي وحدات المشروع (كل الشرائح) بصرف النظر عن حالة البيع — من ملف التخصيص بتاريخ 29 يوليو 2026.</div></div>`;
   }
 
-  /* construction */
-  h+=`<div class="sect"><h3>الحالة الإنشائية</h3><span class="constrbadge">${p.constr}</span></div>`;
+  /* construction — colour signals stage: neutral(not started) / gold(in progress) / green(complete) */
+  const constrCls = /لم يبدأ/.test(p.constr||"") ? "pending" : /مكتمل/.test(p.constr||"") ? "" : "progress";
+  h+=`<div class="sect"><h3>الحالة الإنشائية</h3><span class="constrbadge ${constrCls}">${p.constr}</span></div>`;
 
   /* buildings & design models — from raw allocation database, per project */
   const bm = BLDG ? BLDG[p.id] : null;
@@ -2949,7 +2960,7 @@ async function renderSales(){
       <i style="height:${val?Math.max(4,(val/mx)*100):2}%;${val?"":"opacity:.25"}"></i><span>${periodLabel(r.period,salesGran)}</span></div>`;
   }).join("");
 
-  const projList = (projReport||[]).slice(0,30);
+  const projList = (projReport||[]).slice(0,50);
   const projRowsHtml = projList.length ? projList.map(r=>`
     <div class="projRow">
       <div class="projName">${r.project_name}</div>
@@ -2964,8 +2975,21 @@ async function renderSales(){
     ${renderPendingCard()}
     <div class="salesCard" style="max-width:640px;margin:12px auto 0">
       <div class="scTotal" style="border:none;padding:0;margin-bottom:9px;font-size:13px">الأداء حسب المشروع — ${METLBL[salesMetric]} (أعلى ٥٠)</div>
-      <div class="projList">${projRowsHtml}</div>
+      ${projList.length ? `<input type="search" id="projSearchInp" placeholder="ابحث عن مشروع…" class="dateInp" style="width:100%;text-align:start;margin-bottom:9px" autocomplete="off">` : ""}
+      <div class="projList" id="projListBox">${projRowsHtml}</div>
+      <div class="src" id="projNoMatch" style="display:none;text-align:center;padding:16px">لا نتائج مطابقة للبحث</div>
     </div>`;
+  const psi=$("projSearchInp");
+  if(psi) psi.oninput=()=>{
+    const q=psi.value.trim();
+    let anyShown=false;
+    $("projListBox").querySelectorAll(".projRow").forEach(r=>{
+      const match = !q || r.querySelector(".projName").textContent.includes(q);
+      r.style.display = match ? "" : "none";
+      if(match) anyShown=true;
+    });
+    $("projNoMatch").style.display = (q && !anyShown) ? "" : "none";
+  };
 }
 wireSalesCtrl();
 $("dealBannerX").onclick=()=>{ $("dealBanner").style.display="none"; };
