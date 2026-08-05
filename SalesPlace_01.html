@@ -1708,6 +1708,7 @@ table.prods tr:last-child td{border:none}
         <button class="mclose" id="miniClose">✕</button>
         <div class="nm" id="miniNm"></div><div class="mt" id="miniMt"></div>
         <div class="minirow"><div class="st" id="miniSt"></div><button class="btn" id="miniOpen">التفاصيل الكاملة</button></div>
+        <div id="miniMulti" style="display:none"></div>
       </div>
     </div>
   </div>
@@ -2707,11 +2708,20 @@ function renderMap(arr){
   if(!map) return;
   layer.clearLayers(); curPins=[];
   const withGeo=arr.filter(v=>v.p.lat!=null);
+  /* some projects share the exact same master-plan coordinates (same destination, no distinct pin yet) —
+     group them so a tap reaches all of them instead of only whichever marker Leaflet stacks on top */
+  const groups={};
+  for(const v of withGeo){
+    const key=v.p.lat.toFixed(5)+","+v.p.lon.toFixed(5);
+    (groups[key]=groups[key]||[]).push(v);
+  }
   for(const v of withGeo){
     const p=v.p;
-    const lbl=`<b>${p.short}</b> · <i>${compact(Math.round((v.minP+v.maxP)/2))}</i>`;
+    const key=p.lat.toFixed(5)+","+p.lon.toFixed(5);
+    const group=groups[key];
+    const lbl = group.length>1 ? `<b>${group.length} مشاريع بهذا الموقع</b>` : `<b>${p.short}</b> · <i>${compact(Math.round((v.minP+v.maxP)/2))}</i>`;
     const m=L.marker([p.lat,p.lon],{icon:pinIcon(TCOL[domType(v.types)],lbl)});
-    m.on("click",()=>showMini(v));
+    m.on("click",()=>showMini(group));
     m._vm=v;
     m.addTo(layer); curPins.push(m);
   }
@@ -2728,12 +2738,28 @@ function updateLabels(){
   map.getContainer().classList.toggle("zlbl",show);
   hintEl.style.display = show||!curPins.length ? "none" : "block";
 }
-function showMini(v){
-  const p=v.p;
-  $("miniNm").textContent=p.short;
-  $("miniMt").textContent=`${p.dev} · ${p.city}${p.dest?` · وجهة ${p.dest}`:""}`;
-  $("miniSt").innerHTML=`<b>${fmt(v.u)}</b> وحدة · ${compact(v.minP)} – ${compact(v.maxP)} ريال <span style="color:var(--muted);font-size:10.5px">(${priceLbl()})</span>`;
-  $("miniOpen").onclick=()=>openDetail(p.id);
+function showMini(group){
+  const arr=Array.isArray(group)?group:[group];
+  const minirow=$("miniCard").querySelector(".minirow");
+  if(arr.length<=1){
+    const v=arr[0], p=v.p;
+    $("miniNm").textContent=p.short;
+    $("miniMt").textContent=`${p.dev} · ${p.city}${p.dest?` · وجهة ${p.dest}`:""}`;
+    $("miniSt").innerHTML=`<b>${fmt(v.u)}</b> وحدة · ${compact(v.minP)} – ${compact(v.maxP)} ريال <span style="color:var(--muted);font-size:10.5px">(${priceLbl()})</span>`;
+    $("miniOpen").onclick=()=>openDetail(p.id);
+    minirow.style.display="";
+    $("miniMulti").style.display="none";
+  }else{
+    /* several projects share this exact map point (same master-plan location, no distinct pin yet) — let the rep pick which one */
+    $("miniNm").textContent=`${arr.length} مشاريع بهذا الموقع تقريباً`;
+    $("miniMt").textContent="اختر مشروعاً لعرض تفاصيله";
+    minirow.style.display="none";
+    $("miniMulti").style.display="block";
+    $("miniMulti").innerHTML=arr.map(v=>`<div class="projRow" data-pid="${v.p.id}" style="cursor:pointer">
+      <div class="projName">${v.p.short}</div><div class="projStats"><span class="hi">${compact(v.minP)}–${compact(v.maxP)} ريال</span></div>
+    </div>`).join("");
+    $("miniMulti").querySelectorAll("[data-pid]").forEach(el=>el.onclick=()=>openDetail(+el.dataset.pid));
+  }
   $("miniCard").classList.add("on");
   setTimeout(()=>map&&map.invalidateSize(),240);
 }
