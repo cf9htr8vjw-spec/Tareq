@@ -685,12 +685,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --rust:#A15C38; --purple:#6B4A85; --purple-soft:#EEE8F4;
   --navy2:#243a5e; --shadow:0 3px 14px rgba(27,43,68,.07); --overlay-soft:rgba(0,0,0,.05);
   --nav-h:60px; --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --gold-soft2:#faf3e8; --gold-soft-border:#e8dcc4; --gold-text:#7d5426; --gold-text2:#6b5230; --gold-text3:#7d6134; --gold-text-lt:#8a7350;
+  --green-soft-border:#cfe0cf; --rust-soft:#f6e3da; --rust-soft-border:#e6c3af;
+  --loc-bg:#EEF1F5; --loc-text:#44506b; --star-empty:#d4b483;
 }
 :root[data-theme="dark"]{
   --bg:#0f1620; --surface:#182236; --ink:#e7ecf3; --muted:#93a0b4; --line:#2a3548;
   --green:#4a9257; --green-soft:#1d3324; --gold:#c99a5c; --gold-soft:#3a2f1c;
   --rust:#c97a54; --purple:#9a7ec2; --purple-soft:#2a2340;
   --navy2:#0d1626; --shadow:0 3px 14px rgba(0,0,0,.35); --overlay-soft:rgba(255,255,255,.08);
+  --gold-soft2:#332912; --gold-soft-border:#4a3b22; --gold-text:#e0b979; --gold-text2:#e0b979; --gold-text3:#e0b979; --gold-text-lt:#c9a875;
+  --green-soft-border:#2d4a33; --rust-soft:#3a2420; --rust-soft-border:#5a3428;
+  --loc-bg:#232c3d; --loc-text:#aab4c9; --star-empty:#8a7245;
 }
 :root[data-theme="dark"] body{background:var(--bg)}
 :root[data-theme="dark"] .leaflet-container{background:#1a2333}
@@ -793,6 +799,8 @@ main{flex:1;min-height:0;position:relative}
 .hticon{font-size:32px}
 .httxt b{display:block;font-size:14px;font-family:"Noto Kufi Arabic";margin-bottom:4px}
 .httxt span{font-size:11px;color:var(--muted);line-height:1.6}
+@media(max-width:639px){.htiles>.htile:last-child:nth-child(odd){grid-column:1/-1;flex-direction:row;justify-content:flex-start;text-align:start;padding:16px 18px}
+.htiles>.htile:last-child:nth-child(odd) .hticon{font-size:26px}}
 @media(min-width:640px){.htiles{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}}
 
 /* ===== Destinations browse ===== */
@@ -842,10 +850,10 @@ main{flex:1;min-height:0;position:relative}
 .salesCtrl .chips{flex-wrap:wrap}
 .dateInp{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:6px 12px;
   font-size:11.5px;color:var(--ink);font-family:inherit}
-.favBtn{position:absolute;top:10px;left:10px;font-size:18px;line-height:1;color:#d4b483;background:none;z-index:1}
+.favBtn{position:absolute;top:10px;left:10px;font-size:18px;line-height:1;color:var(--star-empty);background:none;z-index:1}
 .favBtn.on{color:var(--gold)}
 .cardCartBtn{display:block;width:100%;margin-top:11px;padding:9px;border-radius:11px;font-size:12.5px;font-weight:700;
-  background:var(--gold-soft);border:1.5px solid #e8dcc4;color:#7d5426}
+  background:var(--gold-soft);border:1.5px solid var(--gold-soft-border);color:var(--gold-text)}
 .cardCartBtn.on{background:var(--green);border-color:var(--green);color:#fff}
 .card:active{transform:scale(.985)}
 .card .nm{font-weight:700;font-size:14.5px;line-height:1.4}
@@ -853,11 +861,11 @@ main{flex:1;min-height:0;position:relative}
 .cmeta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .pill{font-size:10.5px;font-weight:600;padding:2.5px 9px;border-radius:99px}
 .pill.v{background:var(--green-soft);color:var(--green)}
-.pill.a{background:var(--gold-soft);color:#7d6134}
+.pill.a{background:var(--gold-soft);color:var(--gold-text3)}
 .pill.t{background:var(--purple-soft);color:var(--purple)}
 .pill.geo{background:var(--green-soft);color:var(--green);font-weight:500}
-.pill.doc{background:var(--gold-soft);color:#7d6134;font-weight:500}
-.pill.loc{background:#EEF1F5;color:#44506b;font-weight:500}
+.pill.doc{background:var(--gold-soft);color:var(--gold-text3);font-weight:500}
+.pill.loc{background:var(--loc-bg);color:var(--loc-text);font-weight:500}
 .crow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);gap:8px}
 .crow .units b{font-size:17px;font-family:"Noto Kufi Arabic"}
 .crow .units b.scarce{color:var(--rust)}
@@ -911,7 +919,7 @@ main{flex:1;min-height:0;position:relative}
 .pstat{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 11px;text-align:center}
 .pstat b{display:block;font-size:15px;font-family:"Noto Kufi Arabic";line-height:1.35}
 .pstat span{font-size:9.5px;color:var(--muted);line-height:1.5;display:block;margin-top:2px}
-.pstat.good b{color:var(--green)} .pstat.mid b{color:#8a6b2f} .pstat.bad b{color:var(--rust)}
+.pstat.good b{color:var(--green)} .pstat.mid b{color:var(--gold-text2)} .pstat.bad b{color:var(--rust)}
 .absbar{position:relative;height:26px;border-radius:8px;background:var(--bg);border:1px solid var(--line);
   margin-top:10px;overflow:hidden}
 .absbar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#4a7d52)}
@@ -921,7 +929,7 @@ main{flex:1;min-height:0;position:relative}
 .mhead{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:9px;gap:8px}
 .tr{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;flex:none}
 .tr.up{background:var(--green-soft);color:var(--green)}
-.tr.dn{background:#f6e3da;color:var(--rust)}
+.tr.dn{background:var(--rust-soft);color:var(--rust)}
 .tr.fl{background:var(--line);color:var(--muted)}
 .mbars{display:flex;align-items:flex-end;gap:3px;height:74px}
 .mbars.withval{height:96px}
@@ -953,8 +961,8 @@ main{flex:1;min-height:0;position:relative}
 .mfoot b{color:var(--ink);font-family:"Noto Kufi Arabic"}
 .pill.ab{font-weight:600}
 .pill.ab.hi{background:var(--green);color:#fff}
-.pill.ab.mid{background:var(--gold-soft);color:#7d6134}
-.pill.ab.lo{background:#f6e3da;color:var(--rust)}
+.pill.ab.mid{background:var(--gold-soft);color:var(--gold-text3)}
+.pill.ab.lo{background:var(--rust-soft);color:var(--rust)}
 
 /* ===== Preferences view ===== */
 #prefScroll{flex:1;overflow-y:auto;padding:2px 14px calc(16px + var(--sab))}
@@ -964,8 +972,8 @@ main{flex:1;min-height:0;position:relative}
 .pfilters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
 .pfilters label{font-size:11px;color:var(--muted);font-weight:600;display:flex;flex-direction:column;gap:4px}
 .pfilters select{border:1.5px solid var(--line);border-radius:11px;padding:9px 10px;background:var(--surface);font-size:13px;font-weight:500;outline:none;width:100%}
-#pfBase{background:var(--green-soft);border:1px solid #cfe0cf;border-radius:12px;padding:9px 13px;font-size:12px;color:var(--green);margin-bottom:12px;line-height:1.7}
-#pfBase.warn{background:var(--gold-soft);border-color:#e8dcc4;color:#6b5230}
+#pfBase{background:var(--green-soft);border:1px solid var(--green-soft-border);border-radius:12px;padding:9px 13px;font-size:12px;color:var(--green);margin-bottom:12px;line-height:1.7}
+#pfBase.warn{background:var(--gold-soft);border-color:var(--gold-soft-border);color:var(--gold-text2)}
 #pfBase.none{background:var(--bg);border-color:var(--line);color:var(--muted)}
 .pcard{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:13px 14px;margin-bottom:10px}
 .pcard h4{font-size:13px;font-weight:700;margin-bottom:11px;display:flex;align-items:center;gap:7px}
@@ -1019,7 +1027,7 @@ main{flex:1;min-height:0;position:relative}
 .ptag{font-size:10px;background:var(--green-soft);color:var(--green);padding:2px 8px;border-radius:99px;font-weight:600}
 .pbtns{display:flex;gap:6px;flex:none}
 .pbtns .btn{padding:9px 13px;font-size:12.5px;border-radius:11px}
-#prefBanner{flex:none;display:none;margin:0 14px 8px;background:var(--green-soft);border:1px solid #cfe0cf;
+#prefBanner{flex:none;display:none;margin:0 14px 8px;background:var(--green-soft);border:1px solid var(--green-soft-border);
   border-radius:13px;padding:9px 13px}
 #prefBanner.on{display:block}
 .pbhead{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--green)}
@@ -1027,10 +1035,10 @@ main{flex:1;min-height:0;position:relative}
 #recentStrip{flex:none;display:flex;align-items:center;gap:7px;overflow-x:auto;padding:10px 14px 2px;-webkit-overflow-scrolling:touch}
 .rsLbl{flex:none;font-size:10.5px;color:var(--muted);font-weight:700;white-space:nowrap}
 .rsChip{flex:none;font-size:11px;font-weight:600;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:6px 13px;white-space:nowrap;color:var(--ink)}
-#dealBanner{flex:none;display:none;margin:10px 14px 0;background:var(--gold-soft);border:1px solid #e8dcc4;
+#dealBanner{flex:none;display:none;margin:10px 14px 0;background:var(--gold-soft);border:1px solid var(--gold-soft-border);
   border-radius:13px;padding:10px 13px;align-items:center;justify-content:space-between;gap:10px}
-#dealBannerTxt{font-size:12px;font-weight:600;color:#7d5426;line-height:1.6}
-#dealBannerX{flex:none;font-size:13px;color:#7d5426;opacity:.7}
+#dealBannerTxt{font-size:12px;font-weight:600;color:var(--gold-text);line-height:1.6}
+#dealBannerX{flex:none;font-size:13px;color:var(--gold-text);opacity:.7}
 
 /* ===== Affordability calculator ===== */
 #calcScroll{flex:1;overflow-y:auto;padding:2px 14px calc(16px + var(--sab))}
@@ -1040,7 +1048,7 @@ main{flex:1;min-height:0;position:relative}
 .cform{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
 .cfield{margin-bottom:11px}
 .cfield label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:5px}
-.cfield label em{font-style:normal;font-weight:500;color:#9a9488;font-size:10px}
+.cfield label em{font-style:normal;font-weight:500;color:var(--muted);font-size:10px}
 .cfield input{width:100%;border:1.5px solid var(--line);border-radius:11px;padding:10px 11px;font-size:14px;background:var(--bg)}
 .cfield input:focus{outline:none;border-color:var(--green)}
 .cfrow2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -1052,7 +1060,7 @@ main{flex:1;min-height:0;position:relative}
 .cresblock{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 14px;margin-top:12px;box-shadow:var(--shadow)}
 .cresblock h4{font-size:12.5px;font-weight:700;color:var(--green);margin:11px 0 2px;display:flex;align-items:center;gap:7px}
 .cresblock h4::after{content:"";flex:1;height:1px;background:var(--line)}
-.cwarn{background:var(--gold-soft);border:1px solid #e8dcc4;color:#7d5426;border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.8;margin-top:12px}
+.cwarn{background:var(--gold-soft);border:1px solid var(--gold-soft-border);color:var(--gold-text);border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.8;margin-top:12px}
 .calcActions{display:flex;gap:8px;margin-top:12px}
 .calcActions .btn{flex:1;font-size:12px;padding:10px 8px}
 .clogItem{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 14px;margin-bottom:9px;position:relative;box-shadow:var(--shadow)}
@@ -1073,7 +1081,7 @@ main{flex:1;min-height:0;position:relative}
 .unmRow span{color:var(--muted);flex:none;margin-inline-start:10px}
 .unmAll{margin-top:10px;font-size:11.5px}
 .unmAll summary{cursor:pointer;color:var(--muted);font-weight:600}
-.cerr{background:#f6e3da;border:1px solid #e6c3af;color:var(--rust);border-radius:12px;padding:11px 13px;font-size:12.5px;margin-top:12px}
+.cerr{background:var(--rust-soft);border:1px solid var(--rust-soft-border);color:var(--rust);border-radius:12px;padding:11px 13px;font-size:12.5px;margin-top:12px}
 @media(min-width:900px){
   #calcScroll{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
   #calcScroll>.cintro{flex-basis:100%}
@@ -1094,13 +1102,13 @@ main{flex:1;min-height:0;position:relative}
 .ubadges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
 .ubadge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px}
 .ubadge.on{background:var(--green-soft);color:var(--green)}
-.ubadge.off{background:#f6e3da;color:var(--rust)}
-.ubadge.adm{background:var(--gold-soft);color:#7d5426}
+.ubadge.off{background:var(--rust-soft);color:var(--rust)}
+.ubadge.adm{background:var(--gold-soft);color:var(--gold-text)}
 .umeta{font-size:11px;color:var(--muted);margin-top:6px}
 .uactions{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
 .uactions button{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:9px;border:1.5px solid var(--line);color:var(--ink)}
-.uactions button.danger{color:var(--rust);border-color:#e6c3af}
-.uactions button.warn{color:#7d5426;border-color:#e0c8a0}
+.uactions button.danger{color:var(--rust);border-color:var(--rust-soft-border)}
+.uactions button.warn{color:var(--gold-text);border-color:var(--gold-soft-border)}
 .alogHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;gap:8px}
 #aLogStats{font-size:12px;color:var(--muted)}
 .lrow{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:1px solid var(--bg);font-size:12.5px}
@@ -1170,7 +1178,7 @@ nav.bottom svg{width:22px;height:22px}
 .sect>h3::after{content:"";flex:1;height:1px;background:var(--line)}
 table.prods{width:100%;border-collapse:collapse;font-size:12px}
 table.prods th{background:var(--bg);color:var(--muted);font-weight:600;padding:7px 6px;text-align:right;font-size:10.5px;border-bottom:1px solid var(--line);white-space:nowrap}
-.calcgo{background:var(--green-soft);border:1px solid #cfe0cf;border-radius:8px;width:30px;height:30px;font-size:14px;line-height:1}
+.calcgo{background:var(--green-soft);border:1px solid var(--green-soft-border);border-radius:8px;width:30px;height:30px;font-size:14px;line-height:1}
 .cartchk{background:var(--bg);border:1.5px solid var(--line);border-radius:8px;width:30px;height:30px;font-size:14px;font-weight:700;color:var(--muted);line-height:1}
 .cartchk.on{background:var(--gold);border-color:var(--gold);color:#fff}
 .cmpmapbtn{background:var(--green);color:#fff;border-radius:11px;padding:10px 14px;font-size:13px;font-weight:600;text-align:center;cursor:pointer}
@@ -1206,11 +1214,11 @@ table.prods tr:last-child td{border:none}
 .kv dd:last-of-type,.kv dt:last-of-type{border:none}
 .src{font-size:10px;color:var(--muted);margin-top:8px;line-height:1.5}
 .dest3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.dstat{background:var(--gold-soft);border:1px solid #e8dcc4;border-radius:12px;padding:10px 8px;text-align:center}
-.dstat b{display:block;font-size:14.5px;font-family:"Noto Kufi Arabic";color:#6b5230}
-.dstat span{font-size:9.5px;color:#8a7350;line-height:1.4;display:block;margin-top:2px}
+.dstat{background:var(--gold-soft);border:1px solid var(--gold-soft-border);border-radius:12px;padding:10px 8px;text-align:center}
+.dstat b{display:block;font-size:14.5px;font-family:"Noto Kufi Arabic";color:var(--gold-text2)}
+.dstat span{font-size:9.5px;color:var(--gold-text-lt);line-height:1.4;display:block;margin-top:2px}
 .summ{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.85}
-.filtnote{background:var(--gold-soft);border:1px solid #e8dcc4;color:#6b5230;border-radius:9px;padding:6px 11px;font-size:11.5px;margin-bottom:9px}
+.filtnote{background:var(--gold-soft);border:1px solid var(--gold-soft-border);color:var(--gold-text2);border-radius:9px;padding:6px 11px;font-size:11.5px;margin-bottom:9px}
 .proglist{display:flex;flex-direction:column;gap:7px}
 .suppgrid{display:flex;flex-direction:column;gap:9px}
 .roiCards{display:flex;flex-direction:column;gap:11px;margin-top:14px}
@@ -1244,11 +1252,11 @@ table.prods tr:last-child td{border:none}
 .mcPrice{font-size:12px;font-weight:700;color:var(--green)}
 .mcCount{font-size:10px;color:var(--muted);margin-top:4px}
 @media(min-width:640px){.modelgrid{grid-template-columns:repeat(3,1fr)}}
-.suppcard{background:linear-gradient(135deg,var(--gold-soft),#faf3e8);border:1px solid #e8dcc4;border-radius:15px;padding:12px 14px;box-shadow:var(--shadow)}
-.suptype{font-size:12.5px;font-weight:700;color:#7d5426;margin-bottom:5px}
+.suppcard{background:linear-gradient(135deg,var(--gold-soft),var(--gold-soft2));border:1px solid var(--gold-soft-border);border-radius:15px;padding:12px 14px;box-shadow:var(--shadow)}
+.suptype{font-size:12.5px;font-weight:700;color:var(--gold-text);margin-bottom:5px}
 .supavg{font-size:19px;font-weight:800;font-family:"Noto Kufi Arabic";color:var(--ink)}
 .supavg span{font-size:11px;font-weight:500;color:var(--muted);margin-right:4px}
-.suprange{font-size:11px;color:#8a7350;margin-top:4px}
+.suprange{font-size:11px;color:var(--gold-text-lt);margin-top:4px}
 .suppCompare{display:flex;justify-content:space-between;gap:10px;margin:8px 0;padding:8px 10px;background:var(--overlay-soft);border-radius:9px}
 .suppCompare div{display:flex;flex-direction:column;gap:2px}
 .suppCompare span{font-size:9.5px;color:var(--muted)}
@@ -1618,7 +1626,7 @@ table.prods tr:last-child td{border:none}
           <b>حاسبة جداول الدفعات — غير المستفيدين والمستثمرين</b>
           <span>خطط دفع مرنة على السعر الكامل، أو سداد نقدي</span>
         </div>
-        <div id="cartNote" class="cwarn" style="display:none;background:var(--green-soft);border-color:#cfe0cf;color:var(--green)"></div>
+        <div id="cartNote" class="cwarn" style="display:none;background:var(--green-soft);border-color:var(--green-soft-border);color:var(--green)"></div>
         <div class="cform">
           <div class="cfield"><label>إجمالي قيمة الوحدة/الوحدات (ريال)</label><input id="nPrice" type="number" inputmode="numeric" placeholder="مثال: 1200000"></div>
           <div class="flabel" style="margin-top:2px">خطة الدفع</div>
@@ -1816,7 +1824,7 @@ table.prods tr:last-child td{border:none}
       <div class="progitem"><span class="progtag">دعم مؤكد</span><span>وحدات لها قيمة دعم فعلية موثّقة في ملف التخصيص، لا مجرد شارة برنامج عامة.</span></div>
       <div class="progitem"><span class="progtag">نسخة المستثمرين</span><span>مميزات مشروع مكتوبة خصيصاً لغير المستفيدين والمستثمرين، تظهر بدل النسخة العامة عند توفرها.</span></div>
       <div class="progitem"><span class="progtag">جداول الدفعات المرنة</span><span>خطط سداد معتمدة لغير المستفيدين بديلة عن الدفع النقدي أو تمويل المستفيدين، بحصة محدودة لكل مشروع.</span></div>
-      <div class="progitem"><span class="progtag">سوق NHC</span><span>اسم التطبيق ورقم إصداره — يظهر أعلى يمين الشاشة، ويتحدث مع كل تطوير جديد.</span></div>
+      <div class="progitem"><span class="progtag">SalesPlace</span><span>اسم التطبيق ورقم إصداره — يظهر أعلى يمين الشاشة، ويتحدث مع كل تطوير جديد.</span></div>
     </div>
     <button type="button" class="btn ghost" id="replayTourBtn" style="width:100%;margin-top:14px">🔄 إعادة الجولة التعريفية</button>
   </div>
@@ -1844,7 +1852,7 @@ table.prods tr:last-child td{border:none}
 <div id="onbScrim"></div>
 <div id="onbCard">
   <div class="onbLogoWrap"><div class="onbIcon">👋</div></div>
-  <h2 class="kufi">أهلاً بك في سوق NHC</h2>
+  <h2 class="kufi">أهلاً بك في SalesPlace</h2>
   <div id="onbSteps"></div>
   <div class="onbDots" id="onbDots"></div>
   <button class="btn" id="onbNext" style="width:100%;margin-top:14px">التالي</button>
@@ -1872,7 +1880,7 @@ table.prods tr:last-child td{border:none}
       <button class="btn" id="roiCalc" style="width:100%;margin-top:11px">احسب العائد</button>
     </div>
     <div id="roiResult"></div>
-    <div class="cwarn" style="background:var(--gold-soft);border-color:#e8dcc4;color:#7d5426;margin-top:14px">
+    <div class="cwarn" style="background:var(--gold-soft);border-color:var(--gold-soft-border);color:var(--gold-text);margin-top:14px">
       ⚠ جميع الأرقام تقديرية توضيحية فقط — ليست ضماناً أو نصيحة استثمارية. عوائد الإيجار وزيادة الشراء على الخارطة (15%) افتراضات. يُنصح العميل دائماً بطلب استشارة مالية مستقلة.
     </div>
   </div>
@@ -2296,7 +2304,7 @@ function openDetail(id){
     h+=`<div class="sect"><h3>مميزات المشروع${investorF?" — نسخة المستثمرين":""}</h3>`;
     if(F.unique) h+=`<div class="uniq"><div class="tag">✦ نقطة التميز الفريدة</div><p>${F.unique}</p></div>`;
     if(F.summary) h+=`<div class="summ">${F.summary.replace(/\n/g,"<br>")}</div>`;
-    if(F.regionNote) h+=`<div class="cwarn" style="background:var(--gold-soft);border-color:#e8dcc4;color:#7d5426;margin-bottom:11px">${F.regionNote}</div>`;
+    if(F.regionNote) h+=`<div class="cwarn" style="background:var(--gold-soft);border-color:var(--gold-soft-border);color:var(--gold-text);margin-bottom:11px">${F.regionNote}</div>`;
     const FICON={location:"📍",edge:"⚡",unitTypes:"🏠",amenities:"🌳",design:"🎨",access:"🚗",investment:"💰",keyNumbers:"📊",target:"👪"};
     const L={location:"الموقع",edge:"الميزة التنافسية",unitTypes:"أنواع الوحدات",amenities:"المرافق والخدمات",design:"التصميم والجودة",access:"سهولة الوصول",investment:"الاستثمار",keyNumbers:"إجمالي حجم المشروع",target:"الفئة المستهدفة"};
     const cards=Object.keys(L).filter(k=>F[k]).map(k=>
@@ -2348,7 +2356,7 @@ function openDetail(id){
     if(stats.length){
       h+=`<div class="sect"><h3>الوحدات والمباني</h3>
         <div class="dest3" style="grid-template-columns:repeat(${stats.length},1fr)">
-          ${stats.map(([b,s])=>`<div class="dstat" style="background:var(--green-soft);border-color:#cfe0cf"><b style="color:var(--green)">${b}</b><span style="color:var(--green)">${s}</span></div>`).join("")}
+          ${stats.map(([b,s])=>`<div class="dstat" style="background:var(--green-soft);border-color:var(--green-soft-border)"><b style="color:var(--green)">${b}</b><span style="color:var(--green)">${s}</span></div>`).join("")}
         </div>`;
       /* visual model spec cards — same-model units share design/beds/area/price, shown to aid selection */
       const mSpecs = MODELS ? MODELS[p.id] : null;
@@ -2381,7 +2389,7 @@ function openDetail(id){
   if(al){
     const byT=Object.entries(al.byType||{}).map(([t,u])=>`${t} (${fmt(u)})`).join(" · ");
     h+=`<div class="sect"><h3>برنامج جداول الدفعات المرنة 2026</h3>
-      <div class="cwarn" style="background:var(--green-soft);border-color:#cfe0cf;color:var(--green)">
+      <div class="cwarn" style="background:var(--green-soft);border-color:var(--green-soft-border);color:var(--green)">
         <b style="font-size:15px;font-family:'Noto Kufi Arabic'">${fmt(al.total)} وحدة</b> من هذا المشروع ضمن حصة برنامج الدفعات المرنة للنصف الأول 2026${byT?` — ${byT}`:""}.
       </div>
       <div class="src">الحد الأقصى العام 25% من وحدات أي مشروع. المصدر: خطة جداول الدفعات المعتمدة.</div></div>`;
@@ -3119,7 +3127,7 @@ function renderCalcLog(){
 
 /* ---------- onboarding tour (shown once, first login on this device) ---------- */
 const ONB_STEPS=[
-  "هذه نسخة Beta من سوق NHC — جولة سريعة بأهم ٥ مسارات في الشاشة الرئيسية.",
+  "هذه نسخة Beta من SalesPlace — جولة سريعة بأهم ٥ مسارات في الشاشة الرئيسية.",
   "🏘️ <b>الوجهات</b> — تصفّح المشاريع مباشرة حسب موقعها الجغرافي.",
   "🤝 <b>الصفقات</b> و⚖️ <b>المقارنة</b> — اختر وحدات من عدة مشاريع بضغطة واحدة على كل بطاقة، ثم قارنها أو احسب لها جدول دفعات وعائد استثماري معاً.",
   "🔍 <b>البحث والتصفية</b> — كل المشاريع الـ١٨٧ بفلاتر كاملة (المدينة، النوع، السعر، NHC أو المطورين...).",
@@ -3355,7 +3363,7 @@ function loadSheetJS(){
 }
 function syncSetStatus(msg,type){
   const el=$("syncStatus");
-  el.innerHTML=`<div class="cwarn"${type==="err"?' style="background:#f6e3da;border-color:#e6c3af;color:var(--rust)"':""}>${msg}</div>`;
+  el.innerHTML=`<div class="cwarn"${type==="err"?' style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)"':""}>${msg}</div>`;
 }
 $("syncFile").onchange=()=>{ $("syncStart").disabled = !$("syncFile").files.length; };
 
@@ -3656,13 +3664,13 @@ function runCalc(){
   if(capped){
     h += `<div class="cwarn">⚠ الراتب لا يدعم كامل التمويل المستهدف (80%) بالقسط والمدة المحددَين. الفرق البالغ <b>${fmt(Math.round(extraDown))}</b> ريال أُضيف للدفعة الأولى بدل زيادة القسط.</div>`;
   }
-  h += `<div class="cwarn" style="background:var(--green-soft);border-color:#cfe0cf;color:var(--green)">منهجية REDF: دعم 150,000 ريال للرواتب أقل من 10,000، و100,000 ريال لما فوقها. القسط بنظام الفائدة الفلات = المبلغ × (1 + النسبة السنوية × السنوات) ÷ (السنوات×12). الحد الأقصى للقسط = 65% من الراتب ناقص الالتزامات.</div>`;
+  h += `<div class="cwarn" style="background:var(--green-soft);border-color:var(--green-soft-border);color:var(--green)">منهجية REDF: دعم 150,000 ريال للرواتب أقل من 10,000، و100,000 ريال لما فوقها. القسط بنظام الفائدة الفلات = المبلغ × (1 + النسبة السنوية × السنوات) ÷ (السنوات×12). الحد الأقصى للقسط = 65% من الراتب ناقص الالتزامات.</div>`;
   h += `<div class="calcActions">
     <button type="button" class="btn ghost" id="cShareWA">📤 مشاركة واتساب</button>
     <button type="button" class="btn ghost" id="cSaveLog">💾 حفظ باسم العميل</button>
   </div>`;
   box.innerHTML = h;
-  const waText = `حاسبة القدرة الشرائية — سوق NHC\nسعر الوحدة: ${fmt(Math.round(price))} ريال\nالراتب الشهري: ${fmt(salary)} ريال\n———\nالدفعة الأولى المطلوبة: ${fmt(Math.round(downFinal))} ريال\nالقسط الشهري: ${fmt(Math.round(installment))} ريال\nدعم الصندوق العقاري: ${fmt(support)} ريال\nالتمويل المعتمد: ${fmt(Math.round(financeUsed))} ريال`;
+  const waText = `حاسبة القدرة الشرائية — SalesPlace\nسعر الوحدة: ${fmt(Math.round(price))} ريال\nالراتب الشهري: ${fmt(salary)} ريال\n———\nالدفعة الأولى المطلوبة: ${fmt(Math.round(downFinal))} ريال\nالقسط الشهري: ${fmt(Math.round(installment))} ريال\nدعم الصندوق العقاري: ${fmt(support)} ريال\nالتمويل المعتمد: ${fmt(Math.round(financeUsed))} ريال`;
   $("cShareWA").onclick=()=>shareWA(waText);
   $("cSaveLog").onclick=()=>saveCalcRecord("REDF", `سعر ${fmt(Math.round(price))} · دفعة أولى ${fmt(Math.round(downFinal))} · قسط ${fmt(Math.round(installment))} ريال/شهر`);
 }
@@ -3755,7 +3763,7 @@ function runRoiCalc(){
     <button type="button" class="btn ghost" id="roiSaveLog">💾 حفظ باسم العميل</button>
   </div>`;
   $("roiResult").innerHTML=h;
-  const waText = `العائد الاستثماري المتوقع — سوق NHC\nقيمة الوحدات: ${fmt(Math.round(totalPrice))} ريال · فترة ${years} سنوات\n———\n${waScenarios.join("\n")}\n———\nتقديري، ليس ضماناً أو نصيحة استثمارية.`;
+  const waText = `العائد الاستثماري المتوقع — SalesPlace\nقيمة الوحدات: ${fmt(Math.round(totalPrice))} ريال · فترة ${years} سنوات\n———\n${waScenarios.join("\n")}\n———\nتقديري، ليس ضماناً أو نصيحة استثمارية.`;
   $("roiShareWA").onclick=()=>shareWA(waText);
   $("roiSaveLog").onclick=()=>saveCalcRecord("العائد الاستثماري", `${fmt(Math.round(totalPrice))} ريال · ${years} سنوات · ${waScenarios[0]}`);
 }
@@ -3889,7 +3897,7 @@ function runNCalc(){
       <tbody>${sched.map((s,i)=>`<tr><td>${i+1}</td><td>${s.label}</td><td>${fmt(Math.round(s.amt))} ريال</td></tr>`).join("")}</tbody>
     </table></div></div>`;
 
-  h+=`<div class="cwarn" style="background:var(--green-soft);border-color:#cfe0cf;color:var(--green);margin-top:12px">الحد الأقصى للوحدات الخاضعة للجداول المرنة 25% من إجمالي وحدات المشروع. يُمنع تقديم خصومات إضافية عند استخدام هذه الجداول. بعض المشاريع مؤهلة لدعم بنية تحتية إضافي — راجع صفحة المشروع.</div>`;
+  h+=`<div class="cwarn" style="background:var(--green-soft);border-color:var(--green-soft-border);color:var(--green);margin-top:12px">الحد الأقصى للوحدات الخاضعة للجداول المرنة 25% من إجمالي وحدات المشروع. يُمنع تقديم خصومات إضافية عند استخدام هذه الجداول. بعض المشاريع مؤهلة لدعم بنية تحتية إضافي — راجع صفحة المشروع.</div>`;
   h+=`<div class="calcActions">
     <button type="button" class="btn ghost" id="nShareWA">📤 مشاركة واتساب</button>
     <button type="button" class="btn ghost" id="nSaveLog">💾 حفظ باسم العميل</button>
@@ -3897,7 +3905,7 @@ function runNCalc(){
   box.innerHTML=h;
   const waLines=sched.slice(0,6).map((s,i)=>`${i+1}. ${s.label}: ${fmt(Math.round(s.amt))} ريال`).join("\n");
   const waMore = sched.length>6 ? `\n...و${sched.length-6} دفعة إضافية` : "";
-  const waText = `جدول الدفعات — ${r.pl.label} — سوق NHC\nقيمة الوحدة: ${fmt(Math.round(price))} ريال\nإجمالي المدفوع: ${fmt(Math.round(r.totalAmt))} ريال\n———\n${waLines}${waMore}`;
+  const waText = `جدول الدفعات — ${r.pl.label} — SalesPlace\nقيمة الوحدة: ${fmt(Math.round(price))} ريال\nإجمالي المدفوع: ${fmt(Math.round(r.totalAmt))} ريال\n———\n${waLines}${waMore}`;
   $("nShareWA").onclick=()=>shareWA(waText);
   $("nSaveLog").onclick=()=>saveCalcRecord("جدول الدفعات", `${r.pl.label} · سعر ${fmt(Math.round(price))} · إجمالي ${fmt(Math.round(r.totalAmt))} ريال`);
 }
