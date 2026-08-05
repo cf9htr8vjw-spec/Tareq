@@ -2058,8 +2058,8 @@ function filtered(){
     if(k==="u") return b.u-a.u;
     if(k==="pl") return a.minP-b.minP;
     if(k==="ph") return b.maxP-a.maxP;
-    if(k==="ab"){ const A=PERF[a.p.id], B=PERF[b.p.id];
-      return ((B&&B.absorb!=null?B.absorb:-1)-(A&&A.absorb!=null?A.absorb:-1)); }
+    if(k==="ab"){ const A=liveAbsorb(a.p.id), B=liveAbsorb(b.p.id);
+      return ((B!=null?B:-1)-(A!=null?A:-1)); }
     if(k==="rt"){ const A=PERF[a.p.id], B=PERF[b.p.id];
       return ((B?B.r12:-1)-(A?A.r12:-1)); }
     return a.p.name.localeCompare(b.p.name,"ar");
@@ -2073,11 +2073,19 @@ function activeFilterCount(){
 }
 
 /* ---------- list render ---------- */
+/* live absorption = (reserved+contracted) / total units for the project, from unit_status (fetched at login) — not the static embedded PERF snapshot */
+function liveAbsorb(id){
+  const bk=BOOK&&BOOK[String(id)];
+  if(!bk) return null;
+  const tot=bk.avail+bk.reserved+bk.contracted;
+  if(!tot) return null;
+  return Math.round((bk.reserved+bk.contracted)/tot*100);
+}
 function absPill(id){
-  const f=PERF&&PERF[id];
-  if(!f||f.absorb==null) return "";
-  const cls = f.absorb>=80 ? "ab hi" : f.absorb>=40 ? "ab mid" : "ab lo";
-  return `<span class="pill ${cls}">سحب ${f.absorb}%</span>`;
+  const absorb=liveAbsorb(id);
+  if(absorb==null) return "";
+  const cls = absorb>=80 ? "ab hi" : absorb>=40 ? "ab mid" : "ab lo";
+  return `<span class="pill ${cls}">سحب ${absorb}%</span>`;
 }
 function typePills(types){
   return TYPES.filter(t=>types[t]).map(t=>`<span class="pill ${TCLS[t]}">${t} (${fmt(types[t])})</span>`).join("");
@@ -2462,16 +2470,19 @@ function openDetail(id){
     const runTxt = f.runway==null ? "—" : f.runway>60 ? "أكثر من ٥ سنوات"
       : f.runway<1 ? "أقل من شهر" : `${f.runway} شهراً`;
     const runCls = f.runway==null ? "" : f.runway>36 ? "bad" : f.runway>18 ? "mid" : "good";
+    /* معدل السحب حيّ دائماً (من unit_status)، لا من لقطة PERF الثابتة — نفس مصدر شارة البطاقة */
+    const absorbLive = liveAbsorb(p.id);
     h+=`<div class="sect"><h3>أداء المشروع منذ فتح البيع</h3>
       <div class="perf4">
         <div class="pstat"><b>${ageTxt}</b><span>منذ أول بيع (${f.first})</span></div>
         <div class="pstat"><b>${fmt(f.tu)}</b><span>وحدة مباعة · ${compact(f.tv)} ريال</span></div>
-        <div class="pstat"><b>${f.absorb!=null?f.absorb+"%":"—"}</b><span>معدل السحب</span></div>
+        <div class="pstat"><b>${absorbLive!=null?absorbLive+"%":"—"}</b><span>معدل السحب</span></div>
         <div class="pstat ${runCls}"><b>${runTxt}</b><span>لنفاد المتبقي بالمعدل الحالي</span></div>
       </div>`;
-    if(f.absorb!=null){
-      h+=`<div class="absbar"><i style="width:${Math.min(100,f.absorb)}%"></i>
-        <em>مباع ${fmt(f.tu)}</em><em class="r">متبقٍ ${fmt(f.avail)}</em></div>`;
+    if(absorbLive!=null){
+      const bk=BOOK[String(p.id)];
+      h+=`<div class="absbar"><i style="width:${Math.min(100,absorbLive)}%"></i>
+        <em>مباع ${fmt(bk.reserved+bk.contracted)}</em><em class="r">متبقٍ ${fmt(bk.avail)}</em></div>`;
     }
     /* last 12 months momentum */
     const mx=Math.max(1,...f.ser.map(s=>s[1]));
