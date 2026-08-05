@@ -1004,18 +1004,22 @@ main{flex:1;min-height:0;position:relative}
   border:1.5px solid var(--line);font-size:10px;color:var(--muted);vertical-align:-2px;font-weight:700}
 .prow.pick.on{background:var(--green-soft)}
 .prow.pick.on .tick{background:var(--green);border-color:var(--green);color:#fff}
-#cartBar{position:fixed;inset-inline:12px;bottom:calc(64px + var(--sab) + 8px);z-index:950;background:var(--surface);
+#cartBar,#dealBar{position:fixed;inset-inline:12px;bottom:calc(64px + var(--sab) + 8px);z-index:950;background:var(--surface);
   border:1px solid var(--line);border-radius:16px;padding:11px 14px;box-shadow:0 8px 30px rgba(0,0,0,.18);
   display:none;animation:up .2s ease;max-width:640px;margin:0 auto}
-#cartBar.on{display:block}
-#cartTxt b{font-family:"Noto Kufi Arabic";font-size:16px}
-#cartBar .pbrow{flex-direction:column;align-items:stretch;gap:9px}
+#cartBar.on,#dealBar.on{display:block}
+#dealBar{border-color:var(--gold)}
+#dealBar.stackedAbove{bottom:calc(64px + var(--sab) + 8px + 76px)}
+#cartTxt b,#dealTxt b{font-family:"Noto Kufi Arabic";font-size:16px}
+#cartBar .pbrow,#dealBar .pbrow{flex-direction:column;align-items:stretch;gap:9px}
 #cartBar .pbtns{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px}
-#cartBar .pbtns .btn{padding:9px 3px;font-size:10.5px;text-align:center}
+#dealBar .pbtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+#cartBar .pbtns .btn,#dealBar .pbtns .btn{padding:9px 3px;font-size:10.5px;text-align:center}
 @media(min-width:900px){
-  #cartBar{bottom:16px}
-  #cartBar .pbrow{flex-direction:row;align-items:center}
-  #cartBar .pbtns{display:flex}
+  #cartBar,#dealBar{bottom:16px}
+  #dealBar.stackedAbove{bottom:70px}
+  #cartBar .pbrow,#dealBar .pbrow{flex-direction:row;align-items:center}
+  #cartBar .pbtns,#dealBar .pbtns{display:flex}
 }
 #pickBar{position:absolute;inset-inline:12px;bottom:12px;z-index:900;background:var(--surface);
   border:1px solid var(--line);border-radius:16px;padding:11px 14px;box-shadow:0 8px 30px rgba(0,0,0,.16);
@@ -1385,7 +1389,7 @@ table.prods tr:last-child td{border:none}
   }
 
   /* interactive controls make no sense on paper */
-  .calcgo,.cartchk,.pill.geo,#pickBar,#cartBar,#installHint,.subnav,.favBtn{ display:none!important; }
+  .calcgo,.cartchk,.pill.geo,#pickBar,#cartBar,#dealBar,#installHint,.subnav,.favBtn{ display:none!important; }
 
   /* keep sections intact across page breaks where possible */
   .sect{ break-inside:avoid; page-break-inside:avoid; margin-top:14px!important; }
@@ -1715,6 +1719,16 @@ table.prods tr:last-child td{border:none}
     </div>
   </div>
 </div>
+<div id="dealBar">
+  <div class="pbrow">
+    <div><div id="dealTxt"></div><div id="dealTags" class="ptags"></div></div>
+    <div class="pbtns">
+      <button class="btn ghost" id="dealSummaryBtn">تفاصيل الصفقة</button>
+      <button class="btn" id="dealCalcGo">احسب الدفعات</button>
+      <button class="btn ghost" id="dealClear">مسح</button>
+    </div>
+  </div>
+</div>
 
 <nav class="bottom">
   <button id="nvList" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3.5" y="4" width="17" height="6.5" rx="2"/><rect x="3.5" y="13.5" width="17" height="6.5" rx="2"/></svg>القائمة</button>
@@ -1901,10 +1915,49 @@ table.prods tr:last-child td{border:none}
 <div class="sheet" id="cmpSheet">
   <div class="handle" data-drag="cmpSheet"></div>
   <div class="sheetbody">
-    <h2 class="kufi" style="font-size:16px">مقارنة الوحدات وبناء الصفقة</h2>
+    <h2 class="kufi" style="font-size:16px">مقارنة الوحدات</h2>
     <div class="src" style="margin-top:2px">عدّل السعر المعتمد لكل وحدة ليعكس التفاوض الفعلي</div>
     <div id="cmpMapBtn" class="cmpmapbtn">📍 عرض الكل على الخريطة</div>
     <div class="tw" style="margin-top:12px"><table class="prods" id="cmpTable"></table></div>
+  </div>
+</div>
+
+<!-- Deal builder sheet: project -> unit type -> live available real units (non-beneficiary price) from unit_allocation_mirror -->
+<div class="scrim" id="dealScrim"></div>
+<div class="sheet" id="dealSheet">
+  <div class="handle" data-drag="dealSheet"></div>
+  <div class="sheetbody">
+    <h2 class="kufi" style="font-size:16px">ابدأ صفقة جديدة</h2>
+    <div class="src" style="margin-top:2px">اختر المشروع ثم نوع الوحدة — الوحدات المتاحة الفعلية وسعرها (غير المستفيد) تُجلب مباشرة من قاعدة البيانات</div>
+
+    <div class="flabel">١. المشروع</div>
+    <input type="search" id="dealProjSearch" placeholder="ابحث باسم المشروع أو المدينة…" class="dateInp" style="width:100%;text-align:start;margin-bottom:8px" autocomplete="off">
+    <div id="dealProjList" class="projList" style="max-height:230px"></div>
+
+    <div id="dealTypeWrap" style="display:none;margin-top:16px">
+      <div class="flabel">٢. نوع الوحدة — <b id="dealProjName"></b></div>
+      <div class="chips" id="dealTypeChips"></div>
+    </div>
+
+    <div id="dealUnitsWrap" style="display:none;margin-top:16px">
+      <div class="flabel">٣. الوحدات المتاحة الآن</div>
+      <div id="dealUnitsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Deal summary sheet -->
+<div class="scrim" id="dealSumScrim"></div>
+<div class="sheet" id="dealSumSheet">
+  <div class="handle" data-drag="dealSumSheet"></div>
+  <div class="sheetbody">
+    <h2 class="kufi" style="font-size:16px">تفاصيل الصفقة</h2>
+    <div id="dealSumList" style="margin-top:10px"></div>
+    <div class="cresrow hi"><span class="cl">الإجمالي</span><span class="cv" id="dealSumTotal"></span></div>
+    <div class="calcActions">
+      <button type="button" class="btn ghost" id="dealShareWA">📤 مشاركة واتساب</button>
+      <button type="button" class="btn" id="dealToCalc">احسب جدول الدفعات</button>
+    </div>
   </div>
 </div>
 
@@ -2118,7 +2171,7 @@ function render(){
     const cartBtnHtml = S.seg==="n" ? `<button type="button" class="cardCartBtn${inCartCard?" on":""}" data-cartkey="${cardKey}"
       data-pid="${p.id}" data-name="${p.short}" data-city="${p.city}" data-dest="${p.dest||""}"
       data-type="${cardTypeLabel}" data-avg="${cardAvgP}" data-min="${v.minP}" data-max="${v.maxP}"
-      data-u="${v.u}" data-lat="${p.lat!=null?p.lat:""}" data-lon="${p.lon!=null?p.lon:""}">${inCartCard?"✓ في الصفقة":"+ أضف للصفقة"}</button>` : "";
+      data-u="${v.u}" data-lat="${p.lat!=null?p.lat:""}" data-lon="${p.lon!=null?p.lon:""}">${inCartCard?"✓ في المقارنة":"+ أضف للمقارنة"}</button>` : "";
     const scarce = v.u>0 && v.u<10;
     el.innerHTML=`<button type="button" class="favBtn${FAVS.has(p.id)?" on":""}" data-fav="${p.id}">${FAVS.has(p.id)?"★":"☆"}</button>
       <div class="nm">${p.short}</div><div class="dv">${p.dev} · ${p.city}${p.dest?` · وجهة ${p.dest}`:""}</div>
@@ -2140,14 +2193,14 @@ function render(){
       const key=cardCartBtn.dataset.cartkey;
       if(CART.has(key)){
         CART.delete(key); CART_OVR.delete(key);
-        cardCartBtn.classList.remove("on"); cardCartBtn.textContent="+ أضف للصفقة";
+        cardCartBtn.classList.remove("on"); cardCartBtn.textContent="+ أضف للمقارنة";
       } else {
         CART.set(key,{pid:+cardCartBtn.dataset.pid,name:cardCartBtn.dataset.name,city:cardCartBtn.dataset.city,
           dest:cardCartBtn.dataset.dest,type:cardCartBtn.dataset.type,beds:"—",
           avg:+cardCartBtn.dataset.avg,min:+cardCartBtn.dataset.min,max:+cardCartBtn.dataset.max,
           u:+cardCartBtn.dataset.u,lat:cardCartBtn.dataset.lat?+cardCartBtn.dataset.lat:null,
           lon:cardCartBtn.dataset.lon?+cardCartBtn.dataset.lon:null});
-        cardCartBtn.classList.add("on"); cardCartBtn.textContent="✓ في الصفقة";
+        cardCartBtn.classList.add("on"); cardCartBtn.textContent="✓ في المقارنة";
       }
       updateCartBar();
     });
@@ -2229,7 +2282,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -2238,7 +2291,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -2864,14 +2917,10 @@ $("themeBtn").onclick=()=>applyTheme(document.documentElement.getAttribute("data
 /* ---------- home landing screen ---------- */
 $("hTileSearch").onclick=()=>{ setView("list"); render(); };
 $("hTileDest").onclick=()=>setView("dest");
-$("hTileDeal").onclick=()=>{
-  setSeg("n"); setView("list");
-  $("dealBannerTxt").textContent="🤝 وضع الصفقة نشط — اضغط «+ أضف للصفقة» على أي بطاقة، أو + داخل جدول المشروع لاختيار نوع محدد.";
-  $("dealBanner").style.display="flex";
-};
+$("hTileDeal").onclick=()=>openDealBuilder();
 $("hTileCmp").onclick=()=>{
   setSeg("n"); setView("list");
-  $("dealBannerTxt").textContent="⚖️ وضع المقارنة نشط — اختر وحدتين أو أكثر بنفس طريقة الصفقة، ثم اضغط «قارن» من الشريط أسفل الشاشة.";
+  $("dealBannerTxt").textContent="⚖️ وضع المقارنة نشط — اختر وحدتين أو أكثر من البطاقات أو جداول المشاريع، ثم اضغط «قارن» من الشريط أسفل الشاشة.";
   $("dealBanner").style.display="flex";
 };
 $("hTileSales").onclick=()=>setView("sales");
@@ -3062,7 +3111,132 @@ $("sortSel").onchange=e=>{S.sort=e.target.value; render();};
 /* ---------- unlock: decrypt the external dataset ---------- */
 const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 let CURUSER="", CURPASS="";
-const CART=new Map(); /* key -> {pid,name,short,city,dest,type,beds,avgP,minP,maxP,lat,lon,u} — non-beneficiary unit selection */
+const CART=new Map(); /* key -> {pid,name,short,city,dest,type,beds,avgP,minP,maxP,lat,lon,u} — comparison selection (aggregated product rows) */
+
+/* ---------- deal builder: project -> unit type -> live individual available units (separate basket from CART/compare) ---------- */
+const DEAL=new Map(); /* key -> {pid,name,city,type,beds,price,moh_price} — real units from unit_allocation_mirror */
+let dealCurProject=null, dealCurType=null;
+function openDealBuilder(){
+  dealCurProject=null; dealCurType=null;
+  $("dealTypeWrap").style.display="none";
+  $("dealUnitsWrap").style.display="none";
+  $("dealProjSearch").value="";
+  renderDealProjectList("");
+  openSheet("dealSheet");
+  setTimeout(()=>{ try{ $("dealProjSearch").focus(); }catch(e){} },200);
+}
+function renderDealProjectList(q){
+  q=(q||"").trim();
+  const list = q ? DATA.filter(p=>p.name.includes(q)||p.city.includes(q)).slice(0,25) : [];
+  $("dealProjList").innerHTML = !q
+    ? `<div class="src" style="padding:8px 2px">اكتب اسم مشروع أو مدينة للبحث</div>`
+    : (list.length ? list.map(p=>`<div class="projRow" data-pid="${p.id}" style="cursor:pointer">
+        <div class="projName">${p.name}</div><div class="projStats"><span>${p.city}</span></div>
+      </div>`).join("") : `<div class="src" style="padding:8px 2px">لا يوجد مشروع مطابق</div>`);
+  $("dealProjList").querySelectorAll("[data-pid]").forEach(el=>el.onclick=()=>selectDealProject(+el.dataset.pid));
+}
+$("dealProjSearch").addEventListener("input",e=>renderDealProjectList(e.target.value));
+function selectDealProject(pid){
+  dealCurProject=DATA.find(p=>p.id===pid); dealCurType=null;
+  if(!dealCurProject) return;
+  $("dealProjName").textContent=dealCurProject.short||dealCurProject.name;
+  const types=projectUnitTypes(dealCurProject);
+  $("dealTypeChips").innerHTML = types.length
+    ? types.map(t=>`<button type="button" class="chip" data-type="${t}">${t}</button>`).join("")
+    : `<div class="src">لا توجد أنواع وحدات مسجّلة لهذا المشروع بالكتالوج</div>`;
+  $("dealTypeChips").querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>selectDealType(b.dataset.type,b));
+  $("dealTypeWrap").style.display="block";
+  $("dealUnitsWrap").style.display="none";
+}
+async function selectDealType(type,btnEl){
+  dealCurType=type;
+  $("dealTypeChips").querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
+  if(btnEl) btnEl.classList.add("on");
+  $("dealUnitsWrap").style.display="block";
+  $("dealUnitsList").innerHTML=`<div class="src" style="padding:14px 2px">جارٍ التحميل من القاعدة…</div>`;
+  let rows;
+  try{ rows=await fetchAvailableUnits(dealCurProject,type); }
+  catch(e){
+    $("dealUnitsList").innerHTML=`<div class="cerr">تعذّر تحميل الوحدات المتاحة: ${e.message||e}</div>`;
+    return;
+  }
+  if(!rows.length){
+    $("dealUnitsList").innerHTML=`<div class="src" style="padding:14px 2px">لا توجد وحدات متاحة مطابقة الآن — قد يكون اسم المشروع بملف التخصيص مختلفاً عن اسمه بالكتالوج، أو لا مخزون متاح حالياً لهذا النوع.</div>`;
+    return;
+  }
+  $("dealUnitsList").innerHTML = rows.map((r,i)=>{
+    const key=`${dealCurProject.id}::${type}::${i}`;
+    const on=DEAL.has(key);
+    return `<div class="ucard" style="padding:11px 13px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div>
+          <div style="font-weight:700;font-size:13px">${type}${r.beds?` · ${r.beds} غرف`:""}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${r.price!=null?fmt(r.price)+" ريال":"سعر غير مسجّل"}</div>
+        </div>
+        <button type="button" class="btn${on?"":" ghost"}" data-dealkey="${key}" data-idx="${i}" style="padding:8px 14px;font-size:12px;flex:none">${on?"✓ أُضيفت":"+ أضف للصفقة"}</button>
+      </div>
+    </div>`;
+  }).join("");
+  $("dealUnitsList").querySelectorAll("[data-dealkey]").forEach(btn=>{
+    btn.onclick=()=>{
+      const key=btn.dataset.dealkey;
+      if(DEAL.has(key)){
+        DEAL.delete(key);
+        btn.classList.add("ghost"); btn.textContent="+ أضف للصفقة";
+      }else{
+        const row=rows[+btn.dataset.idx];
+        DEAL.set(key,{pid:dealCurProject.id,name:dealCurProject.short||dealCurProject.name,city:dealCurProject.city,
+          type,beds:row.beds,price:row.price,moh_price:row.moh_price});
+        btn.classList.remove("ghost"); btn.textContent="✓ أُضيفت";
+      }
+      updateDealBar();
+    };
+  });
+}
+function updateDealBar(){
+  const bar=$("dealBar");
+  if(DEAL.size===0){ bar.classList.remove("on"); return; }
+  bar.classList.add("on");
+  const total=[...DEAL.values()].reduce((s,u)=>s+(u.price||0),0);
+  $("dealTxt").innerHTML=`<b>${fmt(DEAL.size)}</b> وحدة بالصفقة · إجمالي ${fmt(Math.round(total))} ريال`;
+  $("dealTags").innerHTML=[...DEAL.values()].map(u=>`<span class="ptag">${u.name} · ${u.type}</span>`).join("");
+  bar.classList.toggle("stackedAbove",$("cartBar").classList.contains("on"));
+}
+function renderDealSummary(){
+  const entries=[...DEAL.entries()];
+  $("dealSumList").innerHTML = entries.length ? entries.map(([key,u])=>`
+    <div class="unmRow"><b>${u.name} — ${u.type}${u.beds?` (${u.beds} غرف)`:""}</b><span>${u.price!=null?fmt(u.price)+" ريال":"—"}</span>
+      <button type="button" data-rm="${key}" style="margin-inline-start:8px;color:var(--rust);font-size:11px;text-decoration:underline">إزالة</button></div>
+  `).join("") : `<div class="src">لا توجد وحدات بالصفقة بعد</div>`;
+  const total=entries.reduce((s,[,u])=>s+(u.price||0),0);
+  $("dealSumTotal").textContent=fmt(Math.round(total))+" ريال";
+  $("dealSumList").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{ DEAL.delete(b.dataset.rm); renderDealSummary(); updateDealBar(); });
+}
+$("dealSummaryBtn").onclick=()=>{ renderDealSummary(); openSheet("dealSumSheet"); };
+$("dealScrim").onclick=()=>closeSheet("dealSheet");
+$("dealSumScrim").onclick=()=>closeSheet("dealSumSheet");
+$("dealClear").onclick=()=>{ DEAL.clear(); updateDealBar(); };
+function dealTotal(){ return [...DEAL.values()].reduce((s,u)=>s+(u.price||0),0); }
+$("dealCalcGo").onclick=()=>{
+  const total=dealTotal();
+  setSeg("n"); setView("calc");
+  $("nPrice").value=Math.round(total);
+  runNCalc();
+};
+$("dealToCalc").onclick=()=>{
+  const total=dealTotal();
+  closeSheet("dealSumSheet");
+  setSeg("n"); setView("calc");
+  $("nPrice").value=Math.round(total);
+  runNCalc();
+};
+$("dealShareWA").onclick=()=>{
+  const entries=[...DEAL.values()];
+  const total=dealTotal();
+  const lines=entries.map((u,i)=>`${i+1}. ${u.name} — ${u.type}${u.beds?` (${u.beds} غرف)`:""}: ${u.price!=null?fmt(u.price)+" ريال":"—"}`).join("\n");
+  const waText=`صفقة SalesPlace\nعدد الوحدات: ${entries.length}\nالإجمالي: ${fmt(Math.round(total))} ريال\n———\n${lines}`;
+  shareWA(waText);
+};
 
 /* ---------- favorites (persisted locally on this device) ---------- */
 let FAVS=new Set();
@@ -3168,7 +3342,7 @@ function renderCalcLog(){
 const ONB_STEPS=[
   "هذه نسخة Beta من SalesPlace — جولة سريعة بأهم ٥ مسارات في الشاشة الرئيسية.",
   "🏘️ <b>الوجهات</b> — تصفّح المشاريع مباشرة حسب موقعها الجغرافي.",
-  "🤝 <b>الصفقات</b> و⚖️ <b>المقارنة</b> — اختر وحدات من عدة مشاريع بضغطة واحدة على كل بطاقة، ثم قارنها أو احسب لها جدول دفعات وعائد استثماري معاً.",
+  "🤝 <b>الصفقات</b> — اختر مشروعاً ثم نوع الوحدة، وستظهر لك الوحدات المتاحة الفعلية وأسعارها مباشرة من قاعدة البيانات لتبني صفقتك منها. ⚖️ <b>المقارنة</b> — اختر وحدات من عدة مشاريع بضغطة واحدة على كل بطاقة، ثم قارنها أو احسب لها جدول دفعات وعائد استثماري معاً.",
   "🔍 <b>البحث والتصفية</b> — كل المشاريع الـ١٨٧ بفلاتر كاملة (المدينة، النوع، السعر، NHC أو المطورين...).",
   "📊 <b>مبيعاتنا هذا الشهر</b> — تابع الحجوزات والاستصناع والعقود لحظياً، يومياً أو شهرياً أو ربعياً.",
   "الحاسبة أسفل الشاشة تتغيّر تلقائياً حسب الشريحة أعلاها — REDF للمستفيدين، وجداول الدفعات والعائد لغير المستفيدين. جاهز؟"
