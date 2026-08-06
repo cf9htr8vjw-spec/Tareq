@@ -859,7 +859,7 @@ main{flex:1;min-height:0;position:relative}
 .scGroup{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .scLbl{font-size:10.5px;font-weight:700;color:var(--muted);flex:none}
 .salesCtrl .chips{flex-wrap:wrap;gap:5px}
-.salesCtrl .chip{padding:5px 10px;font-size:11.5px}
+.salesCtrl .chip{padding:9px 13px;font-size:11.5px;min-height:20px}
 .dateInp{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:6px 12px;
   font-size:11.5px;color:var(--ink);font-family:inherit}
 .favBtn{position:absolute;top:10px;left:10px;font-size:18px;line-height:1;color:var(--star-empty);background:none;z-index:1}
@@ -956,16 +956,24 @@ main{flex:1;min-height:0;position:relative}
 .qbandRow{display:flex;gap:8px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);flex-wrap:wrap}
 .qbandRow .qb{font-size:9.5px;color:var(--muted);display:flex;align-items:center;gap:4px}
 .qbandRow .qb i{width:9px;height:9px;border-radius:2px;background:var(--bg);border:1px solid var(--line);display:inline-block}
-.bigStats{display:flex;gap:8px;max-width:640px;margin:0 auto}
-.bigStat{flex:1;text-align:center;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:14px;padding:13px 6px;min-width:0}
+.bigStats{display:flex;flex-wrap:wrap;gap:8px;max-width:640px;margin:0 auto}
+.bigStat{flex:1 1 40%;text-align:center;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:14px;padding:13px 6px;min-width:0}
 .bigStat.hi{background:var(--green-soft);border-color:var(--green-soft-border)}
 .bigStat.warn{background:var(--rust-soft);border-color:var(--rust-soft-border)}
 .bigStat b{display:block;font-size:21px;font-family:"Noto Kufi Arabic";color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bigStat.hi b{color:var(--green)}
 .bigStat.warn b{color:var(--rust)}
-.bigStat span{font-size:10.5px;color:var(--muted);display:block;margin-top:2px}
+.bigStat span{font-size:10.5px;color:var(--muted);display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .projList{max-height:420px;overflow-y:auto}
-.projRow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px dashed var(--line)}
+.projRow{display:flex;flex-direction:column;gap:5px;padding:9px 0;border-top:1px dashed var(--line)}
+.projTop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.projBarWrap{height:5px;border-radius:99px;background:var(--line);overflow:hidden}
+.projBarWrap i{display:block;height:100%;background:var(--gold);border-radius:99px}
+.projBarWrap.done i{background:var(--green)}
+.salesLoading{font-size:10px;color:var(--muted);font-weight:400;margin-inline-start:6px;opacity:.8}
+.bigStat.lg{flex:1 1 100%;padding:16px 10px}
+.bigStat.lg b{font-size:30px}
+.bigStat.lg span{font-size:11.5px}
 .projRow:first-child{border-top:none}
 .projName{font-size:12px;font-weight:600;color:var(--ink);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .projStats{display:flex;gap:8px;flex:none;font-size:10.5px;color:var(--muted)}
@@ -3256,8 +3264,9 @@ async function renderSales(){
   const myReq=++salesReqId; // يمنع تعارض النتائج لو غيّر المستخدم الفلتر أثناء التحميل
   const METLBL={book:"الحجوزات",ist:"الاستصناع",contract:"العقود الموقّعة"};
   const METKEY={book:"booking",ist:"istisna",contract:"contract"};
-  $("salesMonthLbl").textContent=`${METLBL[salesMetric]} — جارٍ التحميل من القاعدة…`;
-  $("salesGrid").innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
+  /* لا نمسح البطاقات القديمة لشاشة فراغ وقت التحميل — نبقيها ونعرض مؤشراً خفيفاً فقط،
+     فيبدو التبديل بين الفلاتر فورياً بدل ومضة تحميل فارغة كل مرة */
+  $("salesMonthLbl").innerHTML = `${METLBL[salesMetric]} <span class="salesLoading">جارٍ التحديث…</span>`;
 
   const secParam = salesSector==="all" ? null : salesSector;
   const devParam = salesDev==="all" ? null : salesDev;
@@ -3298,33 +3307,53 @@ async function renderSales(){
   const shown = report.slice(-24);
   const mx = Math.max(1,...shown.map(r=>Number(r.cnt)));
 
-  /* بطاقات الإجمالي — تُعرض أعلى الشارت مباشرة كما طُلب، بدل دفنها بعنوان صغير داخل البطاقة */
+  /* المستهدفات: جدول جديد اختياري (sales_targets.sql) — لا معنى لها بالدقة اليومية،
+     ونطلبها لنفس الأشهر المعروضة فعلياً حتى تكون المقارنة عادلة مع بيانات جزئية للسنة */
+  let targetSummary=null;
+  if(salesGran!=="day"){
+    try{
+      const fromM=+shown[0].period.split("-")[1], toM=+shown[shown.length-1].period.split("-")[1];
+      targetSummary = await sbCall("get_target_summary",{p_year:+salesYear,p_from_month:fromM,p_to_month:toM,p_sector:secParam,p_dev_kind:devParam});
+    }catch(e){ targetSummary=null; } /* sales_targets.sql قد لا يكون شُغّل بعد — الشاشة تعمل عادي بدونه */
+  }
+  if(myReq!==salesReqId) return;
+
+  /* بطاقات الإجمالي — تُعرض أعلى الشارت مباشرة كما طُلب، بدل دفنها بعنوان صغير داخل البطاقة.
+     الإجمالي أكبر بصرياً من البقية (أهم رقم بالشاشة)، والاتجاه له حالة محايدة عند تغيّر طفيف
+     بدل إجباره ▲ أو ▼ على فروق لا دلالة لها. */
   const avgPerPeriod = Math.round(total/shown.length);
-  let trendPct=null, trendUp=null;
+  let trendPct=null, trendState=null;
   if(shown.length>=2){
     const last=Number(shown[shown.length-1].cnt), prev=Number(shown[shown.length-2].cnt);
-    if(prev>0){ trendPct=Math.round(((last-prev)/prev)*100); trendUp=trendPct>=0; }
+    if(prev>0){
+      trendPct=Math.round(((last-prev)/prev)*100);
+      trendState = Math.abs(trendPct)<3 ? "flat" : trendPct>0 ? "up" : "down";
+    }
   }
-  const trendCls = trendPct==null ? "" : trendUp ? "hi" : "warn";
-  const trendTxt = trendPct==null ? "—" : `${trendUp?"▲":"▼"} ${Math.abs(trendPct)}%`;
+  const trendCls = trendState==="up" ? "hi" : trendState==="down" ? "warn" : "";
+  const trendTxt = trendState==null ? "—" : trendState==="flat" ? `◆ ${trendPct>=0?"+":""}${trendPct}%` : `${trendState==="up"?"▲":"▼"} ${Math.abs(trendPct)}%`;
+  const targetPct = (targetSummary && targetSummary.total>0) ? Math.round((total/targetSummary.total)*100) : null;
+  const targetCls = targetPct==null ? "" : targetPct>=100 ? "hi" : targetPct<70 ? "warn" : "";
   const kpiRow = `<div class="bigStats">
-    <div class="bigStat hi"><b>${fmt(total)}</b><span>الإجمالي (${periodLabel(report[0].period,salesGran)} – ${periodLabel(report[report.length-1].period,salesGran)})</span></div>
-    <div class="bigStat"><b>${fmt(avgPerPeriod)}</b><span>متوسط ${granLbl==="يومي"?"اليوم":granLbl==="شهري"?"الشهر":"الربع"}</span></div>
-    <div class="bigStat ${trendCls}"><b>${trendTxt}</b><span>مقارنة بالفترة السابقة</span></div>
+    <div class="bigStat hi lg" id="kpiTotal" title="${periodLabel(report[0].period,salesGran)} – ${periodLabel(report[report.length-1].period,salesGran)}"><b>${fmt(total)}</b><span>الإجمالي</span></div>
+    <div class="bigStat" id="kpiAvg"><b>${fmt(avgPerPeriod)}</b><span>متوسط ${granLbl==="يومي"?"اليوم":granLbl==="شهري"?"الشهر":"الربع"}</span></div>
+    <div class="bigStat ${trendCls}"><b>${trendTxt}</b><span>الاتجاه</span></div>
+    ${targetPct!=null?`<div class="bigStat ${targetCls}" title="المستهدف: ${fmt(Math.round(targetSummary.total))}"><b>${fmt(targetPct)}%</b><span>من المستهدف</span></div>`:""}
   </div>`;
 
   /* أعمدة أوسع + تسميات مختصرة (بلا تكرار السنة إن كانت كل الفترات المعروضة بنفس السنة) بدل
-     تراكب النصوص تحت الأعمدة، وشارت أعمدة نظيف بلا خط اتجاه فوقه يشتّت القراءة */
+     تراكب النصوص تحت الأعمدة، وشارت أعمدة نظيف بلا خط اتجاه فوقه يشتّت القراءة.
+     النقر على أي عمود بالجوال يُظهر قيمته (بديل عملي لتلميح hover غير المتاح باللمس) */
   const yearsShown = new Set(shown.map(r=>r.period.slice(0,4)));
   const sameYear = yearsShown.size===1;
   const BAR_W = salesGran==="month" ? 44 : 34;
   const heightPct = r => { const val=Number(r.cnt); return val?Math.max(4,(val/mx)*100):2; };
-  const bars = shown.map(r=>{
+  const bars = shown.map((r,i)=>{
     const val=Number(r.cnt);
     const q = salesGran==="month" ? Math.ceil(+r.period.split("-")[1]/3) : null;
     const shade = q!=null && q%2===0 ? " qshade" : "";
     const lbl = (salesGran==="month" && sameYear) ? MNAMES[r.period.split("-")[1]] : barLabel(r.period,salesGran);
-    return `<div class="mb${shade}" style="width:${BAR_W}px" title="${periodLabel(r.period,salesGran)}: ${fmt(val)}">
+    return `<div class="mb${shade}" data-i="${i}" style="width:${BAR_W}px" title="${periodLabel(r.period,salesGran)}: ${fmt(val)}">
       <div class="mbVal">${val?fmt(val):""}</div>
       <i style="height:${heightPct(r)}%;${val?"":"opacity:.25"}"></i><span>${lbl}</span></div>`;
   }).join("");
@@ -3332,11 +3361,24 @@ async function renderSales(){
   const qLegend = salesGran==="month" ? `<div class="qbandRow"><span class="qb"><i></i>الربع الأول والثالث</span><span class="qb" style="opacity:.6"><i style="background:transparent"></i>الربع الثاني والرابع</span></div>` : "";
 
   const projList = (projReport||[]).slice(0,50);
-  const projRowsHtml = projList.length ? projList.map(r=>`
-    <div class="projRow">
-      <div class="projName">${r.project_name}</div>
-      <div class="projStats"><span class="hi">${fmt(Number(r.cnt))}</span></div>
-    </div>`).join("") : `<div class="src" style="text-align:center;padding:16px">لا حركة لأي مشروع بهذا الاختيار</div>`;
+  const targetByProject = {};
+  if(targetSummary && targetSummary.by_project) targetSummary.by_project.forEach(t=>{ targetByProject[t.project_name]=Number(t.target); });
+  const maxProjCnt = Math.max(1,...projList.map(r=>Number(r.cnt)));
+  const projRowsHtml = projList.length ? projList.map(r=>{
+    const cnt=Number(r.cnt);
+    const projTarget = targetByProject[r.project_name];
+    const rawPct = projTarget ? Math.round((cnt/projTarget)*100) : Math.round((cnt/maxProjCnt)*100);
+    const barPct = Math.min(100,rawPct); /* عرض الشريط لا يتجاوز الحاوية، لكن الرقم المكتوب يبقى دقيقاً حتى لو تجاوز ١٠٠٪ */
+    const barMode = projTarget ? "target" : "rel";
+    return `<div class="projRow">
+      <div class="projTop">
+        <div class="projName">${r.project_name}</div>
+        <div class="projStats"><span class="hi">${fmt(cnt)}</span></div>
+      </div>
+      <div class="projBarWrap ${barMode==="target"&&rawPct>=100?"done":""}"><i style="width:${barPct}%"></i></div>
+      ${projTarget?`<div class="src">${fmt(rawPct)}% من المستهدف (${fmt(projTarget)})</div>`:""}
+    </div>`;
+  }).join("") : `<div class="src" style="text-align:center;padding:16px">لا حركة لأي مشروع بهذا الاختيار</div>`;
 
   $("salesGrid").innerHTML = `
     ${kpiRow}
@@ -3346,16 +3388,24 @@ async function renderSales(){
         <div class="mbars withval" style="width:${totalW}px">${bars}</div>
       </div></div>
       ${qLegend}
-      ${shown.length>8?'<div class="src" style="text-align:center;margin-top:4px">اسحب أفقياً لعرض كل الفترات ⇄</div>':""}
+      ${shown.length>8?'<div class="src" style="text-align:center;margin-top:4px">اسحب أفقياً لعرض كل الفترات ⇄ · اضغط أي عمود لعرض رقمه</div>':'<div class="src" style="text-align:center;margin-top:4px">اضغط أي عمود لعرض رقمه</div>'}
     </div>
     ${renderPendingCard()}
-    <div class="salesCard" style="max-width:640px;margin:12px auto 0">
+    <div class="salesCard" style="max-width:640px;margin:12px auto 0" id="projListCard">
       <div class="scTotal" style="border:none;padding:0;margin-bottom:9px;font-size:13px">الأداء حسب المشروع — ${METLBL[salesMetric]} (أعلى ٥٠)</div>
       ${projList.length ? `<input type="search" id="projSearchInp" placeholder="ابحث عن مشروع…" class="dateInp" style="width:100%;text-align:start;margin-bottom:9px" autocomplete="off">` : ""}
       <div class="projList" id="projListBox">${projRowsHtml}</div>
       <div class="src" id="projNoMatch" style="display:none;text-align:center;padding:16px">لا نتائج مطابقة للبحث</div>
     </div>`;
   const mbw=document.querySelector(".mbarsWrap"); if(mbw) mbw.scrollLeft=mbw.scrollWidth; /* أحدث الفترات مرئية افتراضياً بلا الحاجة للسحب */
+  document.querySelectorAll(".mb").forEach(el=>el.onclick=()=>{
+    const r=shown[+el.dataset.i];
+    toast(`${periodLabel(r.period,salesGran)}: ${fmt(Number(r.cnt))} ${METLBL[salesMetric]}`,"ok");
+  });
+  const goProjList=()=>$("projListCard").scrollIntoView({behavior:"smooth",block:"start"});
+  const kt=$("kpiTotal"), ka=$("kpiAvg");
+  if(kt){ kt.style.cursor="pointer"; kt.onclick=goProjList; }
+  if(ka){ ka.style.cursor="pointer"; ka.onclick=goProjList; }
   const psi=$("projSearchInp");
   if(psi) psi.oninput=()=>{
     const q=psi.value.trim();
