@@ -2590,7 +2590,13 @@ function openDetail(id){
     const ks = S.seg==="b" ? Object.keys(d) : Object.keys(d).filter(k=>k==="infra");
     if(ks.length){
       h+=`<div class="sect"><h3>${S.seg==="b"?"البرامج والدعوم المتاحة":"الدعم المتاح لغير المستفيدين"}</h3><div class="proglist">`;
-      for(const k of ks) h+=`<div class="progitem"><span class="progtag">${PROGLBL[k]||k}</span><span>${d[k]}</span></div>`;
+      /* دعم الصندوق العقاري REDF حصري للمستفيدين دائماً — بعض قيم p.pgd.redf بالمصدر تتضمن
+         عبارة "(مستفيدين وغير مستفيدين)" كوصف عام لشريحة المشروع وليس لأهلية الدعم نفسها،
+         فنزيل هذه العبارة من نص برنامج الصندوق تحديداً حتى لا تُقرأ كتناقض */
+      for(const k of ks){
+        const val = k==="redf" ? String(d[k]).replace(/\(?\s*مستفيدين\s*وغير\s*مستفيدين\s*\)?/g,"").trim() : d[k];
+        h+=`<div class="progitem"><span class="progtag">${PROGLBL[k]||k}</span><span>${val}</span></div>`;
+      }
       h+=`</div><div class="src">${S.seg==="b"?"المصدر: ملف الدعومات والمميزات للمشاريع. تُعرض لشريحة المستفيدين فقط.":"دعم البنية التحتية متاح لهذا المشروع بصرف النظر عن الشريحة."}</div></div>`;
     }
   }
@@ -2617,12 +2623,14 @@ function openDetail(id){
       <div class="src">سعر السوق = سعر الوزارة + متوسط الدعم الإضافي لنفس النوع. من ملف التخصيص بتاريخ 29 يوليو 2026. تُعرض لشريحة المستفيدين فقط.</div></div>`;
   }
 
-  /* ownership / segment — دعم الصندوق العقاري REDF-only دائماً؛ لا تُعرض لغير المستفيدين مهما كانت قيمة الفئة بالمصدر */
+  /* ownership / segment — دعم الصندوق العقاري REDF-only دائماً؛ لا تُعرض لغير المستفيدين مهما كانت
+     قيمة الفئة بالمصدر، ولا نعرض نص الفئة الخام حتى للمستفيدين (قد يصف المصدر الفئة بشكل عام
+     كـ"مستفيدين وغير مستفيدين" وهو تناقض مع كون الدعم حصرياً للمستفيدين) — نطبّع العرض دائماً */
   if(p.sup){
     const s=p.sup, rows=[];
     if(s.land) rows.push(["ملكية الأرض",s.land]);
     if(s.tseg) rows.push(["شريحة المشروع",s.tseg]);
-    if(s.redf && S.seg==="b") rows.push(["دعم الصندوق العقاري",s.redf]);
+    if(s.redf && S.seg==="b") rows.push(["دعم الصندوق العقاري","مستفيدين فقط"]);
     if(rows.length) h+=`<div class="sect"><h3>بيانات المشروع</h3>${kvRows(rows)}</div>`;
   }
 
@@ -3606,8 +3614,13 @@ async function renderProjectOffersPanel(project){
   try{ o=await fetchProjectOffers(project); }
   catch(e){ return; } /* project_support_offers may not exist yet on this Supabase project — fail silently */
   if(!el.isConnected || !o) return;
+  /* دعم الصندوق العقاري REDF دائماً حصري للمستفيدين فقط — لا نعرض نص الفئة كما ورد بمصدر
+     البيانات حرفياً لأنه قد يصف الفئة كـ"مستفيدين وغير مستفيدين" (تصنيف عام للمشروع لا يخص
+     أهلية الدعم نفسها)، فنطبّع العرض دائماً بدل عرض نص متناقض مع حقيقة أن الدعم للمستفيدين فقط */
+  const redfRaw=o.redf_support_category;
+  const redfShown = (redfRaw && String(redfRaw).trim() && redfRaw!=="لا ينطبق" && redfRaw!=="-") ? "مستفيدين فقط" : null;
   const rows=[
-    ["دعم الصندوق العقاري", o.redf_support_category],
+    ["دعم الصندوق العقاري", redfShown],
     ["دعم ذرى بلس", o.dara_plus_category],
     ["دعم عيني", o.in_kind_category],
     ["دعم البنية التحتية", o.infra_support_category],
@@ -4219,15 +4232,24 @@ async function uploadSyncData(statusRows,mirrorRows){
 async function loadAdminUsers(){
   if(!window.__isAdmin) return;
   $("aUserList").innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
-  let res;
+  let res, permsAvailable=true;
   try{ res=await adminCall("admin_list_users_v2",{}); }
-  catch(e){ $("aUserList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر الاتصال بالخادم</div>`; return; }
-  if(!res||!res.ok){ $("aUserList").innerHTML=`<div style="color:var(--rust);font-size:12px">${(res&&res.msg)||"تعذّر التحميل — تأكد من تشغيل ملف user_permissions.sql على قاعدة البيانات"}</div>`; return; }
+  catch(e){ res=null; }
+  if(!res||!res.ok){
+    /* admin_list_users_v2 needs user_permissions.sql — fall back to the original
+       admin_list_users (always available) so the users screen still works before that migration runs */
+    permsAvailable=false;
+    try{ res=await adminCall("admin_list_users",{}); }
+    catch(e){ $("aUserList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر الاتصال بالخادم</div>`; return; }
+    if(!res||!res.ok){ $("aUserList").innerHTML=`<div style="color:var(--rust);font-size:12px">${(res&&res.msg)||"تعذّر التحميل"}</div>`; return; }
+  }
   const users=res.users||[];
-  $("aUserList").innerHTML = users.map(u=>{
+  $("aUserList").innerHTML =
+    (permsAvailable ? "" : `<div class="src" style="margin-bottom:10px">تحرير الصلاحيات غير متاح بعد — شغّل ملف user_permissions.sql على قاعدة البيانات لتفعيله</div>`) +
+    users.map(u=>{
     const last = u.last_login ? new Date(u.last_login).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"short"}) : "لم يدخل بعد";
     const perm = Object.assign({},PERM_ALL,u.permissions||{});
-    const permChips = u.is_admin ? `<div class="umeta">المدير يرى كل بنود القائمة دائماً</div>` : `
+    const permChips = !permsAvailable ? "" : u.is_admin ? `<div class="umeta">المدير يرى كل بنود القائمة دائماً</div>` : `
       <div class="uperm" data-u="${u.username}">
         ${Object.entries(PERM_LABELS).map(([k,lbl])=>`<button type="button" class="chip small ${perm[k]?"on":""}" data-k="${k}">${lbl}</button>`).join("")}
         <button class="btn ghost sm" data-act="saveperm" data-u="${u.username}" style="margin-inline-start:auto">💾 حفظ الصلاحيات</button>
