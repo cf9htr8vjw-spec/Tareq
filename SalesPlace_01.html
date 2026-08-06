@@ -3928,9 +3928,7 @@ async function syncLiveData(){
     const {book,prodstat}=deriveBookProdstat(unitStatusRows);
     BOOK=book; PRODSTAT=prodstat;
     saveLiveCache(unitStatusRows);
-    const now=new Date();
-    setLiveBadge("live",`🟢 بيانات حيّة — ${now.toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long",year:"numeric"})}`);
-    $("userBadge").firstChild.textContent = `بيانات ${now.toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long",year:"numeric"})} · `;
+    setLiveBadge("live",`🟢 بيانات حيّة`);
     render();
     if(S.view==="sales") renderSales();
   }catch(e){
@@ -4224,9 +4222,11 @@ async function uploadSyncData(statusRows,mirrorRows){
     : `اكتمل التحديث بنجاح — أُدرجت ${fmt(inserted)} وحدة بمرآة التخصيص الكاملة`,
     failedChunks?"err":null);
   toast(failedChunks?"اكتمل التحديث مع بعض الأخطاء":"اكتمل تحديث المخزون والمبيعات بنجاح", failedChunks?"err":"ok");
+  try{ await adminCall("admin_mark_synced",{}); }catch(e){} /* سجل وقت آخر تحديث فعلي — يظهر لكل المستخدمين بدل تاريخ اليوم؛ لا يوقف التدفق إن فشل (قد يكون قبل تشغيل sync_status.sql) */
   /* تحديث فوري لنفس الجلسة — بلا هذا، يبقى التطبيق يعرض بيانات ما قبل الرفع حتى يُعاد تسجيل الدخول */
   syncSetStatus("جارٍ تحديث العرض بالبيانات الجديدة…");
   await syncLiveData();
+  await refreshLastSyncBadge();
   const liveState = $("liveBadge").className.includes("live");
   if(liveState){
     syncSetStatus("اكتمل التحديث والعرض محدَّث الآن بالكامل ✓ — افتح شاشة مبيعاتنا لرؤية الأرقام الجديدة مباشرة");
@@ -4713,6 +4713,18 @@ function applyPermissions(){
     const el=$(id); if(el) el.style.display = PERMS.calc ? "" : "none";
   }
 }
+async function refreshLastSyncBadge(){
+  try{
+    const rows = await sbSelect("sync_status",{select:"last_synced_at",limit:"1"});
+    const ts = rows && rows[0] && rows[0].last_synced_at;
+    if(ts){
+      const d=new Date(ts);
+      $("userBadge").firstChild.textContent = `آخر تحديث للبيانات: ${d.toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long",year:"numeric"})} ${d.toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit"})} · `;
+      return;
+    }
+  }catch(e){} /* sync_status.sql قد لا يكون شُغّل بعد، أو لم يحدث أي رفع منذ إنشاء الجدول */
+  $("userBadge").firstChild.textContent = `بيانات المخزون · `;
+}
 function boot(){
   if(booted) return; booted=true;
   $("verPill").textContent=window.APP_NAME+" "+(/^\d/.test(window.APP_VERSION)?"V":"")+window.APP_VERSION;
@@ -4724,6 +4736,7 @@ function boot(){
   if(window.__isAdmin) buildAdminTab();
   updateCalcLogBadge();
   maybeShowOnboarding();
+  refreshLastSyncBadge();
 }
 function lockErr(msg){
   $("lock").classList.remove("busy");
