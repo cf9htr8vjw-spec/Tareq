@@ -844,11 +844,16 @@ main{flex:1;min-height:0;position:relative}
 .fLbl b{font-size:15px;font-family:"Noto Kufi Arabic"}
 .fLbl span{font-size:11px;color:var(--muted)}
 .fArrow{font-size:11px;color:var(--muted);padding:3px 0 3px 44px;font-weight:700}
-.salesCtrl{display:flex;flex-direction:column;gap:11px;background:var(--surface);border:1px solid var(--line);
-  border-radius:15px;padding:13px 14px;box-shadow:var(--shadow);max-width:640px;margin:0 auto}
-.scGroup{display:flex;flex-direction:column;gap:6px}
-.scLbl{font-size:10.5px;font-weight:700;color:var(--muted)}
-.salesCtrl .chips{flex-wrap:wrap}
+.salesCtrl{background:var(--surface);border:1px solid var(--line);
+  border-radius:15px;padding:9px 14px;box-shadow:var(--shadow);max-width:640px;margin:0 auto}
+.salesCtrlToggle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:4px 0;font-size:12px;font-weight:700;color:var(--ink)}
+.salesCtrlToggle #salesCtrlSummary{font-size:10.5px;font-weight:600;color:var(--muted);flex:1;text-align:start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.salesCtrlToggle .chev{font-size:10px;color:var(--muted);transition:transform .15s}
+.salesCtrlBody{display:flex;flex-wrap:wrap;gap:8px 16px;padding-top:10px;margin-top:8px;border-top:1px solid var(--line)}
+.scGroup{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.scLbl{font-size:10.5px;font-weight:700;color:var(--muted);flex:none}
+.salesCtrl .chips{flex-wrap:wrap;gap:5px}
+.salesCtrl .chip{padding:5px 10px;font-size:11.5px}
 .dateInp{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:6px 12px;
   font-size:11.5px;color:var(--ink);font-family:inherit}
 .favBtn{position:absolute;top:10px;left:10px;font-size:18px;line-height:1;color:var(--star-empty);background:none;z-index:1}
@@ -932,12 +937,19 @@ main{flex:1;min-height:0;position:relative}
 .tr.up{background:var(--green-soft);color:var(--green)}
 .tr.dn{background:var(--rust-soft);color:var(--rust)}
 .tr.fl{background:var(--line);color:var(--muted)}
-.mbars{display:flex;align-items:flex-end;gap:3px;height:74px}
+.mbarsWrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;margin:0 -2px;padding:0 2px 4px}
+.mbarsInner{position:relative}
+.mbars{display:flex;align-items:flex-end;gap:0;height:74px}
 .mbars.withval{height:96px}
-.mb{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:3px}
-.mb i{width:100%;max-width:20px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--gold),#c9a875);display:block}
+.mb{flex:0 0 auto;width:30px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:3px;padding:0 2px}
+.mb.qshade{background:var(--bg);border-radius:6px 6px 0 0}
+.mb i{width:100%;max-width:18px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--gold),#c9a875);display:block}
 .mb span{font-size:8px;color:var(--muted);white-space:nowrap}
 .mbVal{font-size:8.5px;font-weight:700;color:var(--ink);white-space:nowrap;min-height:11px}
+.mtrend{position:absolute;top:0;right:0;pointer-events:none}
+.qbandRow{display:flex;gap:8px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);flex-wrap:wrap}
+.qbandRow .qb{font-size:9.5px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.qbandRow .qb i{width:9px;height:9px;border-radius:2px;background:var(--bg);border:1px solid var(--line);display:inline-block}
 .bigStats{display:flex;gap:8px}
 .bigStat{flex:1;text-align:center;background:var(--surface2,rgba(0,0,0,.02));border-radius:12px;padding:14px 8px}
 .bigStat.hi{background:var(--green-soft)}
@@ -1524,6 +1536,12 @@ table.prods tr:last-child td{border:none}
   <div class="view" id="salesView">
     <div id="salesScroll">
       <div class="salesCtrl">
+        <button type="button" class="salesCtrlToggle" id="salesCtrlToggle">
+          <span>⚙️ فلاتر التقرير</span>
+          <span id="salesCtrlSummary"></span>
+          <span class="chev" id="salesCtrlChev">▾</span>
+        </button>
+        <div class="salesCtrlBody" id="salesCtrlBody" style="display:none">
         <div class="scGroup">
           <span class="scLbl">السنة</span>
           <div class="chips">
@@ -1566,6 +1584,7 @@ table.prods tr:last-child td{border:none}
             <button class="chip" id="secWest">الغربي</button>
             <button class="chip" id="secEast">الشرقي</button>
           </div>
+        </div>
         </div>
       </div>
       <div class="flabel" id="salesMonthLbl" style="margin:14px 0 4px"></div>
@@ -3051,22 +3070,35 @@ $("hTileSales").onclick=()=>setView("sales");
 const _now=new Date();
 let salesGran="month", salesMetric="contract", salesDev="all", salesSector="all",
     salesYear="2026", salesMonth=String(_now.getMonth()+1).padStart(2,"0");
+function updateSalesCtrlSummary(){
+  const granLbl={day:"يومي",month:"شهري",quarter:"ربعي"}[salesGran];
+  const metLbl={book:"الحجوزات",ist:"الاستصناع",contract:"العقود"}[salesMetric];
+  const devLbl={all:"كل المطورين",nhc:"NHC",other:"مطورون آخرون"}[salesDev];
+  const secLbl=salesSector==="all"?"كل القطاعات":salesSector;
+  $("salesCtrlSummary").textContent=`${salesYear} · ${granLbl} · ${metLbl} · ${devLbl} · ${secLbl}`;
+}
 function wireSalesCtrl(){
   $("salesMonthSel").value=salesMonth; // افتراضي: الشهر الحالي
+  $("salesCtrlToggle").onclick=()=>{
+    const open=$("salesCtrlBody").style.display==="none";
+    $("salesCtrlBody").style.display=open?"flex":"none";
+    $("salesCtrlChev").style.transform=open?"rotate(180deg)":"rotate(0deg)";
+  };
   const g={day:$("gDay"),month:$("gMonth"),quarter:$("gQuarter")};
   Object.entries(g).forEach(([k,btn])=>btn.onclick=()=>{
     salesGran=k; Object.values(g).forEach(b=>b.classList.remove("on")); btn.classList.add("on");
     $("salesMonthGroup").style.display = k==="day" ? "flex" : "none";
-    renderSales();
+    updateSalesCtrlSummary(); renderSales();
   });
   const m={book:$("mBook"),ist:$("mIst"),contract:$("mContract")};
-  Object.entries(m).forEach(([k,btn])=>btn.onclick=()=>{ salesMetric=k; Object.values(m).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); renderSales(); });
+  Object.entries(m).forEach(([k,btn])=>btn.onclick=()=>{ salesMetric=k; Object.values(m).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); updateSalesCtrlSummary(); renderSales(); });
   const d={all:$("sdAll"),nhc:$("sdNHC"),other:$("sdOther")};
-  Object.entries(d).forEach(([k,btn])=>btn.onclick=()=>{ salesDev=k; Object.values(d).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); renderSales(); });
+  Object.entries(d).forEach(([k,btn])=>btn.onclick=()=>{ salesDev=k; Object.values(d).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); updateSalesCtrlSummary(); renderSales(); });
   const sec={all:$("secAll"),"الأوسط":$("secMid"),"الغربي":$("secWest"),"الشرقي":$("secEast")};
-  Object.entries(sec).forEach(([k,btn])=>btn.onclick=()=>{ salesSector=k; Object.values(sec).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); renderSales(); });
-  $("salesYear").onchange=()=>{ salesYear=$("salesYear").value; renderSales(); };
+  Object.entries(sec).forEach(([k,btn])=>btn.onclick=()=>{ salesSector=k; Object.values(sec).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); updateSalesCtrlSummary(); renderSales(); });
+  $("salesYear").onchange=()=>{ salesYear=$("salesYear").value; updateSalesCtrlSummary(); renderSales(); };
   $("salesMonthSel").onchange=()=>{ salesMonth=$("salesMonthSel").value; renderSales(); };
+  updateSalesCtrlSummary();
 }
 const MNAMES={"01":"يناير","02":"فبراير","03":"مارس","04":"أبريل","05":"مايو","06":"يونيو",
   "07":"يوليو","08":"أغسطس","09":"سبتمبر","10":"أكتوبر","11":"نوفمبر","12":"ديسمبر"};
@@ -3140,12 +3172,23 @@ async function renderSales(){
   const total = report.reduce((s,r)=>s+Number(r.cnt),0);
   const shown = report.slice(-24);
   const mx = Math.max(1,...shown.map(r=>Number(r.cnt)));
+  const BAR_W=30, CHART_H=96;
+  const heightPct = r => { const val=Number(r.cnt); return val?Math.max(4,(val/mx)*100):2; };
   const bars = shown.map(r=>{
     const val=Number(r.cnt);
-    return `<div class="mb" title="${periodLabel(r.period,salesGran)}: ${val}">
+    const q = salesGran==="month" ? Math.ceil(+r.period.split("-")[1]/3) : null;
+    const shade = q!=null && q%2===0 ? " qshade" : "";
+    return `<div class="mb${shade}" title="${periodLabel(r.period,salesGran)}: ${val}">
       <div class="mbVal">${val||""}</div>
-      <i style="height:${val?Math.max(4,(val/mx)*100):2}%;${val?"":"opacity:.25"}"></i><span>${periodLabel(r.period,salesGran)}</span></div>`;
+      <i style="height:${heightPct(r)}%;${val?"":"opacity:.25"}"></i><span>${periodLabel(r.period,salesGran)}</span></div>`;
   }).join("");
+  const totalW = shown.length*BAR_W;
+  const pts = shown.map((r,i)=>[i*BAR_W+BAR_W/2, CHART_H-(heightPct(r)/100*CHART_H)]);
+  const trendSvg = shown.length>1 ? `<svg class="mtrend" width="${totalW}" height="${CHART_H}" viewBox="0 0 ${totalW} ${CHART_H}" preserveAspectRatio="none">
+      <polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/>
+      ${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.4" fill="var(--green)"/>`).join("")}
+    </svg>` : "";
+  const qLegend = salesGran==="month" ? `<div class="qbandRow"><span class="qb"><i></i>الربع الأول والثالث</span><span class="qb" style="opacity:.6"><i style="background:transparent"></i>الربع الثاني والرابع</span></div>` : "";
 
   const projList = (projReport||[]).slice(0,50);
   const projRowsHtml = projList.length ? projList.map(r=>`
@@ -3157,7 +3200,12 @@ async function renderSales(){
   $("salesGrid").innerHTML = `
     <div class="salesCard" style="max-width:640px;margin:0 auto">
       <div class="scTotal" style="border:none;padding:0;margin-bottom:11px;font-size:16px">${fmt(total)} — ${METLBL[salesMetric]} (${periodLabel(report[0].period,salesGran)} – ${periodLabel(report[report.length-1].period,salesGran)})</div>
-      <div class="mbars withval">${bars}</div>
+      <div class="mbarsWrap"><div class="mbarsInner" style="width:${totalW}px">
+        <div class="mbars withval" style="width:${totalW}px">${bars}</div>
+        ${trendSvg}
+      </div></div>
+      ${qLegend}
+      ${shown.length>8?'<div class="src" style="text-align:center;margin-top:4px">اسحب أفقياً لعرض كل الفترات ⇄</div>':""}
     </div>
     ${renderPendingCard()}
     <div class="salesCard" style="max-width:640px;margin:12px auto 0">
