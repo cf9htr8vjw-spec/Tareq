@@ -2815,7 +2815,12 @@ function renderMap(arr){
     const group=groups[key];
     const lbl = group.length>1 ? `<b>${group.length} مشاريع بهذا الموقع</b>` : `<b>${p.short}</b> · <i>${compact(Math.round((v.minP+v.maxP)/2))}</i>`;
     const m=L.marker([p.lat,p.lon],{icon:pinIcon(TCOL[domType(v.types)],lbl)});
-    m.on("click",()=>showMini(group));
+    m.on("click",()=>{
+      /* اختيار مشروع محدد (وليس مجموعة مشاريع متداخلة) من الخريطة يقرّب العرض عليه أيضاً،
+         بنفس سلوك زر "عرض على الخريطة" بالبطاقة، بدل ترك التقريب كما هو */
+      if(group.length===1) map.setView([p.lat,p.lon],Math.max(map.getZoom(),WIDE_ZOOM),{animate:true});
+      showMini(group);
+    });
     m._vm=v;
     m.addTo(layer); curPins.push(m);
   }
