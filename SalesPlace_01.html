@@ -2241,7 +2241,7 @@ function render(){
     const cartBtnHtml = S.seg==="n" ? `<button type="button" class="cardCartBtn${inCartCard?" on":""}" data-cartkey="${cardKey}"
       data-pid="${p.id}" data-name="${p.short}" data-city="${p.city}" data-dest="${p.dest||""}"
       data-type="${cardTypeLabel}" data-avg="${cardAvgP}" data-min="${v.minP}" data-max="${v.maxP}"
-      data-u="${v.u}" data-lat="${p.lat!=null?p.lat:""}" data-lon="${p.lon!=null?p.lon:""}">${inCartCard?"✓ في المقارنة":"+ أضف للمقارنة"}</button>` : "";
+      data-u="${v.u}" data-pps="${v.pps}" data-lat="${p.lat!=null?p.lat:""}" data-lon="${p.lon!=null?p.lon:""}">${inCartCard?"✓ في المقارنة":"+ أضف للمقارنة"}</button>` : "";
     const scarce = v.u>0 && v.u<10;
     el.innerHTML=`<button type="button" class="favBtn${FAVS.has(p.id)?" on":""}" data-fav="${p.id}">${FAVS.has(p.id)?"★":"☆"}</button>
       <div class="nm">${p.short}</div><div class="dv">${p.dev} · ${p.city}${p.dest?` · وجهة ${p.dest}`:""}</div>
@@ -2268,7 +2268,8 @@ function render(){
         CART.set(key,{pid:+cardCartBtn.dataset.pid,name:cardCartBtn.dataset.name,city:cardCartBtn.dataset.city,
           dest:cardCartBtn.dataset.dest,type:cardCartBtn.dataset.type,beds:"—",
           avg:+cardCartBtn.dataset.avg,min:+cardCartBtn.dataset.min,max:+cardCartBtn.dataset.max,
-          u:+cardCartBtn.dataset.u,lat:cardCartBtn.dataset.lat?+cardCartBtn.dataset.lat:null,
+          u:+cardCartBtn.dataset.u,pps:cardCartBtn.dataset.pps?+cardCartBtn.dataset.pps:null,
+          lat:cardCartBtn.dataset.lat?+cardCartBtn.dataset.lat:null,
           lon:cardCartBtn.dataset.lon?+cardCartBtn.dataset.lon:null});
         cardCartBtn.classList.add("on"); cardCartBtn.textContent="✓ في المقارنة";
       }
@@ -2430,7 +2431,7 @@ function openDetail(id){
       extraCell=`<td><button type="button" class="cartchk${checked?" on":""}" data-key="${key}"
         data-pid="${p.id}" data-name="${p.short}" data-city="${p.city}" data-dest="${p.dest||""}"
         data-type="${pr.type}" data-beds="${pr.beds}" data-avg="${pr.avgP}" data-min="${pr.minP}" data-max="${pr.maxP}"
-        data-u="${pr.u}" data-lat="${p.lat!=null?p.lat:""}" data-lon="${p.lon!=null?p.lon:""}">${checked?"✓":"+"}</button></td>`;
+        data-u="${pr.u}" data-pps="${pr.pps}" data-lat="${p.lat!=null?p.lat:""}" data-lon="${p.lon!=null?p.lon:""}">${checked?"✓":"+"}</button></td>`;
     }
     const st = pstat ? pstat[`${pr.type}|${pr.beds}`] : null;
     const reservedTxt = st && st.reserved>0 ? `<div class="resDim">+${fmt(st.reserved)} محجوزة</div>` : "";
@@ -2694,7 +2695,8 @@ function bindDetailInteractions(){
     else{
       CART.set(key,{pid:+b.dataset.pid,name:b.dataset.name,city:b.dataset.city,dest:b.dataset.dest,
         type:b.dataset.type,beds:b.dataset.beds,avg:+b.dataset.avg,min:+b.dataset.min,max:+b.dataset.max,
-        u:+b.dataset.u,lat:b.dataset.lat?+b.dataset.lat:null,lon:b.dataset.lon?+b.dataset.lon:null});
+        u:+b.dataset.u,pps:b.dataset.pps?+b.dataset.pps:null,
+        lat:b.dataset.lat?+b.dataset.lat:null,lon:b.dataset.lon?+b.dataset.lon:null});
       b.classList.add("on"); b.textContent="✓";
     }
     updateCartBar();
@@ -3270,6 +3272,19 @@ function selectDealProject(pid){
   $("dealTypeWrap").style.display="block";
   $("dealUnitsWrap").style.display="none";
 }
+function catalogAvgSize(project,type){
+  for(const seg of ["b","n"]){
+    const sg=project[seg];
+    const pr=sg&&sg.prods&&sg.prods.find(x=>x.type===type);
+    if(pr&&pr.minS&&pr.maxS) return (pr.minS+pr.maxS)/2;
+  }
+  return null;
+}
+function ppsFor(price,project,type){
+  const sz=catalogAvgSize(project,type);
+  if(!price||!sz) return null;
+  return Math.round(price/sz);
+}
 async function selectDealType(type,btnEl){
   dealCurType=type;
   $("dealTypeChips").querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
@@ -3293,7 +3308,7 @@ async function selectDealType(type,btnEl){
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <div>
           <div style="font-weight:700;font-size:13px">${type}${r.beds?` · ${r.beds} غرف`:""}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${r.price!=null?fmt(r.price)+" ريال":"سعر غير مسجّل"}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${r.price!=null?fmt(r.price)+" ريال":"سعر غير مسجّل"}${ppsFor(r.price,dealCurProject,type)!=null?` · ${fmt(ppsFor(r.price,dealCurProject,type))} ريال/م² (تقديري)`:""}</div>
         </div>
         <button type="button" class="btn${on?"":" ghost"}" data-dealkey="${key}" data-idx="${i}" style="padding:8px 14px;font-size:12px;flex:none">${on?"✓ أُضيفت":"+ أضف للصفقة"}</button>
       </div>
@@ -3308,7 +3323,7 @@ async function selectDealType(type,btnEl){
       }else{
         const row=rows[+btn.dataset.idx];
         DEAL.set(key,{pid:dealCurProject.id,name:dealCurProject.short||dealCurProject.name,city:dealCurProject.city,
-          type,beds:row.beds,price:row.price,moh_price:row.moh_price});
+          type,beds:row.beds,price:row.price,moh_price:row.moh_price,pps:ppsFor(row.price,dealCurProject,type)});
         btn.classList.remove("ghost"); btn.textContent="✓ أُضيفت";
       }
       updateDealBar();
@@ -3327,7 +3342,7 @@ function updateDealBar(){
 function renderDealSummary(){
   const entries=[...DEAL.entries()];
   $("dealSumList").innerHTML = entries.length ? entries.map(([key,u])=>`
-    <div class="unmRow"><b>${u.name} — ${u.type}${u.beds?` (${u.beds} غرف)`:""}</b><span>${u.price!=null?fmt(u.price)+" ريال":"—"}</span>
+    <div class="unmRow"><b>${u.name} — ${u.type}${u.beds?` (${u.beds} غرف)`:""}</b><span>${u.price!=null?fmt(u.price)+" ريال":"—"}${u.pps!=null?` <span style="color:var(--muted);font-size:10.5px">(${fmt(u.pps)} ريال/م²)</span>`:""}</span>
       <button type="button" data-rm="${key}" style="margin-inline-start:8px;color:var(--rust);font-size:11px;text-decoration:underline">إزالة</button></div>
   `).join("") : `<div class="src">لا توجد وحدات بالصفقة بعد</div>`;
   const total=entries.reduce((s,[,u])=>s+(u.price||0),0);
@@ -4379,6 +4394,7 @@ function openComparison(){
     ["المشروع",u=>u.name],["المدينة",u=>u.city],["الوجهة",u=>u.dest||"—"],
     ["النوع",u=>u.type],["الغرف",u=>u.beds],["الوحدات المتاحة",u=>fmt(u.u)],
     ["نطاق السعر",u=>`${fmt(u.min)} – ${fmt(u.max)} ريال`],
+    ["سعر المتر",u=>u.pps!=null?`${fmt(u.pps)} ريال/م²`:"—"],
   ];
   let h=`<thead><tr><th></th>${entries.map(([k,u])=>`<th>${u.name}</th>`).join("")}</tr></thead><tbody>`;
   for(const [label,fn] of rows){
