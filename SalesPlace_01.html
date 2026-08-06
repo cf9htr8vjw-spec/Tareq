@@ -1453,6 +1453,7 @@ table.prods tr:last-child td{border:none}
     </div>
     <div class="verpill" id="verPill"></div>
     <div class="hcluster">
+      <button id="backBtn" class="hbtn" style="display:none" title="رجوع">◀</button>
       <button id="themeBtn" class="hbtn" title="الوضع الليلي">🌙</button>
       <button id="helpBtn" class="hbtn" title="شرح المصطلحات">؟</button>
       <button id="adminBtn" class="hbtn" style="display:none" title="لوحة الإدارة">🛡️</button>
@@ -2804,7 +2805,7 @@ function showMini(group){
   setTimeout(()=>map&&map.invalidateSize(),240);
 }
 $("miniClose").onclick=()=>{ $("miniCard").classList.remove("on"); setTimeout(()=>map&&map.invalidateSize(),60); };
-const WIDE_ZOOM=12;
+const WIDE_ZOOM=16;
 function highlightPin(p){
   const m=curPins.find(x=>x._vm && x._vm.p.id===p.id);
   if(!m||!m._icon) return;
@@ -2977,6 +2978,7 @@ function findCityOf(dest){
 }
 
 /* ---------- views & segment ---------- */
+let __suppressNavPush=false, __bootingNav=true;
 function setView(v){
   if(!window.__isAdmin){
     const denied = (v==="dest"&&!PERMS.dest) || (v==="sales"&&!PERMS.sales) ||
@@ -2984,6 +2986,7 @@ function setView(v){
                    ((v==="list"||v==="map"||v==="pref")&&!(PERMS.search||PERMS.cmp));
     if(denied){ toast("لا تملك صلاحية الوصول لهذا القسم","err"); v="home"; }
   }
+  const prevView=S.view;
   S.view=v;
   for(const [id,name] of [["homeView","home"],["destView","dest"],["listView","list"],["mapView","map"],["prefView","pref"],["adminView","admin"],["calcView","calc"],["salesView","sales"]])
     $(id).classList.toggle("on",v===name);
@@ -3003,7 +3006,25 @@ function setView(v){
   if(v==="admin") loadAdminUsers();
   if(v==="dest") renderDestinations();
   if(v==="sales") renderSales();
+  if(!__suppressNavPush && !__bootingNav && v!==prevView){
+    try{ history.pushState({navView:v}, "", "#"+v); }catch(e){}
+  }
+  __bootingNav=false;
+  updateBackBtn();
 }
+function updateBackBtn(){
+  $("backBtn").style.display = (S.view!=="home") ? "inline-flex" : "none";
+}
+window.addEventListener("popstate",(e)=>{
+  const v=(e.state && e.state.navView) || "home";
+  __suppressNavPush=true;
+  setView(v);
+  __suppressNavPush=false;
+});
+$("backBtn").onclick=()=>{
+  if(history.state && history.state.navView){ history.back(); }
+  else { setView("home"); }
+};
 $("pickGo").onclick=()=>{ setView("list"); $("listScroll").scrollTop=0; };
 $("pickClear").onclick=clearPicks;
 $("pbClear").onclick=clearPicks;
