@@ -2117,6 +2117,7 @@ let DATA = [], PREFS = null, PERF = null, SUPP = null, FN = null, GAL = null, BL
 const PERM_ALL = {dest:true,search:true,deal:true,cmp:true,calc:true,sales:true};
 const PERM_LABELS = {dest:"الوجهات",search:"البحث والتصفية",deal:"الصفقات",cmp:"المقارنة",calc:"الحاسبات",sales:"مبيعاتنا"};
 let PERMS = Object.assign({}, PERM_ALL);
+let SERVER_ONBOARDED = null; /* null = unknown (older DB without the migration, or fetch failed) */
 
 /* ---------- state ---------- */
 const S = { seg:"b", view:"list", q:"", city:"", dest:"", dev:"", devKind:"", cat595:false, hasPlan:false, favOnly:false, types:new Set(), beds:new Set(),
@@ -3716,8 +3717,11 @@ const ONB_STEPS=[
 ];
 let onbIdx=0;
 function maybeShowOnboarding(){
+  if(SERVER_ONBOARDED===true) return;
   let seen=false;
-  try{ seen = localStorage.getItem("nhc_onboarded")==="1"; }catch(e){}
+  if(SERVER_ONBOARDED===null){ // server flag unavailable — fall back to this device's local record
+    try{ seen = localStorage.getItem("nhc_onboarded_"+CURUSER)==="1" || localStorage.getItem("nhc_onboarded")==="1"; }catch(e){}
+  }
   if(seen) return;
   onbIdx=0; renderOnbStep();
   $("onbScrim").classList.add("on"); $("onbCard").classList.add("on");
@@ -3729,7 +3733,9 @@ function renderOnbStep(){
 }
 function closeOnboarding(){
   $("onbScrim").classList.remove("on"); $("onbCard").classList.remove("on");
-  try{ localStorage.setItem("nhc_onboarded","1"); }catch(e){}
+  try{ localStorage.setItem("nhc_onboarded_"+CURUSER,"1"); localStorage.setItem("nhc_onboarded","1"); }catch(e){}
+  SERVER_ONBOARDED=true;
+  sbCall("mark_onboarded",{p_user:CURUSER,p_pass:CURPASS}).catch(()=>{});
 }
 $("onbNext").onclick=()=>{
   if(onbIdx>=ONB_STEPS.length-1){ closeOnboarding(); return; }
@@ -4626,14 +4632,11 @@ async function tryUnlock(){
     $("userTag").textContent=res.name||uid;
     $("lock").classList.add("hide");
     $("pw").value="";
-    if(window.__isAdmin){
-      PERMS=Object.assign({},PERM_ALL);
-    } else {
-      try{
-        const pr=await sbCall("get_my_permissions",{p_user:uid,p_pass:pass});
-        PERMS = (pr&&pr.ok&&pr.permissions) ? Object.assign({},PERM_ALL,pr.permissions) : Object.assign({},PERM_ALL);
-      }catch(e){ PERMS=Object.assign({},PERM_ALL); }
-    }
+    try{
+      const pr=await sbCall("get_my_permissions",{p_user:uid,p_pass:pass});
+      PERMS = (!window.__isAdmin && pr&&pr.ok&&pr.permissions) ? Object.assign({},PERM_ALL,pr.permissions) : Object.assign({},PERM_ALL);
+      SERVER_ONBOARDED = (pr&&pr.ok) ? !!pr.onboarded : null;
+    }catch(e){ PERMS=Object.assign({},PERM_ALL); SERVER_ONBOARDED=null; }
     boot();
     syncLiveData();
     /* install-hint prompt removed per request */

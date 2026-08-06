@@ -11,6 +11,11 @@ alter table app_users
   add column if not exists permissions jsonb not null default
   '{"dest":true,"search":true,"deal":true,"cmp":true,"calc":true,"sales":true}'::jsonb;
 
+-- يسجّل أول مرة أنهى فيها المستخدم الجولة التعريفية — تُقرأ من أي جهاز يدخل منه
+-- لاحقاً حتى لا تظهر المسجّات الإرشادية مجدداً لمستخدم سبق له الدخول
+alter table app_users
+  add column if not exists onboarded_at timestamptz;
+
 -- دالة إدارية جديدة: عرض المستخدمين مع صلاحياتهم
 -- (بديل عرض إضافي — لا تمسّ admin_list_users الأصلية ولا تحذفها)
 create or replace function admin_list_users_v2(p_admin text, p_pass text)
@@ -89,10 +94,11 @@ declare
   v_perm jsonb;
   v_admin boolean;
   v_found boolean;
+  v_onboarded boolean;
 begin
   select coalesce(permissions, '{"dest":true,"search":true,"deal":true,"cmp":true,"calc":true,"sales":true}'::jsonb),
-         coalesce(is_admin,false), true
-  into v_perm, v_admin, v_found
+         coalesce(is_admin,false), true, (onboarded_at is not null)
+  into v_perm, v_admin, v_found, v_onboarded
   from app_users
   where username = p_user and password = p_pass and coalesce(is_active,true)
   limit 1;
@@ -106,6 +112,30 @@ begin
     v_perm := '{"dest":true,"search":true,"deal":true,"cmp":true,"calc":true,"sales":true}'::jsonb;
   end if;
 
-  return jsonb_build_object('ok', true, 'permissions', v_perm);
+  return jsonb_build_object('ok', true, 'permissions', v_perm, 'onboarded', coalesce(v_onboarded,false));
+end;
+$$;
+
+-- دالة جديدة يستدعيها العميل بعد إغلاق الجولة التعريفية لأول مرة (تخطٍّ أو إنهاء)
+create or replace function mark_onboarded(p_user text, p_pass text)
+returns jsonb
+language plpgsql
+security definer
+as $$
+declare
+  v_ok boolean;
+begin
+  select true into v_ok from app_users
+  where username = p_user and password = p_pass and coalesce(is_active,true)
+  limit 1;
+
+  if v_ok is not true then
+    return jsonb_build_object('ok', false, 'msg', 'بيانات دخول غير صحيحة');
+  end if;
+
+  update app_users set onboarded_at = coalesce(onboarded_at, now())
+  where username = p_user and password = p_pass;
+
+  return jsonb_build_object('ok', true);
 end;
 $$;
