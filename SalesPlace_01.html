@@ -943,7 +943,7 @@ main{flex:1;min-height:0;position:relative}
 .tr.up{background:var(--green-soft);color:var(--green)}
 .tr.dn{background:var(--rust-soft);color:var(--rust)}
 .tr.fl{background:var(--line);color:var(--muted)}
-.mbarsWrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;margin:0 -2px;padding:0 2px 4px}
+.mbarsWrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;margin:0 -2px;padding:0 2px 4px;direction:ltr}
 .mbarsInner{position:relative}
 .mbars{display:flex;align-items:flex-end;gap:0;height:74px}
 .mbars.withval{height:96px}
@@ -3226,6 +3226,12 @@ function periodLabel(iso,gran){
   const q=Math.ceil(+m/3);
   return `ر${q} ${y}`;
 }
+/* تسمية مختصرة تحت كل عمود بالشارت — الدقة اليومية كلها ضمن شهر واحد مختار أصلاً،
+   فرقم اليوم وحده كافٍ ولا داعي لتكرار اسم الشهر على كل عمود */
+function barLabel(iso,gran){
+  if(gran==="day") return String(+iso.split("-")[2]);
+  return periodLabel(iso,gran);
+}
 function renderPendingCard(){
   if(!BOOK) return "";
   let reserved=0;
@@ -3238,9 +3244,9 @@ function renderPendingCard(){
     reserved+=bk.reserved||0;
   }
   return `<div class="salesCard" style="max-width:640px;margin:12px auto 0">
-    <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px">المعلّق حتى تاريخه — لم يتحوّل لعقد نهائي بعد</div>
+    <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px">المعلّق حتى تاريخه — لم يتحوّل لعقد استصناع نهائي بعد</div>
     <div class="src" style="margin-bottom:9px">لقطة حالية من مخزون الداشبورد، لا مجموع فترة</div>
-    <div class="pendRow"><i class="book"></i><span>وحدات محجوزة، بانتظار العقد</span><b>${fmt(reserved)}</b></div>
+    <div class="pendRow"><i class="book"></i><span>وحدات محجوزة، بانتظار عقد الاستصناع</span><b>${fmt(reserved)}</b></div>
   </div>`;
 }
 let salesReqId=0;
@@ -3297,7 +3303,7 @@ async function renderSales(){
     const shade = q!=null && q%2===0 ? " qshade" : "";
     return `<div class="mb${shade}" title="${periodLabel(r.period,salesGran)}: ${val}">
       <div class="mbVal">${val||""}</div>
-      <i style="height:${heightPct(r)}%;${val?"":"opacity:.25"}"></i><span>${periodLabel(r.period,salesGran)}</span></div>`;
+      <i style="height:${heightPct(r)}%;${val?"":"opacity:.25"}"></i><span>${barLabel(r.period,salesGran)}</span></div>`;
   }).join("");
   const totalW = shown.length*BAR_W;
   const pts = shown.map((r,i)=>[i*BAR_W+BAR_W/2, CHART_H-(heightPct(r)/100*CHART_H)]);
@@ -3331,6 +3337,7 @@ async function renderSales(){
       <div class="projList" id="projListBox">${projRowsHtml}</div>
       <div class="src" id="projNoMatch" style="display:none;text-align:center;padding:16px">لا نتائج مطابقة للبحث</div>
     </div>`;
+  const mbw=document.querySelector(".mbarsWrap"); if(mbw) mbw.scrollLeft=mbw.scrollWidth; /* أحدث الفترات مرئية افتراضياً بلا الحاجة للسحب */
   const psi=$("projSearchInp");
   if(psi) psi.oninput=()=>{
     const q=psi.value.trim();
@@ -3830,7 +3837,7 @@ $("newsEditSave").onclick=async ()=>{
     closeSheet("newsEditSheet");
     loadAdminNews();
     refreshNewsTicker();
-  }catch(e){ $("newsEditMsg").textContent="تعذّر الاتصال بالخادم"; }
+  }catch(e){ $("newsEditMsg").textContent="تعذّر الاتصال بالخادم — تأكد من تشغيل ملف news_items.sql على قاعدة البيانات"; }
 };
 async function deleteNews(id){
   if(!confirm("حذف هذا الخبر نهائياً؟")) return;
@@ -3889,7 +3896,7 @@ $("bankEditSave").onclick=async ()=>{
     closeSheet("bankEditSheet");
     loadAdminBanks();
     refreshLiveBanks();
-  }catch(e){ $("bankEditMsg").textContent="تعذّر الاتصال بالخادم"; }
+  }catch(e){ $("bankEditMsg").textContent="تعذّر الاتصال بالخادم — تأكد من تشغيل ملف bank_rates.sql على قاعدة البيانات"; }
 };
 async function deleteBank(id){
   if(!confirm("حذف هذا البنك نهائياً؟")) return;
