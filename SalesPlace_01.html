@@ -1126,6 +1126,11 @@ main{flex:1;min-height:0;position:relative}
 .uactions button{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:9px;border:1.5px solid var(--line);color:var(--ink)}
 .uactions button.danger{color:var(--rust);border-color:var(--rust-soft-border)}
 .uactions button.warn{color:var(--gold-text);border-color:var(--gold-soft-border)}
+#newsTicker{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 12px;-webkit-overflow-scrolling:touch}
+.newsCard{flex:0 0 auto;max-width:280px;min-width:200px;background:linear-gradient(135deg,var(--green),#1a5c3d 80%);color:#fff;border-radius:14px;padding:11px 14px;box-shadow:var(--shadow)}
+.newsCard .newsCat{font-size:10px;font-weight:700;opacity:.85;background:rgba(255,255,255,.16);border-radius:99px;padding:2px 9px;display:inline-block;margin-bottom:6px}
+.newsCard .newsTitle{font-size:13px;font-weight:700;line-height:1.5}
+.newsCard .newsDate{font-size:10px;opacity:.75;margin-top:5px}
 .uperm{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
 .chip.small{padding:4.5px 10px;font-size:11.5px}
 .btn.sm{padding:6px 12px;font-size:11.5px;border-radius:9px}
@@ -1509,6 +1514,7 @@ table.prods tr:last-child td{border:none}
 <main>
   <div class="view on" id="homeView">
     <div id="homeScroll">
+      <div id="newsTicker" style="display:none"></div>
       <div class="htiles">
         <button type="button" class="htile" id="hTileDest">
           <div class="hticon">🏘️</div>
@@ -1729,6 +1735,8 @@ table.prods tr:last-child td{border:none}
         <button class="atab" data-a="log">سجل الدخول</button>
         <button class="atab" data-a="sync">تحديث المخزون اليومي</button>
         <button class="atab" data-a="offers">دعومات المشاريع</button>
+        <button class="atab" data-a="news">أخبار الشاشة الرئيسية</button>
+        <button class="atab" data-a="banks">بنوك التمويل</button>
       </div>
       <div id="aUsers">
         <button class="btn" id="aAddBtn" style="margin-bottom:12px">+ إضافة مستخدم</button>
@@ -1763,8 +1771,68 @@ table.prods tr:last-child td{border:none}
         <input type="search" id="aOffersSearch" class="dateInp" style="width:100%;text-align:start;margin:10px 0" placeholder="ابحث باسم المشروع…" autocomplete="off">
         <div id="aOffersList"></div>
       </div>
+      <div id="aNews" style="display:none">
+        <div class="cintro">
+          <b>أخبار الشاشة الرئيسية</b>
+          <span>تظهر كشريط بطاقات أعلى الشاشة الرئيسية لكل المستخدمين — إطلاق مشاريع، حملات بيعية، اتفاقيات، إلخ</span>
+        </div>
+        <button class="btn" id="aNewsAddBtn" style="margin:10px 0">+ إضافة خبر</button>
+        <div id="aNewsList"></div>
+      </div>
+      <div id="aBanks" style="display:none">
+        <div class="cintro">
+          <b>بنوك التمويل</b>
+          <span>جدول أسعار وشروط التمويل الظاهر بحاسبة الدعم — تعديلاتك هنا تُحفظ بقاعدة البيانات وتصل لكل المستخدمين عند دخولهم القادم</span>
+        </div>
+        <button class="btn" id="aBankAddBtn" style="margin:10px 0">+ إضافة بنك</button>
+        <div id="aBanksList"></div>
+      </div>
     </div>
   </div>
+  <div class="sheet" id="newsEditSheet">
+    <div class="handle" data-drag="newsEditSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 12px" id="newsEditTitle">إضافة خبر</h2>
+      <div class="cform">
+        <div class="flabel">العنوان</div>
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="newsTitleInp">
+        <div class="flabel" style="margin-top:9px">التصنيف (اختياري)</div>
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="newsCatInp" placeholder="إطلاق مشروع، حملة بيعية، اتفاقية…">
+        <div class="flabel" style="margin-top:9px">الحالة</div>
+        <div class="chips"><button type="button" class="chip on" id="newsActiveOn">نشط</button><button type="button" class="chip" id="newsActiveOff">موقوف</button></div>
+      </div>
+      <div id="newsEditMsg" class="src" style="margin-top:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button type="button" class="btn" id="newsEditSave" style="flex:1">💾 حفظ</button>
+        <button type="button" class="btn ghost" id="newsEditCancel">إلغاء</button>
+      </div>
+    </div>
+  </div>
+  <div class="scrim" id="newsEditScrim"></div>
+  <div class="sheet" id="bankEditSheet">
+    <div class="handle" data-drag="bankEditSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 12px" id="bankEditTitle">إضافة بنك</h2>
+      <div class="cform">
+        <div class="flabel">اسم البنك</div>
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="bankNameInp">
+        <div class="flabel" style="margin-top:9px">فئة الأهلية</div>
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="bankEligInp">
+        <div class="flabel" style="margin-top:9px">فئة تحويل الراتب</div>
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="bankSalInp">
+        <div class="flabel" style="margin-top:9px">نسبة الفائدة (%)</div>
+        <input type="number" step="0.01" class="dateInp" style="width:100%;text-align:start" id="bankRateInp">
+        <div class="flabel" style="margin-top:9px">ملاحظة (اختياري)</div>
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="bankNoteInp">
+      </div>
+      <div id="bankEditMsg" class="src" style="margin-top:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button type="button" class="btn" id="bankEditSave" style="flex:1">💾 حفظ</button>
+        <button type="button" class="btn ghost" id="bankEditCancel">إلغاء</button>
+      </div>
+    </div>
+  </div>
+  <div class="scrim" id="bankEditScrim"></div>
   <div class="sheet" id="offerEditSheet">
     <div class="handle" data-drag="offerEditSheet"></div>
     <div class="sheetbody">
@@ -2397,7 +2465,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -2406,7 +2474,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -3703,6 +3771,124 @@ $("offerEditSave").onclick=async ()=>{
   }catch(e){ $("offerEditMsg").textContent="تعذّر الاتصال بالخادم"; }
 };
 
+/* ---------- admin: news ticker (news_items) ---------- */
+let ADMIN_NEWS=[], adminNewsEditingId=null;
+async function loadAdminNews(){
+  $("aNewsList").innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
+  try{ ADMIN_NEWS = await sbSelect("news_items",{select:"*",order:"created_at.desc"}); }
+  catch(e){ $("aNewsList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر تحميل الأخبار — تأكد من تشغيل ملف news_items.sql على قاعدة البيانات</div>`; return; }
+  $("aNewsList").innerHTML = ADMIN_NEWS.length ? ADMIN_NEWS.map(n=>`
+    <div class="ucard">
+      <div class="uhead"><div><div class="nm">${n.title}</div><div class="un">${n.category||"—"} · ${new Date(n.created_at).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long",year:"numeric"})}</div></div></div>
+      <div class="ubadges"><span class="ubadge ${n.active?"on":"off"}">${n.active?"نشط":"موقوف"}</span></div>
+      <div class="uactions">
+        <button data-act="editnews" data-id="${n.id}">تعديل</button>
+        <button class="danger" data-act="delnews" data-id="${n.id}">حذف</button>
+      </div>
+    </div>`).join("") : `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">لا توجد أخبار بعد</div>`;
+  $("aNewsList").querySelectorAll("[data-act='editnews']").forEach(b=>b.onclick=()=>openNewsEditor(+b.dataset.id));
+  $("aNewsList").querySelectorAll("[data-act='delnews']").forEach(b=>b.onclick=()=>deleteNews(+b.dataset.id));
+}
+function openNewsEditor(id){
+  const n = id ? ADMIN_NEWS.find(x=>x.id===id) : null;
+  adminNewsEditingId = id||null;
+  $("newsEditTitle").textContent = id ? "تعديل خبر" : "إضافة خبر";
+  $("newsTitleInp").value = n ? n.title : "";
+  $("newsCatInp").value = n ? (n.category||"") : "";
+  const active = n ? n.active : true;
+  $("newsActiveOn").classList.toggle("on", active);
+  $("newsActiveOff").classList.toggle("on", !active);
+  $("newsEditMsg").textContent="";
+  openSheet("newsEditSheet");
+}
+$("aNewsAddBtn").onclick=()=>openNewsEditor(null);
+$("newsActiveOn").onclick=()=>{ $("newsActiveOn").classList.add("on"); $("newsActiveOff").classList.remove("on"); };
+$("newsActiveOff").onclick=()=>{ $("newsActiveOff").classList.add("on"); $("newsActiveOn").classList.remove("on"); };
+$("newsEditCancel").onclick=()=>closeSheet("newsEditSheet");
+$("newsEditScrim").onclick=()=>closeSheet("newsEditSheet");
+$("newsEditSave").onclick=async ()=>{
+  const title=$("newsTitleInp").value.trim();
+  if(!title){ $("newsEditMsg").textContent="أدخل عنوان الخبر"; return; }
+  const category=$("newsCatInp").value.trim()||null;
+  const active=$("newsActiveOn").classList.contains("on");
+  $("newsEditMsg").textContent="جارٍ الحفظ…";
+  try{
+    const r=await adminCall("admin_upsert_news",{p_id:adminNewsEditingId,p_title:title,p_category:category,p_active:active});
+    if(!r||!r.ok){ $("newsEditMsg").textContent=(r&&r.msg)||"تعذّر الحفظ"; return; }
+    toast(r.msg||"تم الحفظ","ok");
+    closeSheet("newsEditSheet");
+    loadAdminNews();
+    refreshNewsTicker();
+  }catch(e){ $("newsEditMsg").textContent="تعذّر الاتصال بالخادم"; }
+};
+async function deleteNews(id){
+  if(!confirm("حذف هذا الخبر نهائياً؟")) return;
+  const r=await adminCall("admin_delete_news",{p_id:id});
+  if(!r||!r.ok) return toast((r&&r.msg)||"تعذّر الحذف","err");
+  toast(r.msg||"تم الحذف","ok");
+  loadAdminNews();
+  refreshNewsTicker();
+}
+
+/* ---------- admin: financing banks (bank_rates) ---------- */
+let ADMIN_BANKS=[], adminBankEditingId=null;
+async function loadAdminBanks(){
+  $("aBanksList").innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
+  try{ ADMIN_BANKS = await sbSelect("bank_rates",{select:"*",order:"bank_name.asc"}); }
+  catch(e){ $("aBanksList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر تحميل بيانات البنوك — تأكد من تشغيل ملف bank_rates.sql على قاعدة البيانات</div>`; return; }
+  $("aBanksList").innerHTML = ADMIN_BANKS.length ? ADMIN_BANKS.map(b=>`
+    <div class="ucard">
+      <div class="uhead"><div><div class="nm">${b.bank_name}</div><div class="un">${b.eligibility_tier||"—"} · ${b.salary_transfer_tier||"—"}</div></div></div>
+      <div class="umeta">نسبة الفائدة: ${b.rate_pct}% ${b.note?" · "+b.note:""}</div>
+      <div class="uactions">
+        <button data-act="editbank" data-id="${b.id}">تعديل</button>
+        <button class="danger" data-act="delbank" data-id="${b.id}">حذف</button>
+      </div>
+    </div>`).join("") : `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">لا توجد بنوك بعد</div>`;
+  $("aBanksList").querySelectorAll("[data-act='editbank']").forEach(b=>b.onclick=()=>openBankEditor(+b.dataset.id));
+  $("aBanksList").querySelectorAll("[data-act='delbank']").forEach(b=>b.onclick=()=>deleteBank(+b.dataset.id));
+}
+function openBankEditor(id){
+  const b = id ? ADMIN_BANKS.find(x=>x.id===id) : null;
+  adminBankEditingId = id||null;
+  $("bankEditTitle").textContent = id ? "تعديل بنك" : "إضافة بنك";
+  $("bankNameInp").value = b ? b.bank_name : "";
+  $("bankEligInp").value = b ? (b.eligibility_tier||"") : "";
+  $("bankSalInp").value = b ? (b.salary_transfer_tier||"") : "";
+  $("bankRateInp").value = b ? b.rate_pct : "";
+  $("bankNoteInp").value = b ? (b.note||"") : "";
+  $("bankEditMsg").textContent="";
+  openSheet("bankEditSheet");
+}
+$("aBankAddBtn").onclick=()=>openBankEditor(null);
+$("bankEditCancel").onclick=()=>closeSheet("bankEditSheet");
+$("bankEditScrim").onclick=()=>closeSheet("bankEditSheet");
+$("bankEditSave").onclick=async ()=>{
+  const name=$("bankNameInp").value.trim();
+  const rate=+$("bankRateInp").value;
+  if(!name){ $("bankEditMsg").textContent="أدخل اسم البنك"; return; }
+  if(!rate||rate<=0){ $("bankEditMsg").textContent="أدخل نسبة فائدة صحيحة"; return; }
+  $("bankEditMsg").textContent="جارٍ الحفظ…";
+  try{
+    const r=await adminCall("admin_upsert_bank",{p_id:adminBankEditingId,p_bank_name:name,
+      p_eligibility_tier:$("bankEligInp").value.trim()||null, p_salary_transfer_tier:$("bankSalInp").value.trim()||null,
+      p_rate_pct:rate, p_note:$("bankNoteInp").value.trim()||null});
+    if(!r||!r.ok){ $("bankEditMsg").textContent=(r&&r.msg)||"تعذّر الحفظ"; return; }
+    toast(r.msg||"تم الحفظ","ok");
+    closeSheet("bankEditSheet");
+    loadAdminBanks();
+    refreshLiveBanks();
+  }catch(e){ $("bankEditMsg").textContent="تعذّر الاتصال بالخادم"; }
+};
+async function deleteBank(id){
+  if(!confirm("حذف هذا البنك نهائياً؟")) return;
+  const r=await adminCall("admin_delete_bank",{p_id:id});
+  if(!r||!r.ok) return toast((r&&r.msg)||"تعذّر الحذف","err");
+  toast(r.msg||"تم الحذف","ok");
+  loadAdminBanks();
+  refreshLiveBanks();
+}
+
 /* ---------- favorites (persisted locally on this device) ---------- */
 let FAVS=new Set();
 try{ FAVS=new Set(JSON.parse(localStorage.getItem("nhc_favs")||"[]")); }catch(e){}
@@ -3997,8 +4183,12 @@ function buildAdminTab(){
     $("aLog").style.display = which==="log" ? "block" : "none";
     $("aSync").style.display = which==="sync" ? "block" : "none";
     $("aOffers").style.display = which==="offers" ? "block" : "none";
+    $("aNews").style.display = which==="news" ? "block" : "none";
+    $("aBanks").style.display = which==="banks" ? "block" : "none";
     if(which==="log") loadAdminLog();
     if(which==="offers") loadAdminOffers();
+    if(which==="news") loadAdminNews();
+    if(which==="banks") loadAdminBanks();
   });
   $("aLogRefresh").onclick=loadAdminLog;
   $("aAddBtn").onclick=()=>{
@@ -4714,6 +4904,28 @@ function applyPermissions(){
     const el=$(id); if(el) el.style.display = PERMS.calc ? "" : "none";
   }
 }
+async function refreshLiveBanks(){
+  let rows;
+  try{ rows = await sbSelect("bank_rates",{select:"*"}); }
+  catch(e){ return; } /* bank_rates.sql قد لا يكون شُغّل بعد — يبقى التطبيق يعمل بجدول البنوك المضمّن */
+  if(!Array.isArray(rows) || !rows.length) return;
+  BANKS = rows.map(r=>({bank:r.bank_name, eligible:r.eligibility_tier, salaryTransfer:r.salary_transfer_tier,
+    rate: (r.rate_pct!=null ? r.rate_pct/100 : null), note:r.note}));
+  populateBankSelect();
+}
+async function refreshNewsTicker(){
+  const el=$("newsTicker"); if(!el) return;
+  let rows;
+  try{ rows=await sbSelect("news_items",{select:"*",active:"eq.true",order:"created_at.desc",limit:"10"}); }
+  catch(e){ el.style.display="none"; return; } /* news_items.sql قد لا يكون شُغّل بعد — لا نكسر الشاشة الرئيسية */
+  if(!Array.isArray(rows) || !rows.length){ el.style.display="none"; return; }
+  el.innerHTML=rows.map(n=>`<div class="newsCard">
+      ${n.category?`<div class="newsCat">${n.category}</div>`:""}
+      <div class="newsTitle">${n.title}</div>
+      <div class="newsDate">${new Date(n.created_at).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})}</div>
+    </div>`).join("");
+  el.style.display="flex";
+}
 async function refreshLastSyncBadge(){
   try{
     const rows = await sbSelect("sync_status",{select:"last_synced_at",limit:"1"});
@@ -4738,6 +4950,8 @@ function boot(){
   updateCalcLogBadge();
   maybeShowOnboarding();
   refreshLastSyncBadge();
+  refreshNewsTicker();
+  refreshLiveBanks();
 }
 function lockErr(msg){
   $("lock").classList.remove("busy");
