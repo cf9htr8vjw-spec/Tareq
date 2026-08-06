@@ -1728,6 +1728,7 @@ table.prods tr:last-child td{border:none}
         <button class="atab on" data-a="users">المستخدمون</button>
         <button class="atab" data-a="log">سجل الدخول</button>
         <button class="atab" data-a="sync">تحديث المخزون اليومي</button>
+        <button class="atab" data-a="offers">دعومات المشاريع</button>
       </div>
       <div id="aUsers">
         <button class="btn" id="aAddBtn" style="margin-bottom:12px">+ إضافة مستخدم</button>
@@ -1754,8 +1755,29 @@ table.prods tr:last-child td{border:none}
         <div id="syncStatus"></div>
         <div id="syncSummary" style="display:none"></div>
       </div>
+      <div id="aOffers" style="display:none">
+        <div class="cintro">
+          <b>جدول دعومات وعروض المشاريع (project_support_offers)</b>
+          <span>عدّل بيانات الدعم لكل مشروع — تُحفظ مباشرة في قاعدة البيانات وتظهر فوراً بحاسبة الدعم وصفحة تفاصيل المشروع</span>
+        </div>
+        <input type="search" id="aOffersSearch" class="dateInp" style="width:100%;text-align:start;margin:10px 0" placeholder="ابحث باسم المشروع…" autocomplete="off">
+        <div id="aOffersList"></div>
+      </div>
     </div>
   </div>
+  <div class="sheet" id="offerEditSheet">
+    <div class="handle" data-drag="offerEditSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 12px">تعديل دعومات المشروع</h2>
+      <div id="offerEditForm" class="cform"></div>
+      <div id="offerEditMsg" class="src" style="margin-top:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button type="button" class="btn" id="offerEditSave" style="flex:1">💾 حفظ</button>
+        <button type="button" class="btn ghost" id="offerEditCancel">إلغاء</button>
+      </div>
+    </div>
+  </div>
+  <div class="scrim" id="offerEditScrim"></div>
   <div class="view" id="mapView">
     <div id="mapFlex">
       <div id="map"></div>
@@ -2373,7 +2395,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -2382,7 +2404,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -3604,6 +3626,62 @@ async function renderProjectOffersPanel(project){
     ${rows.map(([l,v])=>`<div class="cresrow"><span class="cl">${l}</span><span class="cv" style="font-size:12px;font-weight:600">${v}</span></div>`).join("")}
   </div>`;
 }
+/* ---------- admin: edit project_support_offers in-app ---------- */
+const OFFER_FIELDS=[
+  ["redf_support_category","دعم الصندوق العقاري"],["dara_plus_category","دعم ذرى بلس"],
+  ["mod_support_category","دعم وزارة الدفاع"],["in_kind_category","دعم عيني"],
+  ["infra_support_category","دعم البنية التحتية"],["phase_discount_category","خصم المرحلة الأولى"],
+  ["discounts_text","خصومات إضافية"],["cashback_text","كاش باك"],["ac_text","مكيفات"],
+  ["kitchen_text","مطابخ"],["furniture_text","أثاث"],["booking_fee_discount_text","خصم على رسوم الحجز"],
+  ["flexible_installment_text","القسط المرن"],
+];
+let ADMIN_OFFERS=[], adminOfferEditing=null;
+async function loadAdminOffers(){
+  $("aOffersList").innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
+  try{ ADMIN_OFFERS = await sbSelect("project_support_offers",{select:"*",order:"project_name.asc"}); }
+  catch(e){ $("aOffersList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر تحميل الجدول — تأكد من تشغيل ملف project_support_offers.sql على قاعدة البيانات</div>`; return; }
+  renderAdminOffersList($("aOffersSearch")?$("aOffersSearch").value:"");
+}
+function renderAdminOffersList(q){
+  q=(q||"").trim();
+  const list = q ? ADMIN_OFFERS.filter(o=>o.project_name && o.project_name.includes(q)) : ADMIN_OFFERS;
+  const shown=list.slice(0,150);
+  $("aOffersList").innerHTML = list.length ? shown.map(o=>`
+    <div class="ucard">
+      <div class="uhead"><div><div class="nm">${o.project_name}</div><div class="un">${[o.city,o.developer].filter(Boolean).join(" · ")}</div></div></div>
+      <div class="umeta">دعم الصندوق: ${o.redf_support_category||"—"} · ذرى بلس: ${o.dara_plus_category||"—"}</div>
+      <div class="uactions"><button data-id="${o.id}">✏️ تعديل بيانات الدعم</button></div>
+    </div>`).join("") + (list.length>150?`<div class="src" style="text-align:center;padding:10px">و${fmt(list.length-150)} نتيجة إضافية — دقّق البحث لعرضها</div>`:"")
+    : `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">لا يوجد مشروع مطابق</div>`;
+  $("aOffersList").querySelectorAll("button[data-id]").forEach(b=>b.onclick=()=>openOfferEditor(+b.dataset.id));
+}
+if($("aOffersSearch")) $("aOffersSearch").oninput=()=>renderAdminOffersList($("aOffersSearch").value);
+function openOfferEditor(id){
+  const o=ADMIN_OFFERS.find(x=>x.id===id); if(!o) return;
+  adminOfferEditing=o;
+  $("offerEditForm").innerHTML=`<div class="flabel">${o.project_name}</div>` + OFFER_FIELDS.map(([k,lbl])=>`
+    <div class="flabel" style="margin-top:9px">${lbl}</div>
+    <input type="text" class="dateInp" style="width:100%;text-align:start" data-k="${k}" value="${String(o[k]==null?"":o[k]).replace(/"/g,"&quot;")}">
+  `).join("");
+  $("offerEditMsg").textContent="";
+  openSheet("offerEditSheet");
+}
+$("offerEditCancel").onclick=()=>closeSheet("offerEditSheet");
+$("offerEditScrim").onclick=()=>closeSheet("offerEditSheet");
+$("offerEditSave").onclick=async ()=>{
+  if(!adminOfferEditing) return;
+  const full=Object.assign({},adminOfferEditing);
+  $("offerEditForm").querySelectorAll("[data-k]").forEach(inp=>{ full[inp.dataset.k]=inp.value; });
+  $("offerEditMsg").textContent="جارٍ الحفظ…";
+  try{
+    const r=await adminCall("admin_upsert_project_offers",{p_rows:[full]});
+    if(!r||!r.ok){ $("offerEditMsg").textContent=(r&&r.msg)||"تعذّر الحفظ"; return; }
+    toast(r.msg||"تم الحفظ","ok");
+    Object.assign(adminOfferEditing, full);
+    closeSheet("offerEditSheet");
+    renderAdminOffersList($("aOffersSearch").value);
+  }catch(e){ $("offerEditMsg").textContent="تعذّر الاتصال بالخادم"; }
+};
 
 /* ---------- favorites (persisted locally on this device) ---------- */
 let FAVS=new Set();
@@ -3900,7 +3978,9 @@ function buildAdminTab(){
     $("aUsers").style.display = which==="users" ? "block" : "none";
     $("aLog").style.display = which==="log" ? "block" : "none";
     $("aSync").style.display = which==="sync" ? "block" : "none";
+    $("aOffers").style.display = which==="offers" ? "block" : "none";
     if(which==="log") loadAdminLog();
+    if(which==="offers") loadAdminOffers();
   });
   $("aLogRefresh").onclick=loadAdminLog;
   $("aAddBtn").onclick=()=>{
