@@ -1114,6 +1114,9 @@ main{flex:1;min-height:0;position:relative}
 .uactions button{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:9px;border:1.5px solid var(--line);color:var(--ink)}
 .uactions button.danger{color:var(--rust);border-color:var(--rust-soft-border)}
 .uactions button.warn{color:var(--gold-text);border-color:var(--gold-soft-border)}
+.uperm{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+.chip.small{padding:4.5px 10px;font-size:11.5px}
+.btn.sm{padding:6px 12px;font-size:11.5px;border-radius:9px}
 .alogHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;gap:8px}
 #aLogStats{font-size:12px;color:var(--muted)}
 .lrow{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:1px solid var(--bg);font-size:12.5px}
@@ -2091,6 +2094,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <script>
 "use strict";
 let DATA = [], PREFS = null, PERF = null, SUPP = null, FN = null, GAL = null, BLDG = null, ALLOC = null, MODELS = null, BOOK = null, PRODSTAT = null, SALESDAILY = null, FUNNEL = null, BANKS = [];
+const PERM_ALL = {dest:true,search:true,deal:true,cmp:true,calc:true,sales:true};
+const PERM_LABELS = {dest:"الوجهات",search:"البحث والتصفية",deal:"الصفقات",cmp:"المقارنة",calc:"الحاسبات",sales:"مبيعاتنا"};
+let PERMS = Object.assign({}, PERM_ALL);
 
 /* ---------- state ---------- */
 const S = { seg:"b", view:"list", q:"", city:"", dest:"", dev:"", devKind:"", cat595:false, hasPlan:false, favOnly:false, types:new Set(), beds:new Set(),
@@ -2972,6 +2978,12 @@ function findCityOf(dest){
 
 /* ---------- views & segment ---------- */
 function setView(v){
+  if(!window.__isAdmin){
+    const denied = (v==="dest"&&!PERMS.dest) || (v==="sales"&&!PERMS.sales) ||
+                   (v==="calc"&&!PERMS.calc) || (v==="admin") ||
+                   ((v==="list"||v==="map"||v==="pref")&&!(PERMS.search||PERMS.cmp));
+    if(denied){ toast("لا تملك صلاحية الوصول لهذا القسم","err"); v="home"; }
+  }
   S.view=v;
   for(const [id,name] of [["homeView","home"],["destView","dest"],["listView","list"],["mapView","map"],["prefView","pref"],["adminView","admin"],["calcView","calc"],["salesView","sales"]])
     $(id).classList.toggle("on",v===name);
@@ -3205,6 +3217,7 @@ const CART=new Map(); /* key -> {pid,name,short,city,dest,type,beds,avgP,minP,ma
 const DEAL=new Map(); /* key -> {pid,name,city,type,beds,price,moh_price} — real units from unit_allocation_mirror */
 let dealCurProject=null, dealCurType=null;
 function openDealBuilder(){
+  if(!window.__isAdmin && !PERMS.deal){ toast("لا تملك صلاحية الوصول لهذا القسم","err"); return; }
   dealCurProject=null; dealCurType=null;
   $("dealTypeWrap").style.display="none";
   $("dealUnitsWrap").style.display="none";
@@ -4036,12 +4049,18 @@ async function loadAdminUsers(){
   if(!window.__isAdmin) return;
   $("aUserList").innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
   let res;
-  try{ res=await adminCall("admin_list_users",{}); }
+  try{ res=await adminCall("admin_list_users_v2",{}); }
   catch(e){ $("aUserList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر الاتصال بالخادم</div>`; return; }
-  if(!res||!res.ok){ $("aUserList").innerHTML=`<div style="color:var(--rust);font-size:12px">${(res&&res.msg)||"تعذّر التحميل"}</div>`; return; }
+  if(!res||!res.ok){ $("aUserList").innerHTML=`<div style="color:var(--rust);font-size:12px">${(res&&res.msg)||"تعذّر التحميل — تأكد من تشغيل ملف user_permissions.sql على قاعدة البيانات"}</div>`; return; }
   const users=res.users||[];
   $("aUserList").innerHTML = users.map(u=>{
     const last = u.last_login ? new Date(u.last_login).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"short"}) : "لم يدخل بعد";
+    const perm = Object.assign({},PERM_ALL,u.permissions||{});
+    const permChips = u.is_admin ? `<div class="umeta">المدير يرى كل بنود القائمة دائماً</div>` : `
+      <div class="uperm" data-u="${u.username}">
+        ${Object.entries(PERM_LABELS).map(([k,lbl])=>`<button type="button" class="chip small ${perm[k]?"on":""}" data-k="${k}">${lbl}</button>`).join("")}
+        <button class="btn ghost sm" data-act="saveperm" data-u="${u.username}" style="margin-inline-start:auto">💾 حفظ الصلاحيات</button>
+      </div>`;
     return `<div class="ucard">
       <div class="uhead"><div><div class="nm">${u.full_name||u.username}</div><div class="un">${u.username}</div></div></div>
       <div class="ubadges">
@@ -4049,6 +4068,7 @@ async function loadAdminUsers(){
         ${u.is_admin?'<span class="ubadge adm">مدير</span>':""}
       </div>
       <div class="umeta">آخر دخول: ${last}</div>
+      ${permChips}
       <div class="uactions">
         <button class="warn" data-act="reset" data-u="${u.username}">إعادة تعيين كلمة المرور</button>
         <button class="${u.is_active?"danger":""}" data-act="toggle" data-u="${u.username}" data-cur="${u.is_active}">${u.is_active?"إيقاف":"تفعيل"}</button>
@@ -4056,7 +4076,18 @@ async function loadAdminUsers(){
       </div>
     </div>`;
   }).join("") || `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">لا يوجد مستخدمون</div>`;
-  $("aUserList").querySelectorAll("button[data-act]").forEach(b=>b.onclick=()=>adminUserAction(b.dataset.act,b.dataset.u,b.dataset.cur));
+  $("aUserList").querySelectorAll(".uperm .chip").forEach(c=>c.onclick=()=>c.classList.toggle("on"));
+  $("aUserList").querySelectorAll("button[data-act='saveperm']").forEach(b=>b.onclick=()=>saveUserPermissions(b.dataset.u));
+  $("aUserList").querySelectorAll("button[data-act]:not([data-act='saveperm'])").forEach(b=>b.onclick=()=>adminUserAction(b.dataset.act,b.dataset.u,b.dataset.cur));
+}
+async function saveUserPermissions(username){
+  const wrap=document.querySelector(`.uperm[data-u="${CSS.escape(username)}"]`);
+  if(!wrap) return;
+  const perm={};
+  wrap.querySelectorAll(".chip").forEach(c=>{ perm[c.dataset.k]=c.classList.contains("on"); });
+  const r=await adminCall("admin_set_permissions",{p_target:username,p_permissions:perm});
+  if(!r||!r.ok) return toast((r&&r.msg)||"تعذّر الحفظ","err");
+  toast(r.msg||"تم حفظ الصلاحيات","ok");
 }
 async function adminUserAction(act,username,cur){
   if(act==="toggle"){
@@ -4454,12 +4485,26 @@ function runNCalc(){
 }
 $("nCalc").onclick=runNCalc;
 
+function applyPermissions(){
+  const tiles={hTileDest:"dest",hTileDeal:"deal",hTileSearch:"search",hTileCmp:"cmp",hTileSales:"sales"};
+  for(const [id,key] of Object.entries(tiles)){
+    const el=$(id); if(el) el.style.display = PERMS[key] ? "" : "none";
+  }
+  const canWorkspace = !!(PERMS.search || PERMS.cmp);
+  for(const id of ["nvList","nvMap","nvPref","dvList","dvMap","dvPref"]){
+    const el=$(id); if(el) el.style.display = canWorkspace ? "" : "none";
+  }
+  for(const id of ["nvCalc","dvCalc"]){
+    const el=$(id); if(el) el.style.display = PERMS.calc ? "" : "none";
+  }
+}
 function boot(){
   if(booted) return; booted=true;
   $("verPill").textContent=window.APP_NAME+" "+(/^\d/.test(window.APP_VERSION)?"V":"")+window.APP_VERSION;
   buildFilterUI();
   buildPrefUI();
   setSeg("b");
+  applyPermissions();
   setView("home");
   if(window.__isAdmin) buildAdminTab();
   updateCalcLogBadge();
@@ -4495,6 +4540,14 @@ async function tryUnlock(){
     $("userTag").textContent=res.name||uid;
     $("lock").classList.add("hide");
     $("pw").value="";
+    if(window.__isAdmin){
+      PERMS=Object.assign({},PERM_ALL);
+    } else {
+      try{
+        const pr=await sbCall("get_my_permissions",{p_user:uid,p_pass:pass});
+        PERMS = (pr&&pr.ok&&pr.permissions) ? Object.assign({},PERM_ALL,pr.permissions) : Object.assign({},PERM_ALL);
+      }catch(e){ PERMS=Object.assign({},PERM_ALL); }
+    }
     boot();
     syncLiveData();
     /* install-hint prompt removed per request */
