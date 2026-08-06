@@ -3794,7 +3794,7 @@ let ADMIN_NEWS=[], adminNewsEditingId=null;
 async function loadAdminNews(){
   $("aNewsList").innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
   try{ ADMIN_NEWS = await sbSelect("news_items",{select:"*",order:"created_at.desc"}); }
-  catch(e){ $("aNewsList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر تحميل الأخبار — تأكد من تشغيل ملف news_items.sql على قاعدة البيانات</div>`; return; }
+  catch(e){ $("aNewsList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر تحميل الأخبار — تأكد من تشغيل ملف news_items.sql على قاعدة البيانات<br>السبب الفعلي: ${(e&&e.message)||e}</div>`; return; }
   $("aNewsList").innerHTML = ADMIN_NEWS.length ? ADMIN_NEWS.map(n=>`
     <div class="ucard">
       <div class="uhead"><div><div class="nm">${n.title}</div><div class="un">${n.category||"—"} · ${new Date(n.created_at).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long",year:"numeric"})}</div></div></div>
@@ -3837,7 +3837,7 @@ $("newsEditSave").onclick=async ()=>{
     closeSheet("newsEditSheet");
     loadAdminNews();
     refreshNewsTicker();
-  }catch(e){ $("newsEditMsg").textContent="تعذّر الاتصال بالخادم — تأكد من تشغيل ملف news_items.sql على قاعدة البيانات"; }
+  }catch(e){ $("newsEditMsg").textContent="تعذّر الاتصال بالخادم — تأكد من تشغيل ملف news_items.sql على قاعدة البيانات. السبب الفعلي: "+((e&&e.message)||e); }
 };
 async function deleteNews(id){
   if(!confirm("حذف هذا الخبر نهائياً؟")) return;
@@ -3853,7 +3853,7 @@ let ADMIN_BANKS=[], adminBankEditingId=null;
 async function loadAdminBanks(){
   $("aBanksList").innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
   try{ ADMIN_BANKS = await sbSelect("bank_rates",{select:"*",order:"bank_name.asc"}); }
-  catch(e){ $("aBanksList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر تحميل بيانات البنوك — تأكد من تشغيل ملف bank_rates.sql على قاعدة البيانات</div>`; return; }
+  catch(e){ $("aBanksList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر تحميل بيانات البنوك — تأكد من تشغيل ملف bank_rates.sql على قاعدة البيانات<br>السبب الفعلي: ${(e&&e.message)||e}</div>`; return; }
   $("aBanksList").innerHTML = ADMIN_BANKS.length ? ADMIN_BANKS.map(b=>`
     <div class="ucard">
       <div class="uhead"><div><div class="nm">${b.bank_name}</div><div class="un">${b.eligibility_tier||"—"} · ${b.salary_transfer_tier||"—"}</div></div></div>
@@ -3896,7 +3896,7 @@ $("bankEditSave").onclick=async ()=>{
     closeSheet("bankEditSheet");
     loadAdminBanks();
     refreshLiveBanks();
-  }catch(e){ $("bankEditMsg").textContent="تعذّر الاتصال بالخادم — تأكد من تشغيل ملف bank_rates.sql على قاعدة البيانات"; }
+  }catch(e){ $("bankEditMsg").textContent="تعذّر الاتصال بالخادم — تأكد من تشغيل ملف bank_rates.sql على قاعدة البيانات. السبب الفعلي: "+((e&&e.message)||e); }
 };
 async function deleteBank(id){
   if(!confirm("حذف هذا البنك نهائياً؟")) return;
@@ -4158,7 +4158,13 @@ async function sbCall(fn,body){
     headers:{"Content-Type":"application/json","apikey":window.SB_KEY,
              "Authorization":"Bearer "+window.SB_KEY},
     body:JSON.stringify(body)});
-  if(!r.ok) throw new Error("HTTP "+r.status);
+  if(!r.ok){
+    /* PostgREST يرجّع رسالة الخطأ الفعلية بجسم الاستجابة (مثلاً: الدالة غير موجودة، عمود غير موجود...) —
+       نرفقها برسالة الخطأ حتى تظهر بواجهة التشخيص بدل "HTTP 404" وحدها التي لا تفيد بالتشخيص */
+    let detail="";
+    try{ const j=await r.json(); detail=j&&(j.message||j.hint||j.details)||""; }catch(e){}
+    throw new Error("HTTP "+r.status+(detail?" — "+detail:""));
+  }
   return await r.json();
 }
 function doChangePw(){
@@ -4447,9 +4453,9 @@ async function uploadSyncData(statusRows,mirrorRows){
 async function loadAdminUsers(){
   if(!window.__isAdmin) return;
   $("aUserList").innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
-  let res, permsAvailable=true;
-  try{ res=await adminCall("admin_list_users_v2",{}); }
-  catch(e){ res=null; }
+  let res, permsAvailable=true, v2ErrReason="";
+  try{ res=await adminCall("admin_list_users_v2",{}); if(!res||!res.ok) v2ErrReason=(res&&res.msg)||"استجابة فارغة"; }
+  catch(e){ res=null; v2ErrReason=(e&&e.message)||String(e); }
   if(!res||!res.ok){
     /* admin_list_users_v2 needs user_permissions.sql — fall back to the original
        admin_list_users (always available) so the users screen still works before that migration runs */
@@ -4460,7 +4466,7 @@ async function loadAdminUsers(){
   }
   const users=res.users||[];
   $("aUserList").innerHTML =
-    (permsAvailable ? "" : `<div class="src" style="margin-bottom:10px">تحرير الصلاحيات غير متاح بعد — شغّل ملف user_permissions.sql على قاعدة البيانات لتفعيله</div>`) +
+    (permsAvailable ? "" : `<div class="src" style="margin-bottom:10px">تحرير الصلاحيات غير متاح بعد — شغّل ملف user_permissions.sql على قاعدة البيانات لتفعيله<br>السبب الفعلي: ${v2ErrReason}</div>`) +
     users.map(u=>{
     const last = u.last_login ? new Date(u.last_login).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"short"}) : "لم يدخل بعد";
     const perm = Object.assign({},PERM_ALL,u.permissions||{});
