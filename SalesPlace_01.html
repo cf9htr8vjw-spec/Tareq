@@ -2048,7 +2048,7 @@ table.prods tr:last-child td{border:none}
     <button id="dPrintBtn">🖨 تصدير PDF</button>
   </div>
   <div class="sheetbody" id="dBody"></div>
-  <div id="printFoot">وثيقة داخلية لفريق مبيعات NHC — الأسعار والبيانات عرضة للتحديث، وليست عرضاً تعاقدياً نهائياً.</div>
+  <div id="printFoot">وثيقة داخلية لفريق مبيعات NHC — البيانات افتراضية وغير رسمية وعرضة للتحديث، ولا تُعد عرضاً تعاقدياً نهائياً.</div>
 </div>
 
 <script>
@@ -3597,8 +3597,9 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 /* ---------- toast notifications (replaces alert() for a consistent feel) ---------- */
 /* ---------- WhatsApp share ---------- */
+const WA_DISCLOSURE="⚠️ بيانات افتراضية وغير رسمية، عرضة للتحديث — لا تُعد عرضاً تعاقدياً نهائياً.";
 function shareWA(text){
-  window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank");
+  window.open("https://wa.me/?text="+encodeURIComponent(text+"\n\n"+WA_DISCLOSURE), "_blank");
 }
 
 /* ---------- recently viewed (persisted locally on this device) ---------- */
