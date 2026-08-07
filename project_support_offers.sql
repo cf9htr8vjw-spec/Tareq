@@ -2,7 +2,11 @@
 -- SalesPlace — جدول عروض ودعومات المشاريع (project_support_offers)
 -- جدول جديد بالكامل — لا يمسّ أي دالة أو جدول موجود حالياً
 -- شغّل هذا الملف كاملاً مرة واحدة في Supabase SQL editor
+-- تصحيح: كلمات المرور بجدول app_users مشفّرة bcrypt بعمود pass_hash (لا يوجد عمود password
+-- نصي) — التحقق يتم عبر crypt() من امتداد pgcrypto بدل المقارنة المباشرة
 -- ============================================================
+
+create extension if not exists pgcrypto;
 
 create table if not exists project_support_offers (
   id bigint generated always as identity primary key,
@@ -61,7 +65,7 @@ declare
 begin
   select true, coalesce(is_admin,false) into v_ok, v_admin
   from app_users
-  where username = p_admin and password = p_pass and coalesce(is_active,true)
+  where username = p_admin and pass_hash = crypt(p_pass, pass_hash) and coalesce(is_active,true)
   limit 1;
 
   if v_ok is not true then

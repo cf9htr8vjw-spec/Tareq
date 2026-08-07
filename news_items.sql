@@ -2,7 +2,11 @@
 -- SalesPlace — شريط أخبار اليوم على الشاشة الرئيسية (news_items)
 -- جدول جديد بالكامل — لا يمسّ أي دالة أو جدول موجود حالياً
 -- شغّل هذا الملف كاملاً مرة واحدة في Supabase SQL editor
+-- تصحيح: كلمات المرور بجدول app_users مشفّرة bcrypt بعمود pass_hash (لا يوجد عمود password
+-- نصي) — التحقق يتم عبر crypt() من امتداد pgcrypto بدل المقارنة المباشرة
 -- ============================================================
+
+create extension if not exists pgcrypto;
 
 create table if not exists news_items (
   id bigint generated always as identity primary key,
@@ -30,7 +34,7 @@ declare
   v_ok boolean;
 begin
   select true into v_ok from app_users
-  where username = p_admin and password = p_pass and coalesce(is_active,true)
+  where username = p_admin and pass_hash = crypt(p_pass, pass_hash) and coalesce(is_active,true)
   limit 1;
 
   if v_ok is not true then
@@ -59,7 +63,7 @@ declare
   v_ok boolean;
 begin
   select true into v_ok from app_users
-  where username = p_admin and password = p_pass and coalesce(is_active,true)
+  where username = p_admin and pass_hash = crypt(p_pass, pass_hash) and coalesce(is_active,true)
   limit 1;
 
   if v_ok is not true then

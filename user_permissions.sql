@@ -3,7 +3,11 @@
 -- تعديل إضافي فقط — لا يمسّ أي دالة أو جدول موجود حالياً
 -- (login الأصلية، admin_list_users الأصلية، إلخ تبقى كما هي بلا أي تغيير)
 -- شغّل هذا الملف كاملاً مرة واحدة في Supabase SQL editor
+-- تصحيح: كلمات المرور بجدول app_users مشفّرة bcrypt بعمود pass_hash (لا يوجد عمود password
+-- نصي) — التحقق يتم عبر crypt() من امتداد pgcrypto بدل المقارنة المباشرة
 -- ============================================================
+
+create extension if not exists pgcrypto;
 
 -- عمود جديد على app_users — القيمة الافتراضية "الكل مسموح" حتى لا يُحجب أي
 -- مستخدم حالي عن أي بند فجأة؛ الأدمن يضيّق الصلاحيات لاحقاً من لوحة الإدارة
@@ -30,7 +34,7 @@ declare
 begin
   select true, coalesce(is_admin,false) into v_ok, v_admin
   from app_users
-  where username = p_admin and password = p_pass and coalesce(is_active,true)
+  where username = p_admin and pass_hash = crypt(p_pass, pass_hash) and coalesce(is_active,true)
   limit 1;
 
   if v_ok is not true then
@@ -64,7 +68,7 @@ declare
 begin
   select true, coalesce(is_admin,false) into v_ok, v_admin
   from app_users
-  where username = p_admin and password = p_pass and coalesce(is_active,true)
+  where username = p_admin and pass_hash = crypt(p_pass, pass_hash) and coalesce(is_active,true)
   limit 1;
 
   if v_ok is not true then
@@ -100,7 +104,7 @@ begin
          coalesce(is_admin,false), true, (onboarded_at is not null)
   into v_perm, v_admin, v_found, v_onboarded
   from app_users
-  where username = p_user and password = p_pass and coalesce(is_active,true)
+  where username = p_user and pass_hash = crypt(p_pass, pass_hash) and coalesce(is_active,true)
   limit 1;
 
   if v_found is not true then
@@ -126,7 +130,7 @@ declare
   v_ok boolean;
 begin
   select true into v_ok from app_users
-  where username = p_user and password = p_pass and coalesce(is_active,true)
+  where username = p_user and pass_hash = crypt(p_pass, pass_hash) and coalesce(is_active,true)
   limit 1;
 
   if v_ok is not true then
@@ -134,7 +138,7 @@ begin
   end if;
 
   update app_users set onboarded_at = coalesce(onboarded_at, now())
-  where username = p_user and password = p_pass;
+  where username = p_user and pass_hash = crypt(p_pass, pass_hash);
 
   return jsonb_build_object('ok', true);
 end;
