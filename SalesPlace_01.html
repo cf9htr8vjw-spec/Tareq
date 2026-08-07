@@ -1750,6 +1750,12 @@ table.prods tr:last-child td{border:none}
           <div id="advOnlyFields" style="display:none">
             <div class="cfield"><label>نسبة الدفعة الأولى (%)</label><input id="advDownPct" type="number" step="0.5" value="10"></div>
 
+            <div class="flabel" style="margin-top:2px">نوع دعم الصندوق <em style="font-style:normal;font-weight:400;color:var(--muted)">(نمطان لا يجتمعان معاً)</em></div>
+            <select id="advSupportMode" style="width:100%;border:1.5px solid var(--line);border-radius:11px;padding:10px 11px;background:var(--surface);color:var(--ink);margin-bottom:11px;font-size:13px">
+              <option value="installment">قسط شهري (يُضاف لقدرة السداد)</option>
+              <option value="downpayment">دفعة مقدمة (مبلغ مقطوع 100/150 ألف)</option>
+            </select>
+
             <button type="button" class="btn ghost" id="advMoreToggle" style="width:100%;margin:2px 0 9px">بيانات إضافية لدقة أعلى (اختياري) ▾</button>
             <div id="advMoreFields" style="display:none">
               <div class="cfrow2">
@@ -5048,37 +5054,36 @@ function estimatePension(baseSalary,yearsService,sector){
   const factor = sector.indexOf("عسكري")===0 ? 35 : 40;
   return baseSalary*Math.pow(1.025,yearsService)*(yearsService/factor);
 }
-function pvAnnuity(installment,monthlyRate,months){
-  if(months<=0) return 0;
-  if(monthlyRate===0) return installment*months;
-  return installment*(1-Math.pow(1+monthlyRate,-months))/monthlyRate;
-}
-function installmentForPrincipal(principal,monthlyRate,months){
-  if(months<=0) return 0;
-  if(monthlyRate===0) return principal/months;
-  return principal*monthlyRate/(1-Math.pow(1+monthlyRate,-months));
-}
 /* المحرك الأساسي — دخل/سقوف ← قدرة تمويلية، بمعزل عن سعر وحدة بعينها؛
    ثم يقارَن بسعر الوحدة الفعلي (بعد خصم كل الدعومات) لتحديد الأنسب */
+/* نسبة الاستقطاع (DBR) متدرّجة بالراتب — مطابقة لصيغة حاسبة الراجحي الفعلية (Sheet2 H30/I30):
+   المدعوم 65% (٧٥% للرواتب ≥25 ألف) — غير المدعوم 55% (٦٥% ≥15 ألف، ٧٥% ≥25 ألف) */
+function redfDbrPct(salary, eligible){
+  if(eligible) return salary>=25000 ? 0.75 : 0.65;
+  return salary>=25000 ? 0.75 : (salary>=15000 ? 0.65 : 0.55);
+}
 function computeAdvancedAffordability(inp){
   const requestedMonths=Math.round(inp.years*12);
-  const monthlyRate=inp.annualRate/100/12;
 
   const reasons=[];
   if(inp.familyAssets!=null && inp.familyAssets>=5000000) reasons.push("أصول الأسرة تتجاوز الحد المسموح (5 مليون ريال)");
   if(inp.priorUse) reasons.push("سبق الاستفادة من دعم سكني");
   const eligibleGate = reasons.length===0;
 
-  /* سقف مدة التمويل بحسب العمر عند نهاية التمويل (70 موظف / 77 متقاعد) + سقف 30 سنة نظامي — §3.2 */
+  /* سقف مدة التمويل بحسب العمر عند نهاية التمويل + سقف 30 سنة نظامي — مطابق لصيغة حاسبة
+     الراجحي الفعلية (Sheet2 I21): 70 سنة لقطاع "عسكري أفراد" حصراً، 77 سنة لكل ما عداه
+     (بما فيها الضباط والحكومي والخاص) — هذا يختلف عن الافتراض الشائع "70 موظف/77 متقاعد"،
+     فتحقّقنا منه من نفس ملف الراجحي المرجعي بدل افتراضه */
   let ageNow=null, retireAgeUsed=null, maxMonthsByAge=null, maxAgeEnd=null;
   if(inp.dob && inp.sector){
     ageNow=ageYearsFrom(inp.dob);
     retireAgeUsed=retireAgeFor(inp.sector, inp.rank);
-    maxAgeEnd = inp.sector==="متقاعد" ? 77 : 70;
+    maxAgeEnd = inp.sector==="عسكري أفراد" ? 70 : 77;
     maxMonthsByAge=Math.max(0, (maxAgeEnd-ageNow)*12);
   }
   const months=Math.min(requestedMonths, 360, maxMonthsByAge!=null?maxMonthsByAge:Infinity);
   const termCapped = months < requestedMonths;
+  const years = months/12;
 
   let monthsBefore=months, monthsAfter=0, pensionEst=null;
   if(inp.dob && inp.sector){
@@ -5094,19 +5099,27 @@ function computeAdvancedAffordability(inp){
     }
   }
 
-  const dbrPct = inp.eligible ? 0.65 : 0.55;
-  const monthlySupport = inp.eligible ? redfMonthlySupport(inp.salary, months) : 0;
-  const downSupport = inp.eligible ? (inp.salary<10000?150000:100000) : 0;
+  /* دعم الصندوق بمنهجية الراجحي: نمطان متعارضان لا يجتمعان — "قسط دعم" (إعانة شهرية تُضاف
+     لقدرة السداد) أو "دفعة مقدمة" (مبلغ مقطوع 100/150 ألف يُخصم من الدفعة الأولى فقط) —
+     المستخدم يختار عبر supportMode، بدل افتراض الجمع بينهما كما بالإصدار السابق */
+  const supportMode = inp.supportMode || "installment";
+  const monthlySupport = (inp.eligible && supportMode==="installment") ? redfMonthlySupport(inp.salary, months) : 0;
+  const downSupport = (inp.eligible && supportMode==="downpayment") ? (inp.salary<10000?150000:100000) : 0;
   const modSupport = (inp.eligible && inp.mod) ? 160000 : 0;
 
-  const installmentBefore=Math.max(0, (inp.salary - inp.oblig + monthlySupport) * dbrPct);
+  const dbrBefore = redfDbrPct(inp.salary, inp.eligible);
   const pensionNet = pensionEst!=null ? pensionEst : inp.salary;
-  const installmentAfter = monthsAfter>0 ? Math.max(0, (pensionNet - inp.oblig + monthlySupport) * dbrPct) : 0;
+  const dbrAfter = redfDbrPct(pensionNet, inp.eligible);
 
-  const stage1=pvAnnuity(installmentBefore, monthlyRate, monthsBefore);
-  const stage2raw = monthsAfter>0 ? pvAnnuity(installmentAfter, monthlyRate, monthsAfter) : 0;
-  const stage2 = stage2raw * Math.pow(1+monthlyRate, -monthsBefore);
-  const maxFinancing = stage1+stage2;
+  /* القسط الأقصى المتاح = (الدخل المؤهِّل + قسط الدعم) × نسبة الاستقطاع، ثم تُخصم الالتزامات
+     كاملة (وليس بنسبتها من الاستقطاع) — مطابق حرفياً لصيغة J15/J19 بملف الراجحي */
+  const installmentBefore=Math.max(0, (inp.salary + monthlySupport) * dbrBefore - inp.oblig);
+  const installmentAfter = monthsAfter>0 ? Math.max(0, (pensionNet + monthlySupport) * dbrAfter - inp.oblig) : 0;
+
+  /* مبلغ التمويل الأقصى: بنظام الفائدة الفلات (نفس منهجية الحاسبة المبسّطة وحاسبة الراجحي
+     الفعلية) — إجمالي الأقساط المتاحة عبر كامل المدة، مقسوماً على (1 + النسبة×السنوات) */
+  const grossCapacity = monthsBefore*installmentBefore + monthsAfter*installmentAfter;
+  const maxFinancing = years>0 ? grossCapacity/(1+(inp.annualRate/100)*years) : 0;
   const maxPropertyValue = maxFinancing/0.90 + downSupport + modSupport;
 
   let bracket;
@@ -5126,15 +5139,16 @@ function computeAdvancedAffordability(inp){
   const financeNeeded = Math.max(0, inp.price - downStd - excessSupport);
   const priceAfterSupport = Math.max(0, inp.price - totalSupport);
 
-  const actualInstallment = installmentForPrincipal(financeNeeded, monthlyRate, months);
+  /* القسط الفعلي لهذه الوحدة: نفس صيغة الفلات المستخدمة بالحاسبة المبسّطة والراجحي */
+  const actualInstallment = years>0 ? calcFlatInstallment(financeNeeded, inp.annualRate, years) : 0;
   const totalPaid = actualInstallment*months;
   const totalProfit = Math.max(0, totalPaid-financeNeeded);
   const fitsBefore = actualInstallment <= installmentBefore + 1;
   const fitsAfter = monthsAfter>0 ? (actualInstallment <= installmentAfter + 1) : true;
 
   return {eligibleGate, reasons, requestedMonths, months, termCapped, maxMonthsByAge, maxAgeEnd,
-    monthsBefore, monthsAfter, retireAgeUsed, pensionEst,
-    dbrPct, monthlySupport, downSupport, modSupport, installmentBefore, installmentAfter,
+    monthsBefore, monthsAfter, retireAgeUsed, pensionEst, supportMode,
+    dbrBefore, dbrAfter, monthlySupport, downSupport, modSupport, installmentBefore, installmentAfter,
     maxFinancing, maxPropertyValue, bracket,
     projectSupport, totalSupport, priceAfterSupport, downStd, downNet, financeNeeded,
     actualInstallment, totalPaid, totalProfit, fitsBefore, fitsAfter};
@@ -5154,10 +5168,11 @@ function runAdvancedCalc(){
   if(!rate||rate<=0||!years||years<=0){ box.innerHTML=`<div class="cerr">تحقق من نسبة الفائدة ومدة التمويل</div>`; return; }
 
   const eligible=cElig==="نعم";
+  const supportMode=$("advSupportMode").value;
   const dob=$("advDob").value||null, sector=$("advSector").value||null, rank=$("advRank").value||null;
   const yearsServiceRaw=$("advYearsService").value, baseSalaryRaw=$("advBaseSalary").value, assetsRaw=$("advAssets").value;
   const r=computeAdvancedAffordability({
-    price, salary, oblig, annualRate:rate, years, eligible, mod:cMod==="نعم", downPct,
+    price, salary, oblig, annualRate:rate, years, eligible, mod:cMod==="نعم", downPct, supportMode,
     dob, sector, rank, yearsService: yearsServiceRaw!==""?+yearsServiceRaw:null,
     baseSalary: baseSalaryRaw!==""?+baseSalaryRaw:null,
     familyAssets: assetsRaw!==""?+assetsRaw:null, priorUse: $("advPriorUse").checked,
@@ -5170,7 +5185,7 @@ function runAdvancedCalc(){
       ⚠ غير مؤهل وفق بوابة الأهلية التوجيهية: ${r.reasons.join(" · ")}</div>`;
   }
   if(!eligible){
-    h+=`<div class="cwarn">هذه الوحدة مضبوطة على "غير مستحق" — لا يُحتسب دعم صندوق أو قسط دعم شهري، ونسبة الاستقطاع المستخدمة 55% بدل 65%.</div>`;
+    h+=`<div class="cwarn">هذه الوحدة مضبوطة على "غير مستحق" — لا يُحتسب دعم صندوق، ونسبة الاستقطاع أقل (55%–75% حسب الراتب بدل 65%–75%).</div>`;
   }
 
   h+=`<div class="cresblock" style="text-align:center;padding:18px 14px">
@@ -5184,7 +5199,7 @@ function runAdvancedCalc(){
     ${fits?"✅ القسط الشهري لهذه الوحدة ضمن حدود الراتب (نسبة الاستقطاع المسموحة)":"⚠ القسط الشهري لهذه الوحدة قد يتجاوز الحد المسموح من الراتب"}</div>`;
 
   h+=`<div class="cresblock">
-    <h4>ملخص الدفع (سداد متناقص)</h4>
+    <h4>ملخص الدفع (فائدة فلات — نفس منهجية الحاسبة المبسّطة)</h4>
     <div class="cresrow"><span class="cl">الدفعة الأولى القياسية (${fmt(downPct)}% من سعر العقار)</span><span class="cv">${fmt(Math.round(r.downStd))} ريال</span></div>
     <div class="cresrow hi"><span class="cl">الدفعة الأولى المطلوبة (بعد خصم الدعم)</span><span class="cv">${fmt(Math.round(r.downNet))} ريال</span></div>
     <div class="cresrow hi"><span class="cl">مبلغ التمويل المطلوب</span><span class="cv">${fmt(Math.round(r.financeNeeded))} ريال</span></div>
@@ -5194,21 +5209,21 @@ function runAdvancedCalc(){
     <div class="cresrow"><span class="cl">قيمة الأرباح البنكية الإجمالية</span><span class="cv">${fmt(Math.round(r.totalProfit))} ريال</span></div>
     ${r.termCapped?`<div class="cwarn" style="margin-top:8px">⚠ المدة المطلوبة ${fmt(Math.round(r.requestedMonths/12*10)/10)} سنة خُفِّضت إلى ${fmt(Math.round(r.months/12*10)/10)} سنة لأن العمر عند نهاية التمويل يتجاوز الحد المسموح (${r.maxAgeEnd} سنة).</div>`:""}
     <h4>سقف القدرة الشرائية وفق الراتب</h4>
-    <div class="cresrow"><span class="cl">أقصى قسط قبل التقاعد (${fmt(Math.round(r.dbrPct*100))}%)</span><span class="cv">${fmt(Math.round(r.installmentBefore))} ريال</span></div>
-    ${r.monthsAfter>0?`<div class="cresrow"><span class="cl">أقصى قسط بعد التقاعد</span><span class="cv">${fmt(Math.round(r.installmentAfter))} ريال</span></div>
+    <div class="cresrow"><span class="cl">أقصى قسط قبل التقاعد (${fmt(Math.round(r.dbrBefore*100))}%)</span><span class="cv">${fmt(Math.round(r.installmentBefore))} ريال</span></div>
+    ${r.monthsAfter>0?`<div class="cresrow"><span class="cl">أقصى قسط بعد التقاعد (${fmt(Math.round(r.dbrAfter*100))}%)</span><span class="cv">${fmt(Math.round(r.installmentAfter))} ريال</span></div>
     <div class="cresrow"><span class="cl">الراتب التقاعدي التقديري</span><span class="cv">${fmt(Math.round(r.pensionEst))} ريال</span></div>
     <div class="cresrow"><span class="cl">مدة ما بعد التقاعد</span><span class="cv">${Math.round(r.monthsAfter/12*10)/10} سنة</span></div>`:""}
     <div class="cresrow"><span class="cl">مبلغ التمويل الأقصى (وفق الراتب فقط)</span><span class="cv">${fmt(Math.round(r.maxFinancing))} ريال</span></div>
     <div class="cresrow"><span class="cl">القيمة العقارية القصوى المقدَّرة</span><span class="cv">${fmt(Math.round(r.maxPropertyValue))} ريال</span></div>
     <div class="cresrow"><span class="cl">الشريحة السعرية المستهدَفة</span><span class="cv">${r.bracket}</span></div>
-    <h4>الدعومات المُحتسَبة</h4>
-    <div class="cresrow"><span class="cl">دعم الصندوق (الدفعة الأولى)</span><span class="cv">${fmt(r.downSupport)} ريال</span></div>
-    <div class="cresrow"><span class="cl">قسط الدعم الشهري (يُضاف لقدرة السداد)</span><span class="cv">${fmt(Math.round(r.monthlySupport))} ريال/شهر</span></div>
+    <h4>الدعومات المُحتسَبة <span style="font-weight:400;font-size:10.5px;color:var(--muted)">(${supportMode==="installment"?"نمط القسط الشهري نشط":"نمط الدفعة المقدمة نشط"} — لا يجتمعان معاً)</span></h4>
+    ${supportMode==="downpayment"?`<div class="cresrow"><span class="cl">دعم الصندوق (الدفعة الأولى)</span><span class="cv">${fmt(r.downSupport)} ريال</span></div>`
+      :`<div class="cresrow"><span class="cl">قسط الدعم الشهري (يُضاف لقدرة السداد)</span><span class="cv">${fmt(Math.round(r.monthlySupport))} ريال/شهر</span></div>`}
     ${r.modSupport?`<div class="cresrow"><span class="cl">دعم وزارة الدفاع</span><span class="cv">${fmt(r.modSupport)} ريال</span></div>`:""}
     ${r.projectSupport?`<div class="cresrow"><span class="cl">دعم المشروع/الوحدة (بنية تحتية وعيني)</span><span class="cv">${fmt(Math.round(r.projectSupport))} ريال</span></div>`:""}
   </div>`;
 
-  h+=`<div class="cwarn" style="background:var(--purple-soft);border-color:var(--purple-soft-border);color:var(--purple)">تقدير توجيهي وفق سقوف النظام (ساما ولائحة الصندوق العقاري) لغرض الفرز والتوجيه فقط — وليس عرضاً بنكياً ملزماً. نسبة الربح المستخدمة من بيانات بنك التمويل المختار أعلاه، مُطبَّقة بنظام السداد المتناقص (وليس فلات). قسط الدعم الشهري تقديري بالاستيفاء الخطي من جداول الصندوق ولا يشمل تعديل حجم الأسرة (غير متوفر رسمياً).</div>`;
+  h+=`<div class="cwarn" style="background:var(--purple-soft);border-color:var(--purple-soft-border);color:var(--purple)">تقدير توجيهي وفق سقوف النظام (ساما ولائحة الصندوق العقاري) لغرض الفرز والتوجيه فقط — وليس عرضاً بنكياً ملزماً. نسبة الربح المستخدمة من بيانات بنك التمويل المختار أعلاه، مُطبَّقة بنظام الفائدة الفلات (نفس منهجية الحاسبة المبسّطة)، مع تقسيم القدرة قبل/بعد التقاعد عند توفر بيانات العمر والقطاع. قسط الدعم الشهري تقديري بالاستيفاء الخطي من جداول الصندوق ولا يشمل تعديل حجم الأسرة (غير متوفر رسمياً). الالتزامات الحالية تُخصم كثابت طوال مدة التمويل (تقدير محافظ لا يفترض انتهاء التزامات قائمة أثناء المدة).</div>`;
   h+=`<div id="cOffersPanel"></div>`;
   h+=`<div class="calcActions">
     <button type="button" class="btn ghost" id="cShareWA">📤 مشاركة واتساب</button>
@@ -5216,7 +5231,7 @@ function runAdvancedCalc(){
   </div>`;
   box.innerHTML=h;
   if(pickedProject) renderProjectOffersPanel(pickedProject);
-  const waText=`حاسبة القدرة الشرائية المتقدمة — SalesPlace\nقيمة الوحدة بعد الدعومات: ${fmt(Math.round(r.priceAfterSupport))} ريال (من أصل ${fmt(Math.round(price))} ريال)\n———\nالدفعة الأولى (${fmt(downPct)}% من السعر — بعد خصم الدعم): ${fmt(Math.round(r.downNet))} ريال\nمبلغ التمويل: ${fmt(Math.round(r.financeNeeded))} ريال\nمدة التمويل: ${Math.round(r.months/12*10)/10} سنة\nالقسط الشهري التقديري: ${fmt(Math.round(r.actualInstallment))} ريال\nإجمالي الأرباح البنكية خلال المدة: ${fmt(Math.round(r.totalProfit))} ريال\nدعم الصندوق: ${fmt(r.downSupport)} ريال\nقسط الدعم الشهري: ${fmt(Math.round(r.monthlySupport))} ريال/شهر\n(تقدير توجيهي وفق سقوف النظام — وليس عرضاً بنكياً ملزماً)`;
+  const waText=`حاسبة القدرة الشرائية المتقدمة — SalesPlace\nقيمة الوحدة بعد الدعومات: ${fmt(Math.round(r.priceAfterSupport))} ريال (من أصل ${fmt(Math.round(price))} ريال)\n———\nالدفعة الأولى (${fmt(downPct)}% من السعر — بعد خصم الدعم): ${fmt(Math.round(r.downNet))} ريال\nمبلغ التمويل: ${fmt(Math.round(r.financeNeeded))} ريال\nمدة التمويل: ${Math.round(r.months/12*10)/10} سنة\nالقسط الشهري التقديري: ${fmt(Math.round(r.actualInstallment))} ريال\nإجمالي الأرباح البنكية خلال المدة: ${fmt(Math.round(r.totalProfit))} ريال\n${supportMode==="downpayment"?`دعم الصندوق (دفعة أولى): ${fmt(r.downSupport)} ريال`:`قسط الدعم الشهري: ${fmt(Math.round(r.monthlySupport))} ريال/شهر`}\n(تقدير توجيهي وفق سقوف النظام — وليس عرضاً بنكياً ملزماً)`;
   $("cShareWA").onclick=()=>shareWA(waText);
   $("cSaveLog").onclick=()=>saveCalcRecord("REDF متقدم", `سعر بعد الدعم ${fmt(Math.round(r.priceAfterSupport))} · دفعة أولى ${fmt(Math.round(r.downNet))} · قسط ${fmt(Math.round(r.actualInstallment))} ريال/شهر`);
 }
@@ -5225,7 +5240,6 @@ wireChipGroup("calcModeChips","mode",v=>{
   calcMode=v;
   const adv = v==="advanced";
   $("advOnlyFields").style.display = adv?"block":"none";
-  $("cRateLabel").textContent = adv ? "نسبة الفائدة السنوية (تناقصية %)" : "نسبة الفائدة السنوية (فلات %)";
   runCalcDispatch();
 });
 $("advMoreToggle").onclick=()=>{
@@ -5241,7 +5255,7 @@ $("advSector").onchange=()=>{
   else if(isNco) $("advRank").innerHTML = REDF_NCO_RANKS.map(r=>`<option value="${r}">${r}</option>`).join("");
   runCalcDispatch();
 };
-["advDownPct","advDob","advRank","advYearsService","advBaseSalary","advAssets"].forEach(id=>{
+["advDownPct","advSupportMode","advDob","advRank","advYearsService","advBaseSalary","advAssets"].forEach(id=>{
   $(id).addEventListener("input",()=>{ if(calcMode==="advanced") runCalcDispatch(); });
 });
 $("advPriorUse").addEventListener("change",()=>{ if(calcMode==="advanced") runCalcDispatch(); });
