@@ -1786,8 +1786,10 @@ table.prods tr:last-child td{border:none}
           </div>
 
           <button class="btn" id="cCalc" style="width:100%;margin-top:6px">احسب</button>
+          <button type="button" class="btn ghost" id="advCompareBanksBtn" style="width:100%;margin-top:9px;display:none">🏦 قارن كل البنوك</button>
         </div>
         <div id="cResult"></div>
+        <div id="bankCompareResults" style="margin-top:12px"></div>
       </div>
 
       <!-- non-beneficiary / investor: flexible payment plans + cash -->
@@ -5240,8 +5242,66 @@ wireChipGroup("calcModeChips","mode",v=>{
   calcMode=v;
   const adv = v==="advanced";
   $("advOnlyFields").style.display = adv?"block":"none";
+  $("advCompareBanksBtn").style.display = adv?"block":"none";
+  $("bankCompareResults").innerHTML="";
   runCalcDispatch();
 });
+/* قارن كل البنوك — نفس منهجية الحاسبة المتقدمة (سقوف ساما/الصندوق عامة لكل البنوك)،
+   يتغيّر فقط هامش الربح بين بنك وآخر */
+function compareAllBanks(){
+  const price=+$("cPrice").value, salary=+$("cSalary").value, oblig=+$("cOblig").value||0,
+        years=+$("cYears").value, downPct=+$("advDownPct").value||10;
+  const box=$("bankCompareResults");
+  if(!price||price<=0){ box.innerHTML=`<div class="cerr">أدخل سعر الوحدة</div>`; return; }
+  if(!salary||salary<=0){ box.innerHTML=`<div class="cerr">أدخل الراتب الشهري</div>`; return; }
+  const eligible=cElig==="نعم", supportMode=$("advSupportMode").value;
+  const dob=$("advDob").value||null, sector=$("advSector").value||null, rank=$("advRank").value||null;
+  const yearsServiceRaw=$("advYearsService").value, baseSalaryRaw=$("advBaseSalary").value, assetsRaw=$("advAssets").value;
+  const baseInputs={
+    price, salary, oblig, years, eligible, mod:cMod==="نعم", downPct, supportMode,
+    dob, sector, rank, yearsService: yearsServiceRaw!==""?+yearsServiceRaw:null,
+    baseSalary: baseSalaryRaw!==""?+baseSalaryRaw:null,
+    familyAssets: assetsRaw!==""?+assetsRaw:null, priorUse: $("advPriorUse").checked,
+    projectSupport: projectUnitSupportTotal()
+  };
+  /* بيانات البنوك المضمّنة قد تحوي صفوفاً مكررة لنفس البنك/تحويل الراتب (بيانات قديمة قبل
+     تبسيط جدول البنوك) — نستبعد التكرار هنا كما بميزة "أي مشروع يناسب راتبك؟" */
+  const seenBanks=new Set();
+  const rows=(BANKS||[]).filter(b=>{
+    if(typeof b.rate!=="number") return false;
+    const key=b.bank+"|"+b.salaryTransfer;
+    if(seenBanks.has(key)) return false;
+    seenBanks.add(key); return true;
+  }).map(b=>{
+    const r=computeAdvancedAffordability(Object.assign({}, baseInputs, {annualRate:b.rate*100}));
+    return {bank:b, r};
+  });
+  if(!rows.length){ box.innerHTML=`<div class="src" style="text-align:center;padding:16px">لا توجد بنوك بنسبة رقمية ثابتة للمقارنة حالياً</div>`; return; }
+  rows.sort((a,b)=>{
+    const fa=a.r.fitsBefore&&a.r.fitsAfter, fb=b.r.fitsBefore&&b.r.fitsAfter;
+    if(fa!==fb) return fa?-1:1;
+    return a.r.actualInstallment-b.r.actualInstallment;
+  });
+  box.innerHTML = `<h3 style="font-size:13px;margin-bottom:8px">🏦 مقارنة كل البنوك <span style="font-weight:400;font-size:10.5px;color:var(--muted)">(نفس المدخلات أعلاه، بنسبة كل بنك)</span></h3>` +
+    rows.map(({bank,r})=>{
+      const fits=r.fitsBefore&&r.fitsAfter;
+      return `<div class="ucard" data-bank="${bank.bank}" data-transfer="${bank.salaryTransfer}" style="cursor:pointer;margin-bottom:9px">
+        <div class="uhead">
+          <div><div class="nm">${bank.bank}</div><div class="un">${(bank.rate*100).toFixed(2)}% · تحويل الراتب: ${bank.salaryTransfer||"—"}</div></div>
+          <span class="pill ab ${fits?"hi":"lo"}">${fits?"✅ يفي":"⚠ يتجاوز الحد"}</span>
+        </div>
+        <div class="umeta">القسط الشهري ${fmt(Math.round(r.actualInstallment))} ريال · إجمالي الأرباح البنكية ${fmt(Math.round(r.totalProfit))} ريال</div>
+      </div>`;
+    }).join("");
+  box.querySelectorAll("[data-bank]").forEach(el=>el.onclick=()=>{
+    $("cBankSel").value=el.dataset.bank;
+    cTransfer=el.dataset.transfer;
+    $("cTransferChips").querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.transfer===cTransfer));
+    applyBankRate();
+    $("cResult").scrollIntoView({behavior:"smooth",block:"start"});
+  });
+}
+$("advCompareBanksBtn").onclick=compareAllBanks;
 $("advMoreToggle").onclick=()=>{
   const open = $("advMoreFields").style.display!=="none";
   $("advMoreFields").style.display = open?"none":"block";
