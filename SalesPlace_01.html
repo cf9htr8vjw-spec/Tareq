@@ -1572,6 +1572,10 @@ table.prods tr:last-child td{border:none}
           <div class="hticon">🔍</div>
           <div class="httxt"><b>البحث والتصفية</b><span>ابحث في كل المشاريع بالفلاتر</span></div>
         </button>
+        <button type="button" class="htile" id="hTileAfford">
+          <div class="hticon">🎯</div>
+          <div class="httxt"><b>أي مشروع يناسب راتبك؟</b><span>أدخل الراتب والالتزامات واحصل على المشاريع المناسبة</span></div>
+        </button>
         <button type="button" class="htile" id="hTileCmp">
           <div class="hticon">⚖️</div>
           <div class="httxt"><b>المقارنة</b><span>قارن مشاريع بالسعر والمساحة والمواصفات</span></div>
@@ -2060,6 +2064,50 @@ table.prods tr:last-child td{border:none}
   </div>
 </div>
 
+<!-- Affordability finder: "أي مشروع يناسب راتبك؟" -->
+<div class="scrim" id="affordScrim"></div>
+<div class="sheet" id="affordSheet">
+  <div class="handle" data-drag="affordSheet"></div>
+  <div class="sheetbody">
+    <h2 class="kufi" style="font-size:16px">🎯 أي مشروع يناسب راتبك؟</h2>
+    <div class="src" style="margin-top:2px">أدخل الراتب والالتزامات، ونعرض لك المشاريع التي يمكنك شراؤها كمستفيد من دعم الصندوق العقاري — مع ملخص الدعم وأنسب بنوك التمويل</div>
+
+    <div id="affordForm" class="cform" style="margin-top:12px">
+      <div class="cfield"><label>الراتب الشهري (ريال)</label><input id="afSalary" type="number" inputmode="numeric" placeholder="مثال: 12000"></div>
+      <div class="cfield"><label>الالتزامات الشهرية (ريال) <em>أدخل صفر إن لم توجد</em></label><input id="afOblig" type="number" inputmode="numeric" placeholder="مثال: 1500"></div>
+
+      <div class="flabel" style="margin-top:2px">المدينة <em style="font-style:normal;font-weight:400;color:var(--muted)">(اختياري)</em></div>
+      <select id="afCity" style="width:100%;border:1.5px solid var(--line);border-radius:11px;padding:10px 11px;background:var(--surface);color:var(--ink);margin-bottom:11px;font-size:13px">
+        <option value="">كل المدن</option>
+      </select>
+
+      <div class="cfield"><label>عدد أفراد الأسرة <em>اختياري — للاسترشاد فقط</em></label><input id="afFamily" type="number" inputmode="numeric" placeholder="مثال: 5"></div>
+
+      <div class="flabel" style="margin-top:2px">نوع المنتج <em style="font-style:normal;font-weight:400;color:var(--muted)">(اختياري)</em></div>
+      <div class="chips" id="afTypeChips" style="margin-bottom:11px">
+        <button type="button" class="chip on" data-type="">الكل</button>
+        <button type="button" class="chip" data-type="فيلا">فيلا</button>
+        <button type="button" class="chip" data-type="شقة">شقة</button>
+        <button type="button" class="chip" data-type="تاون هاوس">تاون هاوس</button>
+      </div>
+
+      <div class="flabel" style="margin-top:2px">فئة المساحة <em style="font-style:normal;font-weight:400;color:var(--muted)">(اختياري)</em></div>
+      <select id="afArea" style="width:100%;border:1.5px solid var(--line);border-radius:11px;padding:10px 11px;background:var(--surface);color:var(--ink);margin-bottom:9px;font-size:13px">
+        <option value="">كل المساحات</option>
+      </select>
+
+      <button class="btn" id="afSearchBtn" style="width:100%;margin-top:6px">🔎 ابحث عن مشاريع تناسبني</button>
+      <div id="afErr" class="cerr" style="display:none;margin-top:9px"></div>
+    </div>
+
+    <div id="affordResultsWrap" style="display:none;margin-top:14px">
+      <button type="button" class="btn ghost" id="afBackBtn" style="width:100%;margin-bottom:11px">◀ تعديل بيانات البحث</button>
+      <div id="afSummary" class="src" style="margin-bottom:9px"></div>
+      <div id="affordResults"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Idle timeout warning -->
 <div id="idleWarn">
   <div style="font-size:32px">⏳</div>
@@ -2519,7 +2567,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -2528,7 +2576,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -3226,6 +3274,7 @@ $("hTileCmp").onclick=()=>{
   $("dealBanner").style.display="flex";
 };
 $("hTileSales").onclick=()=>setView("sales");
+$("hTileAfford").onclick=()=>openAffordSheet();
 
 const _now=new Date();
 let salesGran="month", salesMetric="contract", salesDev="all", salesSector="all",
@@ -3804,6 +3853,90 @@ function renderBankInfo(){
 }
 $("bankInfoBtn").onclick=()=>{ renderBankInfo(); openSheet("bankInfoSheet"); };
 $("bankInfoScrim").onclick=()=>closeSheet("bankInfoSheet");
+
+/* ---------- "أي مشروع يناسب راتبك؟" — مسح تلقائي للمشاريع حسب القدرة الشرائية ---------- */
+let AF={salary:null,oblig:null,city:"",type:"",areaMin:null,areaMax:null,family:null};
+let afResults=[];
+function populateAffordSelects(){
+  const cities=[...new Set(DATA.map(p=>p.city))].sort((a,b)=>a.localeCompare(b,"ar"));
+  $("afCity").innerHTML=`<option value="">كل المدن</option>`+cities.map(c=>`<option value="${c}">${c}</option>`).join("");
+  $("afArea").innerHTML=`<option value="">كل المساحات</option>`+Object.keys(SBAND).map(k=>`<option value="${k}">${k}</option>`).join("");
+}
+wireChipGroup("afTypeChips","type",v=>{ AF.type=v; });
+function openAffordSheet(){
+  if($("afCity").options.length<2) populateAffordSelects();
+  $("affordResultsWrap").style.display="none";
+  $("affordForm").style.display="block";
+  $("afErr").style.display="none";
+  openSheet("affordSheet");
+  setTimeout(()=>$("afSalary").focus(),200);
+}
+$("affordScrim").onclick=()=>closeSheet("affordSheet");
+$("afBackBtn").onclick=()=>{ $("affordResultsWrap").style.display="none"; $("affordForm").style.display="block"; };
+$("afSearchBtn").onclick=()=>{
+  const salary=+$("afSalary").value;
+  const obligRaw=$("afOblig").value;
+  const err=$("afErr"); err.style.display="none";
+  if(!salary||salary<=0){ err.textContent="أدخل الراتب الشهري"; err.style.display="block"; return; }
+  if(obligRaw===""){ err.textContent="أدخل الالتزامات الشهرية (اكتب 0 إن لم توجد)"; err.style.display="block"; return; }
+  const oblig=+obligRaw||0;
+  const city=$("afCity").value;
+  const type=AF.type||"";
+  const areaKey=$("afArea").value;
+  const areaRange = areaKey ? SBAND[areaKey] : null;
+  const family=+$("afFamily").value||null;
+  AF={salary,oblig,city,type,
+    areaMin:areaRange?areaRange[0]:null,
+    areaMax:(areaRange && isFinite(areaRange[1]))?areaRange[1]:null,
+    family};
+  afResults = scanAffordableProjects({salary,oblig,city:city||undefined,type:type||undefined,areaMin:AF.areaMin,areaMax:AF.areaMax});
+  renderAffordResults();
+  $("affordForm").style.display="none";
+  $("affordResultsWrap").style.display="block";
+};
+function renderAffordResults(){
+  const fitCount=afResults.filter(r=>!r.capped).length;
+  $("afSummary").innerHTML = afResults.length
+    ? `<b>${fmt(afResults.length)}</b> مشروعاً مطابقاً — <b style="color:var(--green)">${fmt(fitCount)}</b> منها يفي بالكامل ضمن الراتب دون دفعة أولى إضافية.`
+    : `لا توجد مشاريع مطابقة لهذه المعايير حالياً — جرّب توسيع نطاق البحث (مدينة/نوع/مساحة).`;
+  $("affordResults").innerHTML = afResults.length ? afResults.map((r,i)=>{
+    const p=r.project, pr=r.product;
+    const banksTxt = (r.topBanks&&r.topBanks.length) ? r.topBanks.map(b=>`${b.bank} ${(b.rate*100).toFixed(2)}%`).join(" · ") : "—";
+    return `<div class="ucard" data-idx="${i}" style="cursor:pointer;margin-bottom:9px">
+      <div class="uhead">
+        <div><div class="nm">${p.short}</div><div class="un">${p.city}${p.dest?" · "+p.dest:""} · ${pr.type}${pr.beds?" ("+pr.beds+" غرف)":""}</div></div>
+        <span class="pill ab ${r.capped?"lo":"hi"}">${r.capped?"⚠ يحتاج دفعة إضافية":"✅ يفي بالكامل"}</span>
+      </div>
+      <div class="umeta">السعر التقريبي ${fmt(Math.round(r.price))} ريال · القسط التقديري ${fmt(Math.round(r.installment))} ريال/شهر · دعم الصندوق ${fmt(r.redfSupport)} ريال</div>
+      <div class="umeta">أنسب البنوك: ${banksTxt}</div>
+    </div>`;
+  }).join("") : "";
+  $("affordResults").querySelectorAll("[data-idx]").forEach(el=>el.onclick=()=>openAffordDetail(afResults[+el.dataset.idx]));
+}
+function openAffordDetail(r){
+  closeSheet("affordSheet");
+  setSeg("b"); setView("calc");
+  pickedProject=r.project; pickedType=r.product.type;
+  pickedMoh=Math.round(r.price); pickedFull=null; calcMarketPrice=null;
+  $("cPrice").value=Math.round(r.price);
+  $("cPickedNote").style.display="block";
+  $("cPickedNote").innerHTML=`✓ ${r.product.type}${r.product.beds?" ("+r.product.beds+" غرف)":""} من <b>${r.project.short}</b> — أرخص خيار متاح تقريبياً بحسب "أي مشروع يناسب راتبك؟"`;
+  cElig="نعم";
+  $("cEligChips").querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.elig==="نعم"));
+  $("cSalary").value=AF.salary;
+  $("cOblig").value=AF.oblig;
+  if(r.bestBank){
+    $("cBankSel").value=r.bestBank.bank;
+    cTransfer=r.bestBank.salaryTransfer;
+    $("cTransferChips").querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.transfer===cTransfer));
+    applyBankRate();
+  } else {
+    $("cRate").value=r.rate.toFixed(2);
+    $("cYears").value=r.years;
+    runCalc();
+  }
+  setTimeout(()=>{ const el=$("cResult"); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); },250);
+}
 
 /* live project-level offers panel (كاش باك/مكيفات/مطابخ/أثاث/قسط مرن...) — new Supabase table, may not exist yet on first run */
 async function fetchProjectOffers(project){
@@ -4677,19 +4810,11 @@ function calcMaxPrincipal(maxInstallment, annualRatePct, years){
   const r = annualRatePct/100;
   return maxInstallment*(years*12) / (1+r*years);
 }
-let calcMarketPrice=null;
-$("cPrice").oninput=()=>{ calcMarketPrice=null; };
-function runCalc(){
-  const price=+$("cPrice").value, salary=+$("cSalary").value,
-        oblig=+$("cOblig").value||0, rate=+$("cRate").value, years=+$("cYears").value;
-  const box=$("cResult");
-  if(!price||price<=0){ box.innerHTML=`<div class="cerr">أدخل سعر الوحدة</div>`; return; }
-  if(!salary||salary<=0){ box.innerHTML=`<div class="cerr">أدخل الراتب الشهري</div>`; return; }
-  if(!rate||rate<=0||!years||years<=0){ box.innerHTML=`<div class="cerr">تحقق من نسبة الفائدة ومدة التمويل</div>`; return; }
-
-  const eligible = cElig==="نعم";
+/* منهجية REDF الأساسية (بلا تعديل عن حاسبة المستفيدين) — مُستخرجة بدالة مستقلة
+   ليعاد استخدامها في مسح تلقائي عبر كل المشاريع (بحث "أي مشروع يناسب راتبي") دون تكرار الصيغة */
+function computeRedfAffordability(price, salary, oblig, rate, years, eligible, mod, dara){
   const redfSupport = eligible ? (salary<10000 ? 150000 : 100000) : 0;
-  const modSupport = (eligible && cMod==="نعم") ? 160000 : 0;
+  const modSupport = (eligible && mod==="نعم") ? 160000 : 0;
   const support = redfSupport + modSupport;
   const downStd = price*0.10;
   const downNet = Math.max(0, downStd-support);
@@ -4708,8 +4833,63 @@ function runCalc(){
     extraDown = financeTarget - financeUsed;
   }
   const downFinal = downNet + extraDown;
-  const totalCash = downFinal; // ما يدفعه المستفيد من جيبه عند التعاقد
-  const installmentAfterDara = cDara==="نعم" ? Math.max(0,installment-500) : installment;
+  const installmentAfterDara = dara==="نعم" ? Math.max(0,installment-500) : installment;
+  return {redfSupport,modSupport,support,downStd,downNet,financeTarget,maxInstallment,maxPrincipal,
+    financeUsed,installment,extraDown,capped,downFinal,installmentAfterDara};
+}
+/* مسح تلقائي عبر كل المشاريع لمشروع "أي مشروع يناسب راتبي" — يطبّق نفس صيغة REDF أعلاه
+   على أرخص منتج مطابق بكل مشروع (شريحة المستفيدين حصراً)، بأفضل نسبة بنك متاحة بافتراض تحويل الراتب.
+   المدينة/نوع المنتج/فئة المساحة فلاتر عرض فقط ولا تدخل على صيغة الحساب المالية. */
+function scanAffordableProjects(params){
+  const {salary, oblig, city, type, areaMin, areaMax} = params;
+  const bankCandidates=(BANKS||[]).filter(b=>typeof b.rate==="number").sort((a,b)=>a.rate-b.rate);
+  const transferBanks=bankCandidates.filter(b=>b.salaryTransfer==="نعم");
+  const bestBank = transferBanks[0] || bankCandidates[0] || null;
+  const rate = bestBank ? bestBank.rate*100 : 3.75;
+  const years=20;
+  const topBanksSeen=new Set(), topBanks=[];
+  for(const b of (transferBanks.length?transferBanks:bankCandidates)){
+    if(topBanksSeen.has(b.bank)) continue;
+    topBanksSeen.add(b.bank); topBanks.push(b);
+    if(topBanks.length>=3) break;
+  }
+  const out=[];
+  for(const p of DATA){
+    const sg=p.b; if(!sg || !Array.isArray(sg.prods) || !sg.prods.length) continue;
+    if(city && p.city!==city) continue;
+    let prods=sg.prods;
+    if(type) prods=prods.filter(pr=>pr.type===type);
+    if(areaMin!=null) prods=prods.filter(pr=>pr.maxS>=areaMin);
+    if(areaMax!=null) prods=prods.filter(pr=>pr.minS<=areaMax);
+    if(!prods.length) continue;
+    let best=null;
+    for(const pr of prods){ if(!best || pr.minP<best.minP) best=pr; }
+    const price=best.minP;
+    const calc=computeRedfAffordability(price, salary, oblig, rate, years, true, "لا", "لا");
+    out.push(Object.assign({project:p, product:best, price, rate, years, bestBank, topBanks}, calc));
+  }
+  out.sort((a,b)=>{
+    if(a.capped!==b.capped) return a.capped?1:-1;
+    if(!a.capped) return b.price-a.price;
+    return a.extraDown-b.extraDown;
+  });
+  return out;
+}
+
+let calcMarketPrice=null;
+$("cPrice").oninput=()=>{ calcMarketPrice=null; };
+function runCalc(){
+  const price=+$("cPrice").value, salary=+$("cSalary").value,
+        oblig=+$("cOblig").value||0, rate=+$("cRate").value, years=+$("cYears").value;
+  const box=$("cResult");
+  if(!price||price<=0){ box.innerHTML=`<div class="cerr">أدخل سعر الوحدة</div>`; return; }
+  if(!salary||salary<=0){ box.innerHTML=`<div class="cerr">أدخل الراتب الشهري</div>`; return; }
+  if(!rate||rate<=0||!years||years<=0){ box.innerHTML=`<div class="cerr">تحقق من نسبة الفائدة ومدة التمويل</div>`; return; }
+
+  const eligible = cElig==="نعم";
+  const {redfSupport,modSupport,support,downStd,downNet,financeTarget,maxInstallment,
+    financeUsed,installment,extraDown,capped,downFinal,installmentAfterDara} =
+    computeRedfAffordability(price, salary, oblig, rate, years, eligible, cMod, cDara);
 
   let h = ``;
   if(!eligible){
@@ -5038,7 +5218,7 @@ function runNCalc(){
 $("nCalc").onclick=runNCalc;
 
 function applyPermissions(){
-  const tiles={hTileDest:"dest",hTileDeal:"deal",hTileSearch:"search",hTileCmp:"cmp",hTileSales:"sales"};
+  const tiles={hTileDest:"dest",hTileDeal:"deal",hTileSearch:"search",hTileCmp:"cmp",hTileSales:"sales",hTileAfford:"calc"};
   for(const [id,key] of Object.entries(tiles)){
     const el=$(id); if(el) el.style.display = PERMS[key] ? "" : "none";
   }
