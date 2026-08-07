@@ -5061,7 +5061,7 @@ function installmentForPrincipal(principal,monthlyRate,months){
 /* المحرك الأساسي — دخل/سقوف ← قدرة تمويلية، بمعزل عن سعر وحدة بعينها؛
    ثم يقارَن بسعر الوحدة الفعلي (بعد خصم كل الدعومات) لتحديد الأنسب */
 function computeAdvancedAffordability(inp){
-  const months=Math.round(inp.years*12);
+  const requestedMonths=Math.round(inp.years*12);
   const monthlyRate=inp.annualRate/100/12;
 
   const reasons=[];
@@ -5069,11 +5069,20 @@ function computeAdvancedAffordability(inp){
   if(inp.priorUse) reasons.push("سبق الاستفادة من دعم سكني");
   const eligibleGate = reasons.length===0;
 
-  let monthsBefore=months, monthsAfter=0, retireAgeUsed=null, pensionEst=null;
+  /* سقف مدة التمويل بحسب العمر عند نهاية التمويل (70 موظف / 77 متقاعد) + سقف 30 سنة نظامي — §3.2 */
+  let ageNow=null, retireAgeUsed=null, maxMonthsByAge=null, maxAgeEnd=null;
   if(inp.dob && inp.sector){
-    const age=ageYearsFrom(inp.dob);
-    retireAgeUsed=retireAgeFor(inp.sector,inp.rank);
-    const remainingServiceMonths=Math.max(0, retireAgeUsed*12 - age*12);
+    ageNow=ageYearsFrom(inp.dob);
+    retireAgeUsed=retireAgeFor(inp.sector, inp.rank);
+    maxAgeEnd = inp.sector==="متقاعد" ? 77 : 70;
+    maxMonthsByAge=Math.max(0, (maxAgeEnd-ageNow)*12);
+  }
+  const months=Math.min(requestedMonths, 360, maxMonthsByAge!=null?maxMonthsByAge:Infinity);
+  const termCapped = months < requestedMonths;
+
+  let monthsBefore=months, monthsAfter=0, pensionEst=null;
+  if(inp.dob && inp.sector){
+    const remainingServiceMonths=Math.max(0, retireAgeUsed*12 - ageNow*12);
     monthsBefore = inp.sector==="متقاعد" ? 0 : Math.min(remainingServiceMonths, months);
     monthsAfter = inp.sector==="متقاعد" ? months : Math.max(0, months-monthsBefore);
     if(monthsAfter>0){
@@ -5106,18 +5115,29 @@ function computeAdvancedAffordability(inp){
   else if(maxPropertyValue<1200000) bracket="800 ألف – 1.2 مليون";
   else bracket="أكثر من 1.2 مليون";
 
+  /* الدفعة الأولى تُحسب كنسبة من سعر العقار الأساسي (وليس بعد خصم الدعم) — تماماً كالحاسبة
+     المبسّطة الحالية؛ الدعم يُخصم من مبلغ الدفعة المطلوب أولاً، وأي فائض دعم يتجاوزها
+     يُخصم مباشرة من مبلغ التمويل، بدل إهداره */
   const projectSupport=inp.projectSupport||0;
-  const priceAfterSupport=Math.max(0, inp.price - downSupport - modSupport - projectSupport);
-  const downAmt = priceAfterSupport * (inp.downPct/100);
-  const financeNeeded = Math.max(0, priceAfterSupport - downAmt);
+  const totalSupport=downSupport+modSupport+projectSupport;
+  const downStd = inp.price*(inp.downPct/100);
+  const downNet = Math.max(0, downStd-totalSupport);
+  const excessSupport = Math.max(0, totalSupport-downStd);
+  const financeNeeded = Math.max(0, inp.price - downStd - excessSupport);
+  const priceAfterSupport = Math.max(0, inp.price - totalSupport);
+
   const actualInstallment = installmentForPrincipal(financeNeeded, monthlyRate, months);
+  const totalPaid = actualInstallment*months;
+  const totalProfit = Math.max(0, totalPaid-financeNeeded);
   const fitsBefore = actualInstallment <= installmentBefore + 1;
   const fitsAfter = monthsAfter>0 ? (actualInstallment <= installmentAfter + 1) : true;
 
-  return {eligibleGate, reasons, months, monthsBefore, monthsAfter, retireAgeUsed, pensionEst,
+  return {eligibleGate, reasons, requestedMonths, months, termCapped, maxMonthsByAge, maxAgeEnd,
+    monthsBefore, monthsAfter, retireAgeUsed, pensionEst,
     dbrPct, monthlySupport, downSupport, modSupport, installmentBefore, installmentAfter,
     maxFinancing, maxPropertyValue, bracket,
-    projectSupport, priceAfterSupport, downAmt, financeNeeded, actualInstallment, fitsBefore, fitsAfter};
+    projectSupport, totalSupport, priceAfterSupport, downStd, downNet, financeNeeded,
+    actualInstallment, totalPaid, totalProfit, fitsBefore, fitsAfter};
 }
 function projectUnitSupportTotal(){
   if(!pickedProject || !pickedType) return 0;
@@ -5165,9 +5185,14 @@ function runAdvancedCalc(){
 
   h+=`<div class="cresblock">
     <h4>ملخص الدفع (سداد متناقص)</h4>
-    <div class="cresrow hi"><span class="cl">الدفعة الأولى (${fmt(downPct)}%)</span><span class="cv">${fmt(Math.round(r.downAmt))} ريال</span></div>
+    <div class="cresrow"><span class="cl">الدفعة الأولى القياسية (${fmt(downPct)}% من سعر العقار)</span><span class="cv">${fmt(Math.round(r.downStd))} ريال</span></div>
+    <div class="cresrow hi"><span class="cl">الدفعة الأولى المطلوبة (بعد خصم الدعم)</span><span class="cv">${fmt(Math.round(r.downNet))} ريال</span></div>
     <div class="cresrow hi"><span class="cl">مبلغ التمويل المطلوب</span><span class="cv">${fmt(Math.round(r.financeNeeded))} ريال</span></div>
     <div class="cresrow hi"><span class="cl">القسط الشهري التقديري</span><span class="cv">${fmt(Math.round(r.actualInstallment))} ريال</span></div>
+    <div class="cresrow"><span class="cl">مدة التمويل الفعلية</span><span class="cv">${Math.round(r.months/12*10)/10} سنة${r.termCapped?" (مخفّضة بسبب سقف العمر)":""}</span></div>
+    <div class="cresrow"><span class="cl">إجمالي المسدَّد خلال مدة التمويل</span><span class="cv">${fmt(Math.round(r.totalPaid))} ريال</span></div>
+    <div class="cresrow"><span class="cl">قيمة الأرباح البنكية الإجمالية</span><span class="cv">${fmt(Math.round(r.totalProfit))} ريال</span></div>
+    ${r.termCapped?`<div class="cwarn" style="margin-top:8px">⚠ المدة المطلوبة ${fmt(Math.round(r.requestedMonths/12*10)/10)} سنة خُفِّضت إلى ${fmt(Math.round(r.months/12*10)/10)} سنة لأن العمر عند نهاية التمويل يتجاوز الحد المسموح (${r.maxAgeEnd} سنة).</div>`:""}
     <h4>سقف القدرة الشرائية وفق الراتب</h4>
     <div class="cresrow"><span class="cl">أقصى قسط قبل التقاعد (${fmt(Math.round(r.dbrPct*100))}%)</span><span class="cv">${fmt(Math.round(r.installmentBefore))} ريال</span></div>
     ${r.monthsAfter>0?`<div class="cresrow"><span class="cl">أقصى قسط بعد التقاعد</span><span class="cv">${fmt(Math.round(r.installmentAfter))} ريال</span></div>
@@ -5191,9 +5216,9 @@ function runAdvancedCalc(){
   </div>`;
   box.innerHTML=h;
   if(pickedProject) renderProjectOffersPanel(pickedProject);
-  const waText=`حاسبة القدرة الشرائية المتقدمة — SalesPlace\nقيمة الوحدة بعد الدعومات: ${fmt(Math.round(r.priceAfterSupport))} ريال (من أصل ${fmt(Math.round(price))} ريال)\n———\nالدفعة الأولى (${fmt(downPct)}%): ${fmt(Math.round(r.downAmt))} ريال\nالقسط الشهري التقديري: ${fmt(Math.round(r.actualInstallment))} ريال\nدعم الصندوق: ${fmt(r.downSupport)} ريال\nقسط الدعم الشهري: ${fmt(Math.round(r.monthlySupport))} ريال/شهر\n(تقدير توجيهي وفق سقوف النظام — وليس عرضاً بنكياً ملزماً)`;
+  const waText=`حاسبة القدرة الشرائية المتقدمة — SalesPlace\nقيمة الوحدة بعد الدعومات: ${fmt(Math.round(r.priceAfterSupport))} ريال (من أصل ${fmt(Math.round(price))} ريال)\n———\nالدفعة الأولى (${fmt(downPct)}% من السعر — بعد خصم الدعم): ${fmt(Math.round(r.downNet))} ريال\nمبلغ التمويل: ${fmt(Math.round(r.financeNeeded))} ريال\nمدة التمويل: ${Math.round(r.months/12*10)/10} سنة\nالقسط الشهري التقديري: ${fmt(Math.round(r.actualInstallment))} ريال\nإجمالي الأرباح البنكية خلال المدة: ${fmt(Math.round(r.totalProfit))} ريال\nدعم الصندوق: ${fmt(r.downSupport)} ريال\nقسط الدعم الشهري: ${fmt(Math.round(r.monthlySupport))} ريال/شهر\n(تقدير توجيهي وفق سقوف النظام — وليس عرضاً بنكياً ملزماً)`;
   $("cShareWA").onclick=()=>shareWA(waText);
-  $("cSaveLog").onclick=()=>saveCalcRecord("REDF متقدم", `سعر بعد الدعم ${fmt(Math.round(r.priceAfterSupport))} · دفعة أولى ${fmt(Math.round(r.downAmt))} · قسط ${fmt(Math.round(r.actualInstallment))} ريال/شهر`);
+  $("cSaveLog").onclick=()=>saveCalcRecord("REDF متقدم", `سعر بعد الدعم ${fmt(Math.round(r.priceAfterSupport))} · دفعة أولى ${fmt(Math.round(r.downNet))} · قسط ${fmt(Math.round(r.actualInstallment))} ريال/شهر`);
 }
 function runCalcDispatch(){ if(calcMode==="advanced") runAdvancedCalc(); else runCalc(); }
 wireChipGroup("calcModeChips","mode",v=>{
