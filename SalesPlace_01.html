@@ -1142,11 +1142,18 @@ main{flex:1;min-height:0;position:relative}
 .uactions button{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:9px;border:1.5px solid var(--line);color:var(--ink)}
 .uactions button.danger{color:var(--rust);border-color:var(--rust-soft-border)}
 .uactions button.warn{color:var(--gold-text);border-color:var(--gold-soft-border)}
-#newsTicker{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 12px;-webkit-overflow-scrolling:touch}
-.newsCard{flex:0 0 auto;max-width:280px;min-width:200px;background:linear-gradient(135deg,var(--green),#1a5c3d 80%);color:#fff;border-radius:14px;padding:11px 14px;box-shadow:var(--shadow)}
-.newsCard .newsCat{font-size:10px;font-weight:700;opacity:.85;background:rgba(255,255,255,.16);border-radius:99px;padding:2px 9px;display:inline-block;margin-bottom:6px}
-.newsCard .newsTitle{font-size:13px;font-weight:700;line-height:1.5}
-.newsCard .newsDate{font-size:10px;opacity:.75;margin-top:5px}
+.newsHead{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--green);margin:0 2px 6px}
+.newsHead .dot{width:6px;height:6px;border-radius:50%;background:var(--rust);flex:none;animation:newsPulse 1.6s ease-in-out infinite}
+@keyframes newsPulse{0%,100%{opacity:1}50%{opacity:.25}}
+#newsTicker{overflow:hidden;padding:2px 2px 12px;-webkit-overflow-scrolling:touch}
+.newsTrack{display:flex;gap:8px;width:max-content;animation:newsScroll 34s linear infinite}
+#newsTicker.paused .newsTrack{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.newsTrack{animation:none;overflow-x:auto}}
+@keyframes newsScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.newsCard{flex:0 0 auto;max-width:240px;min-width:170px;background:linear-gradient(135deg,var(--green),#1a5c3d 80%);color:#fff;border-radius:12px;padding:9px 12px;box-shadow:var(--shadow)}
+.newsCard .newsCat{font-size:9px;font-weight:700;opacity:.85;background:rgba(255,255,255,.16);border-radius:99px;padding:2px 8px;display:inline-block;margin-bottom:5px}
+.newsCard .newsTitle{font-size:11.5px;font-weight:700;line-height:1.45}
+.newsCard .newsDate{font-size:9px;opacity:.75;margin-top:4px}
 .uperm{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
 .chip.small{padding:4.5px 10px;font-size:11.5px}
 .btn.sm{padding:6px 12px;font-size:11.5px;border-radius:9px}
@@ -1371,15 +1378,18 @@ table.prods tr:last-child td{border:none}
 #lock h2{font-size:19px;font-weight:700;margin-bottom:5px}
 #lock p{font-size:12.5px;opacity:.7;max-width:300px;line-height:1.7}
 #lockForm{margin-top:26px;width:100%;max-width:290px}
-#lockForm input{width:100%;text-align:center;font-size:16px;font-weight:600;padding:13px;border-radius:13px;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;outline:none;transition:border-color .15s;margin-bottom:9px}
-#lockForm input::placeholder{font-weight:400;color:rgba(255,255,255,.35)}
-#lockForm input:focus{border-color:var(--gold)}
+#lockForm input,#lockPwForm input{width:100%;text-align:center;font-size:16px;font-weight:600;padding:13px;border-radius:13px;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;outline:none;transition:border-color .15s;margin-bottom:9px}
+#lockForm input::placeholder,#lockPwForm input::placeholder{font-weight:400;color:rgba(255,255,255,.35)}
+#lockForm input:focus,#lockPwForm input:focus{border-color:var(--gold)}
 #lock.err #lockForm input{border-color:#d9634a;animation:shake .3s}
 #lock.busy #lockBtn{opacity:.6;pointer-events:none}
 @keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
-#lockBtn{width:100%;margin-top:11px;background:var(--green);color:#fff;border-radius:13px;padding:13px;font-size:15px;font-weight:600}
-#lockMsg{margin-top:12px;font-size:12px;min-height:17px;color:#f0a08c}
+#lockBtn,#lockPwSave{width:100%;margin-top:11px;background:var(--green);color:#fff;border-radius:13px;padding:13px;font-size:15px;font-weight:600}
+#lockMsg,#lockPwMsg{margin-top:12px;font-size:12px;min-height:17px;color:#f0a08c}
 #lockNote{margin-top:30px;font-size:10.5px;opacity:.42;max-width:290px;line-height:1.7}
+#lockPwLink,#lockPwBack{background:none;border:none;color:rgba(255,255,255,.6);font-size:12.5px;text-decoration:underline;padding:6px;margin-top:6px;cursor:pointer}
+#lockPwForm{display:none;width:100%;max-width:290px;margin-top:26px}
+#lockPwCancel{width:100%;margin-top:9px;background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:11px;font-size:13px}
 /* print-only report header/footer — invisible on screen */
 #printHead{display:none}
 #printFoot{display:none}
@@ -1476,6 +1486,16 @@ table.prods tr:last-child td{border:none}
     <input id="pw" type="password" placeholder="كلمة المرور" autocomplete="off">
     <button id="lockBtn">فتح البيانات</button>
     <div id="lockMsg"></div>
+    <button type="button" id="lockPwLink">تغيير كلمة المرور</button>
+  </div>
+  <div id="lockPwForm">
+    <input id="lockPwUser" type="text" placeholder="اسم المستخدم" autocomplete="username">
+    <input id="lockPwOld" type="password" placeholder="كلمة المرور الحالية" autocomplete="off">
+    <input id="lockPwNew1" type="password" placeholder="كلمة المرور الجديدة (8 خانات فأكثر)" autocomplete="off">
+    <input id="lockPwNew2" type="password" placeholder="تأكيد كلمة المرور الجديدة" autocomplete="off">
+    <button type="button" id="lockPwSave">حفظ كلمة المرور الجديدة</button>
+    <button type="button" id="lockPwCancel">رجوع لتسجيل الدخول</button>
+    <div id="lockPwMsg"></div>
   </div>
   <div id="lockNote">الدخول بحسابك الخاص. البيانات مشفّرة ولا تُفتح إلا بعد التحقق من الحساب — يتطلب اتصالاً بالإنترنت عند الدخول فقط.</div>
 </div>
@@ -1493,6 +1513,7 @@ table.prods tr:last-child td{border:none}
       <button id="backBtn" class="hbtn" style="display:none" title="رجوع">◀</button>
       <button id="themeBtn" class="hbtn" title="الوضع الليلي">🌙</button>
       <button id="helpBtn" class="hbtn" title="شرح المصطلحات">؟</button>
+      <button id="bankInfoBtn" class="hbtn" title="نسب بنوك التمويل">🏦</button>
       <button id="adminBtn" class="hbtn" style="display:none" title="لوحة الإدارة">🛡️</button>
       <div class="datebadge" id="userBadge" style="cursor:pointer" title="تغيير كلمة المرور">بيانات 29 يوليو 2026 · <span id="userTag"></span> ⚙<span id="liveBadge" class="embedded"></span></div>
     </div>
@@ -1534,7 +1555,10 @@ table.prods tr:last-child td{border:none}
 <main>
   <div class="view on" id="homeView">
     <div id="homeScroll">
-      <div id="newsTicker" style="display:none"></div>
+      <div id="newsSection" style="display:none">
+        <div class="newsHead"><span class="dot"></span><span>📰 أخبار اليوم</span></div>
+        <div id="newsTicker"><div class="newsTrack" id="newsTrack"></div></div>
+      </div>
       <div class="htiles">
         <button type="button" class="htile" id="hTileDest">
           <div class="hticon">🏘️</div>
@@ -1835,11 +1859,9 @@ table.prods tr:last-child td{border:none}
       <h2 style="margin:0 0 12px" id="bankEditTitle">إضافة بنك</h2>
       <div class="cform">
         <div class="flabel">اسم البنك</div>
-        <input type="text" class="dateInp" style="width:100%;text-align:start" id="bankNameInp">
-        <div class="flabel" style="margin-top:9px">فئة الأهلية</div>
-        <input type="text" class="dateInp" style="width:100%;text-align:start" id="bankEligInp">
-        <div class="flabel" style="margin-top:9px">فئة تحويل الراتب</div>
-        <input type="text" class="dateInp" style="width:100%;text-align:start" id="bankSalInp">
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="bankNameInp" placeholder="مثال: الأهلي، أو الأهلي - تمويل بديل">
+        <div class="flabel" style="margin-top:9px">تحويل الراتب</div>
+        <div class="chips"><button type="button" class="chip on" id="bankSalYes">نعم</button><button type="button" class="chip" id="bankSalNo">لا</button></div>
         <div class="flabel" style="margin-top:9px">نسبة الفائدة (%)</div>
         <input type="number" step="0.01" class="dateInp" style="width:100%;text-align:start" id="bankRateInp">
         <div class="flabel" style="margin-top:9px">ملاحظة (اختياري)</div>
@@ -2024,6 +2046,17 @@ table.prods tr:last-child td{border:none}
       <div class="progitem"><span class="progtag">SalesPlace</span><span>اسم التطبيق ورقم إصداره — يظهر أعلى يمين الشاشة، ويتحدث مع كل تطوير جديد.</span></div>
     </div>
     <button type="button" class="btn ghost" id="replayTourBtn" style="width:100%;margin-top:14px">🔄 إعادة الجولة التعريفية</button>
+  </div>
+</div>
+
+<!-- Bank financing rates info sheet -->
+<div class="scrim" id="bankInfoScrim"></div>
+<div class="sheet" id="bankInfoSheet">
+  <div class="handle" data-drag="bankInfoSheet"></div>
+  <div class="sheetbody">
+    <h2 class="kufi" style="font-size:16px">🏦 نسب بنوك التمويل</h2>
+    <div class="src" style="margin-top:2px">النسب الموضّحة لشريحة المستفيدين — تُحدَّث من الإدارة</div>
+    <div id="bankInfoList" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -2486,7 +2519,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -2495,7 +2528,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -3750,8 +3783,8 @@ function applyBankRate(){
   const bank=$("cBankSel").value;
   if(!bank){ $("cTransferWrap").style.display="none"; return; }
   $("cTransferWrap").style.display="block";
-  const eligKey = cElig==="نعم" ? "مستحق" : "غير مستحق";
-  const row=(BANKS||[]).find(b=>b.bank===bank && b.eligible===eligKey && b.salaryTransfer===cTransfer);
+  /* جدول البنوك يغذّي حاسبة المستفيدين فقط، فالمطابقة بالبنك وتحويل الراتب فقط بلا بُعد الاستحقاق */
+  const row=(BANKS||[]).find(b=>b.bank===bank && b.salaryTransfer===cTransfer);
   if(row && typeof row.rate==="number"){
     $("cRate").value = (row.rate*100).toFixed(2);
     runCalc();
@@ -3760,6 +3793,17 @@ function applyBankRate(){
   }
 }
 $("cBankSel").addEventListener("change",applyBankRate);
+function renderBankInfo(){
+  const list=[...(BANKS||[])].sort((a,b)=>a.bank.localeCompare(b.bank,"ar"));
+  $("bankInfoList").innerHTML = list.length ? list.map(b=>`
+    <div class="progitem"><span class="progtag">${b.bank}</span><span>
+      تحويل الراتب: ${b.salaryTransfer||"—"} ·
+      ${typeof b.rate==="number" ? `نسبة الفائدة: ${(b.rate*100).toFixed(2)}%` : "نسبة نطاق (راجع الملاحظة)"}
+      ${b.note?`<br><span class="src">${b.note}</span>`:""}
+    </span></div>`).join("") : `<div class="src" style="text-align:center;padding:16px">لا توجد بيانات بنوك بعد</div>`;
+}
+$("bankInfoBtn").onclick=()=>{ renderBankInfo(); openSheet("bankInfoSheet"); };
+$("bankInfoScrim").onclick=()=>closeSheet("bankInfoSheet");
 
 /* live project-level offers panel (كاش باك/مكيفات/مطابخ/أثاث/قسط مرن...) — new Supabase table, may not exist yet on first run */
 async function fetchProjectOffers(project){
@@ -3924,8 +3968,8 @@ async function loadAdminBanks(){
   catch(e){ $("aBanksList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر تحميل بيانات البنوك — تأكد من تشغيل ملف bank_rates.sql على قاعدة البيانات<br>السبب الفعلي: ${(e&&e.message)||e}</div>`; return; }
   $("aBanksList").innerHTML = ADMIN_BANKS.length ? ADMIN_BANKS.map(b=>`
     <div class="ucard">
-      <div class="uhead"><div><div class="nm">${b.bank_name}</div><div class="un">${b.eligibility_tier||"—"} · ${b.salary_transfer_tier||"—"}</div></div></div>
-      <div class="umeta">نسبة الفائدة: ${b.rate_pct}% ${b.note?" · "+b.note:""}</div>
+      <div class="uhead"><div><div class="nm">${b.bank_name}</div><div class="un">تحويل الراتب: ${b.salary_transfer_tier||"—"}</div></div></div>
+      <div class="umeta">نسبة الفائدة: ${b.rate_pct!=null?b.rate_pct+"%":"نطاق (راجع الملاحظة)"} ${b.note?" · "+b.note:""}</div>
       <div class="uactions">
         <button data-act="editbank" data-id="${b.id}">تعديل</button>
         <button class="danger" data-act="delbank" data-id="${b.id}">حذف</button>
@@ -3939,14 +3983,17 @@ function openBankEditor(id){
   adminBankEditingId = id||null;
   $("bankEditTitle").textContent = id ? "تعديل بنك" : "إضافة بنك";
   $("bankNameInp").value = b ? b.bank_name : "";
-  $("bankEligInp").value = b ? (b.eligibility_tier||"") : "";
-  $("bankSalInp").value = b ? (b.salary_transfer_tier||"") : "";
+  const salYes = b ? b.salary_transfer_tier==="نعم" : true;
+  $("bankSalYes").classList.toggle("on", salYes);
+  $("bankSalNo").classList.toggle("on", !salYes);
   $("bankRateInp").value = b ? b.rate_pct : "";
   $("bankNoteInp").value = b ? (b.note||"") : "";
   $("bankEditMsg").textContent="";
   openSheet("bankEditSheet");
 }
 $("aBankAddBtn").onclick=()=>openBankEditor(null);
+$("bankSalYes").onclick=()=>{ $("bankSalYes").classList.add("on"); $("bankSalNo").classList.remove("on"); };
+$("bankSalNo").onclick=()=>{ $("bankSalNo").classList.add("on"); $("bankSalYes").classList.remove("on"); };
 $("bankEditCancel").onclick=()=>closeSheet("bankEditSheet");
 $("bankEditScrim").onclick=()=>closeSheet("bankEditSheet");
 $("bankEditSave").onclick=async ()=>{
@@ -3956,8 +4003,9 @@ $("bankEditSave").onclick=async ()=>{
   if(!rate||rate<=0){ $("bankEditMsg").textContent="أدخل نسبة فائدة صحيحة"; return; }
   $("bankEditMsg").textContent="جارٍ الحفظ…";
   try{
+    const salTier = $("bankSalYes").classList.contains("on") ? "نعم" : "لا";
     const r=await adminCall("admin_upsert_bank",{p_id:adminBankEditingId,p_bank_name:name,
-      p_eligibility_tier:$("bankEligInp").value.trim()||null, p_salary_transfer_tier:$("bankSalInp").value.trim()||null,
+      p_eligibility_tier:"مستحق", p_salary_transfer_tier:salTier,
       p_rate_pct:rate, p_note:$("bankNoteInp").value.trim()||null});
     if(!r||!r.ok){ $("bankEditMsg").textContent=(r&&r.msg)||"تعذّر الحفظ"; return; }
     toast(r.msg||"تم الحفظ","ok");
@@ -4933,12 +4981,17 @@ function computePlan(planId, price, nQtrs){
   const totalPct = price>0 ? (totalAmt/price*100) : 0;
   return {pl,downAmt,periodicAmt,periodicCount,deliveryAmt,postAmt,postCount,totalAmt,totalPct,err};
 }
+function addMonths(base,n){ const d=new Date(base); d.setMonth(d.getMonth()+n); return d; }
+function fmtSchedDate(d){ return d.toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long",year:"numeric"}); }
 function buildScheduleRows(r){
-  const rows=[{label:"الدفعة المقدمة — عند التعاقد",amt:r.downAmt}];
+  /* تُحسب التواريخ على اعتبار أن التعاقد/التمويل يبدأ اليوم، بدفعات ربعية كل 3 أشهر */
+  const today=new Date();
+  const rows=[{label:"الدفعة المقدمة — عند التعاقد",amt:r.downAmt,date:today}];
   let q=0;
-  for(let i=1;i<=r.periodicCount;i++){ q++; rows.push({label:`الربع ${q} (قبل التسليم)`,amt:r.periodicAmt}); }
-  if(r.pl.delivery>0) rows.push({label:"دفعة التسليم",amt:r.deliveryAmt});
-  for(let i=1;i<=r.postCount;i++){ q++; rows.push({label:`الربع ${q} (بعد التسليم)`,amt:r.postAmt}); }
+  for(let i=1;i<=r.periodicCount;i++){ q++; rows.push({label:`الربع ${q} (قبل التسليم)`,amt:r.periodicAmt,date:addMonths(today,q*3)}); }
+  const deliveryDate=addMonths(today,r.periodicCount*3);
+  if(r.pl.delivery>0) rows.push({label:"دفعة التسليم",amt:r.deliveryAmt,date:deliveryDate});
+  for(let i=1;i<=r.postCount;i++){ q++; rows.push({label:`الربع ${q} (بعد التسليم)`,amt:r.postAmt,date:addMonths(deliveryDate,i*3)}); }
   return rows;
 }
 function runNCalc(){
@@ -4961,12 +5014,13 @@ function runNCalc(){
     h+=`<div class="cwarn">إجمالي الخطة يعادل <b>${r.totalPct.toFixed(1)}%</b> من سعر الوحدة (${markup>0?"+":""}${markup.toFixed(1)}% عن السداد النقدي) — وفق الجدول المعتمد.</div>`;
   }
 
-  /* itemized, timed schedule table */
+  /* itemized, timed schedule table — التواريخ محسوبة على اعتبار أن التمويل يبدأ اليوم */
   const sched=buildScheduleRows(r);
   h+=`<div class="sect" style="padding:0;margin-top:14px"><h3 style="font-size:13px">جدول الدفعات المُزمَن</h3>
-    <div class="tw" style="max-height:340px;overflow-y:auto"><table class="prods">
-      <thead><tr><th>#</th><th>التوقيت</th><th>المبلغ</th></tr></thead>
-      <tbody>${sched.map((s,i)=>`<tr><td>${i+1}</td><td>${s.label}</td><td>${fmt(Math.round(s.amt))} ريال</td></tr>`).join("")}</tbody>
+    <div class="src" style="margin-top:2px">التواريخ محسوبة على اعتبار بدء التمويل/التعاقد اليوم ${fmtSchedDate(new Date())}</div>
+    <div class="tw" style="max-height:340px;overflow-y:auto;margin-top:8px"><table class="prods">
+      <thead><tr><th>#</th><th>التوقيت</th><th>التاريخ المتوقع</th><th>المبلغ</th></tr></thead>
+      <tbody>${sched.map((s,i)=>`<tr><td>${i+1}</td><td>${s.label}</td><td>${fmtSchedDate(s.date)}</td><td>${fmt(Math.round(s.amt))} ريال</td></tr>`).join("")}</tbody>
     </table></div></div>`;
 
   h+=`<div class="cwarn" style="background:var(--green-soft);border-color:var(--green-soft-border);color:var(--green);margin-top:12px">الحد الأقصى للوحدات الخاضعة للجداول المرنة 25% من إجمالي وحدات المشروع. يُمنع تقديم خصومات إضافية عند استخدام هذه الجداول. بعض المشاريع مؤهلة لدعم بنية تحتية إضافي — راجع صفحة المشروع.</div>`;
@@ -4975,7 +5029,7 @@ function runNCalc(){
     <button type="button" class="btn ghost" id="nSaveLog">💾 حفظ باسم العميل</button>
   </div>`;
   box.innerHTML=h;
-  const waLines=sched.slice(0,6).map((s,i)=>`${i+1}. ${s.label}: ${fmt(Math.round(s.amt))} ريال`).join("\n");
+  const waLines=sched.slice(0,6).map((s,i)=>`${i+1}. ${s.label} (${fmtSchedDate(s.date)}): ${fmt(Math.round(s.amt))} ريال`).join("\n");
   const waMore = sched.length>6 ? `\n...و${sched.length-6} دفعة إضافية` : "";
   const waText = `جدول الدفعات — ${r.pl.label} — SalesPlace\nقيمة الوحدة: ${fmt(Math.round(price))} ريال\nإجمالي المدفوع: ${fmt(Math.round(r.totalAmt))} ريال\n———\n${waLines}${waMore}`;
   $("nShareWA").onclick=()=>shareWA(waText);
@@ -5006,17 +5060,25 @@ async function refreshLiveBanks(){
   populateBankSelect();
 }
 async function refreshNewsTicker(){
-  const el=$("newsTicker"); if(!el) return;
+  const wrap=$("newsSection"), track=$("newsTrack"); if(!wrap||!track) return;
   let rows;
   try{ rows=await sbSelect("news_items",{select:"*",active:"eq.true",order:"created_at.desc",limit:"10"}); }
-  catch(e){ el.style.display="none"; return; } /* news_items.sql قد لا يكون شُغّل بعد — لا نكسر الشاشة الرئيسية */
-  if(!Array.isArray(rows) || !rows.length){ el.style.display="none"; return; }
-  el.innerHTML=rows.map(n=>`<div class="newsCard">
+  catch(e){ wrap.style.display="none"; return; } /* news_items.sql قد لا يكون شُغّل بعد — لا نكسر الشاشة الرئيسية */
+  if(!Array.isArray(rows) || !rows.length){ wrap.style.display="none"; return; }
+  const cardsHtml=rows.map(n=>`<div class="newsCard">
       ${n.category?`<div class="newsCat">${n.category}</div>`:""}
       <div class="newsTitle">${n.title}</div>
       <div class="newsDate">${new Date(n.created_at).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})}</div>
     </div>`).join("");
-  el.style.display="flex";
+  /* تكرار البطاقات مرتين لتفعيل حلقة تمرير سلسة بلا فجوة عبر إزاحة 50% فقط */
+  track.innerHTML = cardsHtml + cardsHtml;
+  wrap.style.display="block";
+  const ticker=$("newsTicker");
+  if(!ticker.dataset.pauseWired){
+    ticker.dataset.pauseWired="1";
+    ["touchstart","mouseenter"].forEach(ev=>ticker.addEventListener(ev,()=>ticker.classList.add("paused")));
+    ["touchend","mouseleave"].forEach(ev=>ticker.addEventListener(ev,()=>setTimeout(()=>ticker.classList.remove("paused"),500)));
+  }
 }
 async function refreshLastSyncBadge(){
   try{
@@ -5090,6 +5152,34 @@ async function tryUnlock(){
 $("lockBtn").onclick=tryUnlock;
 $("userBadge").onclick=()=>{ if(CURUSER) doChangePw(); };
 ["uid","pw"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") tryUnlock(); }));
+/* تغيير كلمة المرور من شاشة الدخول الرئيسية — قبل تسجيل الدخول، لذا نطلب اسم المستخدم صراحةً */
+$("lockPwLink").onclick=()=>{
+  $("lockForm").style.display="none";
+  $("lockPwForm").style.display="block";
+  $("lockPwUser").value=""; $("lockPwOld").value=""; $("lockPwNew1").value=""; $("lockPwNew2").value=""; $("lockPwMsg").textContent="";
+  setTimeout(()=>$("lockPwUser").focus(),150);
+};
+$("lockPwCancel").onclick=()=>{
+  $("lockPwForm").style.display="none";
+  $("lockForm").style.display="block";
+};
+$("lockPwSave").onclick=async()=>{
+  const u=$("lockPwUser").value.trim(), o=$("lockPwOld").value, n1=$("lockPwNew1").value, n2=$("lockPwNew2").value;
+  const msg=$("lockPwMsg"); msg.style.color="#f0a08c";
+  if(!u||!o||!n1||!n2){ msg.textContent="عبّئ كل الحقول"; return; }
+  if(n1!==n2){ msg.textContent="كلمتا المرور الجديدتان غير متطابقتين"; return; }
+  if(n1.length<8){ msg.textContent="كلمة المرور الجديدة يجب ألا تقل عن 8 خانات"; return; }
+  msg.style.color="rgba(255,255,255,.6)"; msg.textContent="جارٍ الحفظ…";
+  try{
+    const r=await sbCall("change_password",{p_user:u,p_old:o,p_new:n1});
+    if(r && r.ok){
+      msg.style.color="var(--green)"; msg.textContent=r.msg||"تم تغيير كلمة المرور — يمكنك الدخول الآن";
+      setTimeout(()=>{ $("lockPwCancel").click(); $("uid").value=u; $("pw").value=""; $("pw").focus(); },1300);
+    } else {
+      msg.style.color="#f0a08c"; msg.textContent=(r&&r.msg)||"تعذّر التغيير";
+    }
+  }catch(e){ msg.style.color="#f0a08c"; msg.textContent="تعذّر الاتصال بالخادم"; }
+};
 /* splash must clear no matter which lifecycle event fires (in-app webviews often miss "load") */
 let splashDone=false;
 function hideSplash(){
