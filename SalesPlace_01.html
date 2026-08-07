@@ -1698,6 +1698,10 @@ table.prods tr:last-child td{border:none}
           <b>حاسبة القدرة الشرائية للمستفيدين</b>
           <span>الدفعة الأولى، دعم الصندوق العقاري، والقسط الشهري — حسب منهجية REDF</span>
         </div>
+        <div class="chips" id="calcModeChips" style="margin:10px 0 11px">
+          <button type="button" class="chip on" data-mode="simple">مبسّط</button>
+          <button type="button" class="chip" data-mode="advanced">متقدم (تقديري وفق النظام)</button>
+        </div>
         <div class="cform">
           <button type="button" class="btn ghost" id="cPickUnitBtn" style="width:100%;margin-bottom:11px">🔎 اختر وحدة متاحة من مشروع</button>
           <div id="cPickedNote" class="src" style="display:none;margin:-4px 0 9px"></div>
@@ -1739,9 +1743,42 @@ table.prods tr:last-child td{border:none}
           </div>
 
           <div class="cfrow2">
-            <div class="cfield"><label>نسبة الفائدة السنوية (فلات %)</label><input id="cRate" type="number" step="0.01" value="3.75"></div>
+            <div class="cfield"><label id="cRateLabel">نسبة الفائدة السنوية (فلات %)</label><input id="cRate" type="number" step="0.01" value="3.75"></div>
             <div class="cfield"><label>مدة التمويل (سنة)</label><input id="cYears" type="number" value="20"></div>
           </div>
+
+          <div id="advOnlyFields" style="display:none">
+            <div class="cfield"><label>نسبة الدفعة الأولى (%)</label><input id="advDownPct" type="number" step="0.5" value="10"></div>
+
+            <button type="button" class="btn ghost" id="advMoreToggle" style="width:100%;margin:2px 0 9px">بيانات إضافية لدقة أعلى (اختياري) ▾</button>
+            <div id="advMoreFields" style="display:none">
+              <div class="cfrow2">
+                <div class="cfield"><label>تاريخ الميلاد</label><input id="advDob" type="date"></div>
+                <div class="cfield"><label>القطاع</label>
+                  <select id="advSector" style="width:100%;border:1.5px solid var(--line);border-radius:11px;padding:10px 11px;background:var(--surface);color:var(--ink);font-size:13px">
+                    <option value="">— غير محدد —</option>
+                    <option value="حكومي">حكومي</option>
+                    <option value="عسكري ضباط">عسكري (ضباط)</option>
+                    <option value="عسكري أفراد">عسكري (أفراد)</option>
+                    <option value="خاص">خاص</option>
+                    <option value="متقاعد">متقاعد</option>
+                  </select>
+                </div>
+              </div>
+              <div class="cfield" id="advRankWrap" style="display:none"><label>الرتبة</label>
+                <select id="advRank" style="width:100%;border:1.5px solid var(--line);border-radius:11px;padding:10px 11px;background:var(--surface);color:var(--ink);font-size:13px"></select>
+              </div>
+              <div class="cfrow2">
+                <div class="cfield"><label>سنوات الخدمة</label><input id="advYearsService" type="number" placeholder="مثال: 15"></div>
+                <div class="cfield"><label>الراتب الأساسي (ريال)</label><input id="advBaseSalary" type="number" placeholder="مثال: 8000"></div>
+              </div>
+              <div class="cfield"><label>أصول الأسرة (ريال) <em>لبوابة الأهلية فقط</em></label><input id="advAssets" type="number" placeholder="اختياري"></div>
+              <div class="cfield" style="margin-bottom:0">
+                <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input id="advPriorUse" type="checkbox" style="width:auto">سبق الاستفادة من دعم سكني</label>
+              </div>
+            </div>
+          </div>
+
           <button class="btn" id="cCalc" style="width:100%;margin-top:6px">احسب</button>
         </div>
         <div id="cResult"></div>
@@ -3781,7 +3818,7 @@ function applyUnitPick(row){
     pickedProject = unitPickProject; pickedType = unitPickType;
     const sup = SUPP && SUPP[String(unitPickProject.id)] && SUPP[String(unitPickProject.id)][unitPickType];
     calcMarketPrice = sup ? Math.round(priceVal+sup.avg) : null;
-    runCalc();
+    runCalcDispatch();
   }else{
     runNCalc();
     const infra = unitPickProject.pgd && unitPickProject.pgd.infra;
@@ -3817,10 +3854,10 @@ wireChipGroup("cEligChips","elig",v=>{
   if(pickedMoh!=null && pickedFull!=null){
     $("cPrice").value = v==="نعم" ? pickedMoh : pickedFull;
   }
-  runCalc();
+  runCalcDispatch();
 });
-wireChipGroup("cModChips","mod",v=>{ cMod=v; runCalc(); });
-wireChipGroup("cDaraChips","dara",v=>{ cDara=v; runCalc(); });
+wireChipGroup("cModChips","mod",v=>{ cMod=v; runCalcDispatch(); });
+wireChipGroup("cDaraChips","dara",v=>{ cDara=v; runCalcDispatch(); });
 wireChipGroup("cTransferChips","transfer",v=>{ cTransfer=v; applyBankRate(); });
 
 function populateBankSelect(){
@@ -3836,7 +3873,7 @@ function applyBankRate(){
   const row=(BANKS||[]).find(b=>b.bank===bank && b.salaryTransfer===cTransfer);
   if(row && typeof row.rate==="number"){
     $("cRate").value = (row.rate*100).toFixed(2);
-    runCalc();
+    runCalcDispatch();
   }else if(row){
     toast("نسبة هذا البنك نطاق وليست رقماً ثابتاً — راجع الملاحظة: "+(row.note||row.rate),"err");
   }
@@ -3933,7 +3970,7 @@ function openAffordDetail(r){
   } else {
     $("cRate").value=r.rate.toFixed(2);
     $("cYears").value=r.years;
-    runCalc();
+    runCalcDispatch();
   }
   setTimeout(()=>{ const el=$("cResult"); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); },250);
 }
@@ -4958,7 +4995,232 @@ function runCalc(){
   $("cShareWA").onclick=()=>shareWA(waText);
   $("cSaveLog").onclick=()=>saveCalcRecord("REDF", `سعر ${fmt(Math.round(price))} · دفعة أولى ${fmt(Math.round(downFinal))} · قسط ${fmt(Math.round(installment))} ريال/شهر`);
 }
-$("cCalc").onclick=runCalc;
+
+/* =====================================================================
+   الاحتساب المتقدم (تقديري وفق النظام) — مبني على محرك القدرة الشرائية
+   التوجيهي (سقوف ساما + لائحة الصندوق) لغرض الفرز والتوجيه، وليس عرضاً
+   بنكياً ملزماً. يُضاف كوضع اختياري بجانب الاحتساب المبسّط أعلاه (الفلات)
+   بلا أي تعديل عليه — المستخدم يختار أيهما يعرض للعميل.
+
+   الفرق الجوهري عن الاحتساب المبسّط: القسط هنا بنظام السداد المتناقص
+   (Declining Balance / تناقصي) على القيمة الحالية للأقساط، وهو النظام
+   الفعلي المتبع في تمويل الصندوق العقاري والبنوك بالمملكة (نسبة الربح
+   المُفصح عنها من كل بنك — وهي نفس نسبة "بنك التمويل" المختارة أعلاه —
+   تُطبَّق تناقصياً لا فلات). الاحتساب المبسّط (الفلات) يبقى كما هو لأنه
+   منهجية ملف REDF الأصلي المعتمد سابقاً بالتطبيق.
+   ===================================================================== */
+let calcMode="simple";
+const REDF_RANK_RETIRE_AGE={
+  "ملازم":44,"ملازم أول":44,"نقيب":48,"رائد":50,"مقدم":52,"عقيد":54,"عميد":56,"لواء":58,
+  "جندي":44,"جندي أول":44,"عريف":46,"وكيل رقيب":48,"رقيب":50,"رقيب أول":50,"رئيس رقباء":52
+};
+const REDF_OFFICER_RANKS=["ملازم","ملازم أول","نقيب","رائد","مقدم","عقيد","عميد","لواء"];
+const REDF_NCO_RANKS=["جندي","جندي أول","عريف","وكيل رقيب","رقيب","رقيب أول","رئيس رقباء"];
+/* نقاط مرجع قسط الدعم الشهري (الاستيفاء الخطي) — لائحة الصندوق العقاري */
+const REDF_SUPPORT_POINTS=[[3000,1350],[4000,1206],[5000,1073],[6000,955],[7000,850],[8000,757],[9000,673],[10000,599]];
+function redfMonthlySupportRaw(salary){
+  if(salary>10000) return 100000/240;
+  if(salary<=REDF_SUPPORT_POINTS[0][0]) return REDF_SUPPORT_POINTS[0][1];
+  for(let i=0;i<REDF_SUPPORT_POINTS.length-1;i++){
+    const [lowS,lowV]=REDF_SUPPORT_POINTS[i], [highS,highV]=REDF_SUPPORT_POINTS[i+1];
+    if(salary>=lowS && salary<=highS) return ((highS-salary)*(lowV-highV)/(highS-lowS)) + highV;
+  }
+  return REDF_SUPPORT_POINTS[REDF_SUPPORT_POINTS.length-1][1];
+}
+function redfMonthlySupport(salary,months){
+  let v=redfMonthlySupportRaw(salary);
+  if(months>240) v=v*240/months;
+  return v;
+}
+function ageYearsFrom(dobStr,atDate){
+  if(!dobStr) return null;
+  const dob=new Date(dobStr), at=atDate||new Date();
+  let age=at.getFullYear()-dob.getFullYear();
+  const m=at.getMonth()-dob.getMonth();
+  if(m<0 || (m===0 && at.getDate()<dob.getDate())) age--;
+  return age;
+}
+function retireAgeFor(sector,rank){
+  if(sector==="عسكري ضباط"||sector==="عسكري أفراد") return REDF_RANK_RETIRE_AGE[rank]||58;
+  return 60;
+}
+function estimatePension(baseSalary,yearsService,sector){
+  const factor = sector.indexOf("عسكري")===0 ? 35 : 40;
+  return baseSalary*Math.pow(1.025,yearsService)*(yearsService/factor);
+}
+function pvAnnuity(installment,monthlyRate,months){
+  if(months<=0) return 0;
+  if(monthlyRate===0) return installment*months;
+  return installment*(1-Math.pow(1+monthlyRate,-months))/monthlyRate;
+}
+function installmentForPrincipal(principal,monthlyRate,months){
+  if(months<=0) return 0;
+  if(monthlyRate===0) return principal/months;
+  return principal*monthlyRate/(1-Math.pow(1+monthlyRate,-months));
+}
+/* المحرك الأساسي — دخل/سقوف ← قدرة تمويلية، بمعزل عن سعر وحدة بعينها؛
+   ثم يقارَن بسعر الوحدة الفعلي (بعد خصم كل الدعومات) لتحديد الأنسب */
+function computeAdvancedAffordability(inp){
+  const months=Math.round(inp.years*12);
+  const monthlyRate=inp.annualRate/100/12;
+
+  const reasons=[];
+  if(inp.familyAssets!=null && inp.familyAssets>=5000000) reasons.push("أصول الأسرة تتجاوز الحد المسموح (5 مليون ريال)");
+  if(inp.priorUse) reasons.push("سبق الاستفادة من دعم سكني");
+  const eligibleGate = reasons.length===0;
+
+  let monthsBefore=months, monthsAfter=0, retireAgeUsed=null, pensionEst=null;
+  if(inp.dob && inp.sector){
+    const age=ageYearsFrom(inp.dob);
+    retireAgeUsed=retireAgeFor(inp.sector,inp.rank);
+    const remainingServiceMonths=Math.max(0, retireAgeUsed*12 - age*12);
+    monthsBefore = inp.sector==="متقاعد" ? 0 : Math.min(remainingServiceMonths, months);
+    monthsAfter = inp.sector==="متقاعد" ? months : Math.max(0, months-monthsBefore);
+    if(monthsAfter>0){
+      if(inp.baseSalary && inp.yearsService!=null){
+        pensionEst=estimatePension(inp.baseSalary, inp.yearsService, inp.sector);
+      } else {
+        monthsBefore=months; monthsAfter=0; /* بيانات التقاعد ناقصة — نرجع لمرحلة واحدة بدل تخمين معاش */
+      }
+    }
+  }
+
+  const dbrPct = inp.eligible ? 0.65 : 0.55;
+  const monthlySupport = inp.eligible ? redfMonthlySupport(inp.salary, months) : 0;
+  const downSupport = inp.eligible ? (inp.salary<10000?150000:100000) : 0;
+  const modSupport = (inp.eligible && inp.mod) ? 160000 : 0;
+
+  const installmentBefore=Math.max(0, (inp.salary - inp.oblig + monthlySupport) * dbrPct);
+  const pensionNet = pensionEst!=null ? pensionEst : inp.salary;
+  const installmentAfter = monthsAfter>0 ? Math.max(0, (pensionNet - inp.oblig + monthlySupport) * dbrPct) : 0;
+
+  const stage1=pvAnnuity(installmentBefore, monthlyRate, monthsBefore);
+  const stage2raw = monthsAfter>0 ? pvAnnuity(installmentAfter, monthlyRate, monthsAfter) : 0;
+  const stage2 = stage2raw * Math.pow(1+monthlyRate, -monthsBefore);
+  const maxFinancing = stage1+stage2;
+  const maxPropertyValue = maxFinancing/0.90 + downSupport + modSupport;
+
+  let bracket;
+  if(maxPropertyValue<500000) bracket="أقل من 500 ألف";
+  else if(maxPropertyValue<800000) bracket="500 – 800 ألف";
+  else if(maxPropertyValue<1200000) bracket="800 ألف – 1.2 مليون";
+  else bracket="أكثر من 1.2 مليون";
+
+  const projectSupport=inp.projectSupport||0;
+  const priceAfterSupport=Math.max(0, inp.price - downSupport - modSupport - projectSupport);
+  const downAmt = priceAfterSupport * (inp.downPct/100);
+  const financeNeeded = Math.max(0, priceAfterSupport - downAmt);
+  const actualInstallment = installmentForPrincipal(financeNeeded, monthlyRate, months);
+  const fitsBefore = actualInstallment <= installmentBefore + 1;
+  const fitsAfter = monthsAfter>0 ? (actualInstallment <= installmentAfter + 1) : true;
+
+  return {eligibleGate, reasons, months, monthsBefore, monthsAfter, retireAgeUsed, pensionEst,
+    dbrPct, monthlySupport, downSupport, modSupport, installmentBefore, installmentAfter,
+    maxFinancing, maxPropertyValue, bracket,
+    projectSupport, priceAfterSupport, downAmt, financeNeeded, actualInstallment, fitsBefore, fitsAfter};
+}
+function projectUnitSupportTotal(){
+  if(!pickedProject || !pickedType) return 0;
+  const sup = SUPP && SUPP[String(pickedProject.id)] && SUPP[String(pickedProject.id)][pickedType];
+  if(!sup) return 0;
+  return (sup.inKind||0)+(sup.infra||0)+(sup.instl||0)+(sup.phase||0);
+}
+function runAdvancedCalc(){
+  const price=+$("cPrice").value, salary=+$("cSalary").value, oblig=+$("cOblig").value||0,
+        rate=+$("cRate").value, years=+$("cYears").value, downPct=+$("advDownPct").value||10;
+  const box=$("cResult");
+  if(!price||price<=0){ box.innerHTML=`<div class="cerr">أدخل سعر الوحدة</div>`; return; }
+  if(!salary||salary<=0){ box.innerHTML=`<div class="cerr">أدخل الراتب الشهري</div>`; return; }
+  if(!rate||rate<=0||!years||years<=0){ box.innerHTML=`<div class="cerr">تحقق من نسبة الفائدة ومدة التمويل</div>`; return; }
+
+  const eligible=cElig==="نعم";
+  const dob=$("advDob").value||null, sector=$("advSector").value||null, rank=$("advRank").value||null;
+  const yearsServiceRaw=$("advYearsService").value, baseSalaryRaw=$("advBaseSalary").value, assetsRaw=$("advAssets").value;
+  const r=computeAdvancedAffordability({
+    price, salary, oblig, annualRate:rate, years, eligible, mod:cMod==="نعم", downPct,
+    dob, sector, rank, yearsService: yearsServiceRaw!==""?+yearsServiceRaw:null,
+    baseSalary: baseSalaryRaw!==""?+baseSalaryRaw:null,
+    familyAssets: assetsRaw!==""?+assetsRaw:null, priorUse: $("advPriorUse").checked,
+    projectSupport: projectUnitSupportTotal()
+  });
+
+  let h=``;
+  if(!r.eligibleGate){
+    h+=`<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">
+      ⚠ غير مؤهل وفق بوابة الأهلية التوجيهية: ${r.reasons.join(" · ")}</div>`;
+  }
+  if(!eligible){
+    h+=`<div class="cwarn">هذه الوحدة مضبوطة على "غير مستحق" — لا يُحتسب دعم صندوق أو قسط دعم شهري، ونسبة الاستقطاع المستخدمة 55% بدل 65%.</div>`;
+  }
+
+  h+=`<div class="cresblock" style="text-align:center;padding:18px 14px">
+    <div style="font-size:11px;color:var(--muted);font-weight:600">قيمة الوحدة بعد كل الدعومات</div>
+    <div style="font-size:30px;font-weight:800;color:var(--green);margin-top:4px">${fmt(Math.round(r.priceAfterSupport))} <span style="font-size:14px;font-weight:600">ريال</span></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">من أصل ${fmt(Math.round(price))} ريال — دعومات مخصومة: ${fmt(Math.round(price-r.priceAfterSupport))} ريال</div>
+  </div>`;
+
+  const fits = r.fitsBefore && r.fitsAfter;
+  h+=`<div class="cwarn" style="background:${fits?"var(--green-soft)":"var(--gold-soft)"};border-color:${fits?"var(--green-soft-border)":"var(--gold-soft-border)"};color:${fits?"var(--green)":"var(--gold-text3)"}">
+    ${fits?"✅ القسط الشهري لهذه الوحدة ضمن حدود الراتب (نسبة الاستقطاع المسموحة)":"⚠ القسط الشهري لهذه الوحدة قد يتجاوز الحد المسموح من الراتب"}</div>`;
+
+  h+=`<div class="cresblock">
+    <h4>ملخص الدفع (سداد متناقص)</h4>
+    <div class="cresrow hi"><span class="cl">الدفعة الأولى (${fmt(downPct)}%)</span><span class="cv">${fmt(Math.round(r.downAmt))} ريال</span></div>
+    <div class="cresrow hi"><span class="cl">مبلغ التمويل المطلوب</span><span class="cv">${fmt(Math.round(r.financeNeeded))} ريال</span></div>
+    <div class="cresrow hi"><span class="cl">القسط الشهري التقديري</span><span class="cv">${fmt(Math.round(r.actualInstallment))} ريال</span></div>
+    <h4>سقف القدرة الشرائية وفق الراتب</h4>
+    <div class="cresrow"><span class="cl">أقصى قسط قبل التقاعد (${fmt(Math.round(r.dbrPct*100))}%)</span><span class="cv">${fmt(Math.round(r.installmentBefore))} ريال</span></div>
+    ${r.monthsAfter>0?`<div class="cresrow"><span class="cl">أقصى قسط بعد التقاعد</span><span class="cv">${fmt(Math.round(r.installmentAfter))} ريال</span></div>
+    <div class="cresrow"><span class="cl">الراتب التقاعدي التقديري</span><span class="cv">${fmt(Math.round(r.pensionEst))} ريال</span></div>
+    <div class="cresrow"><span class="cl">مدة ما بعد التقاعد</span><span class="cv">${Math.round(r.monthsAfter/12*10)/10} سنة</span></div>`:""}
+    <div class="cresrow"><span class="cl">مبلغ التمويل الأقصى (وفق الراتب فقط)</span><span class="cv">${fmt(Math.round(r.maxFinancing))} ريال</span></div>
+    <div class="cresrow"><span class="cl">القيمة العقارية القصوى المقدَّرة</span><span class="cv">${fmt(Math.round(r.maxPropertyValue))} ريال</span></div>
+    <div class="cresrow"><span class="cl">الشريحة السعرية المستهدَفة</span><span class="cv">${r.bracket}</span></div>
+    <h4>الدعومات المُحتسَبة</h4>
+    <div class="cresrow"><span class="cl">دعم الصندوق (الدفعة الأولى)</span><span class="cv">${fmt(r.downSupport)} ريال</span></div>
+    <div class="cresrow"><span class="cl">قسط الدعم الشهري (يُضاف لقدرة السداد)</span><span class="cv">${fmt(Math.round(r.monthlySupport))} ريال/شهر</span></div>
+    ${r.modSupport?`<div class="cresrow"><span class="cl">دعم وزارة الدفاع</span><span class="cv">${fmt(r.modSupport)} ريال</span></div>`:""}
+    ${r.projectSupport?`<div class="cresrow"><span class="cl">دعم المشروع/الوحدة (بنية تحتية وعيني)</span><span class="cv">${fmt(Math.round(r.projectSupport))} ريال</span></div>`:""}
+  </div>`;
+
+  h+=`<div class="cwarn" style="background:var(--purple-soft);border-color:var(--purple-soft-border);color:var(--purple)">تقدير توجيهي وفق سقوف النظام (ساما ولائحة الصندوق العقاري) لغرض الفرز والتوجيه فقط — وليس عرضاً بنكياً ملزماً. نسبة الربح المستخدمة من بيانات بنك التمويل المختار أعلاه، مُطبَّقة بنظام السداد المتناقص (وليس فلات). قسط الدعم الشهري تقديري بالاستيفاء الخطي من جداول الصندوق ولا يشمل تعديل حجم الأسرة (غير متوفر رسمياً).</div>`;
+  h+=`<div id="cOffersPanel"></div>`;
+  h+=`<div class="calcActions">
+    <button type="button" class="btn ghost" id="cShareWA">📤 مشاركة واتساب</button>
+    <button type="button" class="btn ghost" id="cSaveLog">💾 حفظ باسم العميل</button>
+  </div>`;
+  box.innerHTML=h;
+  if(pickedProject) renderProjectOffersPanel(pickedProject);
+  const waText=`حاسبة القدرة الشرائية المتقدمة — SalesPlace\nقيمة الوحدة بعد الدعومات: ${fmt(Math.round(r.priceAfterSupport))} ريال (من أصل ${fmt(Math.round(price))} ريال)\n———\nالدفعة الأولى (${fmt(downPct)}%): ${fmt(Math.round(r.downAmt))} ريال\nالقسط الشهري التقديري: ${fmt(Math.round(r.actualInstallment))} ريال\nدعم الصندوق: ${fmt(r.downSupport)} ريال\nقسط الدعم الشهري: ${fmt(Math.round(r.monthlySupport))} ريال/شهر\n(تقدير توجيهي وفق سقوف النظام — وليس عرضاً بنكياً ملزماً)`;
+  $("cShareWA").onclick=()=>shareWA(waText);
+  $("cSaveLog").onclick=()=>saveCalcRecord("REDF متقدم", `سعر بعد الدعم ${fmt(Math.round(r.priceAfterSupport))} · دفعة أولى ${fmt(Math.round(r.downAmt))} · قسط ${fmt(Math.round(r.actualInstallment))} ريال/شهر`);
+}
+function runCalcDispatch(){ if(calcMode==="advanced") runAdvancedCalc(); else runCalc(); }
+wireChipGroup("calcModeChips","mode",v=>{
+  calcMode=v;
+  const adv = v==="advanced";
+  $("advOnlyFields").style.display = adv?"block":"none";
+  $("cRateLabel").textContent = adv ? "نسبة الفائدة السنوية (تناقصية %)" : "نسبة الفائدة السنوية (فلات %)";
+  runCalcDispatch();
+});
+$("advMoreToggle").onclick=()=>{
+  const open = $("advMoreFields").style.display!=="none";
+  $("advMoreFields").style.display = open?"none":"block";
+  $("advMoreToggle").textContent = `بيانات إضافية لدقة أعلى (اختياري) ${open?"▾":"▴"}`;
+};
+$("advSector").onchange=()=>{
+  const sector=$("advSector").value;
+  const isOfficer=sector==="عسكري ضباط", isNco=sector==="عسكري أفراد";
+  $("advRankWrap").style.display = (isOfficer||isNco) ? "block" : "none";
+  if(isOfficer) $("advRank").innerHTML = REDF_OFFICER_RANKS.map(r=>`<option value="${r}">${r}</option>`).join("");
+  else if(isNco) $("advRank").innerHTML = REDF_NCO_RANKS.map(r=>`<option value="${r}">${r}</option>`).join("");
+  runCalcDispatch();
+};
+["advDownPct","advDob","advRank","advYearsService","advBaseSalary","advAssets"].forEach(id=>{
+  $(id).addEventListener("input",()=>{ if(calcMode==="advanced") runCalcDispatch(); });
+});
+$("advPriorUse").addEventListener("change",()=>{ if(calcMode==="advanced") runCalcDispatch(); });
+$("cCalc").onclick=runCalcDispatch;
 
 /* ---------- cart: multi-unit selection for non-beneficiary bundle calc + comparison ---------- */
 const CART_OVR=new Map(); /* key -> manually edited price, overrides the type-average when set */
