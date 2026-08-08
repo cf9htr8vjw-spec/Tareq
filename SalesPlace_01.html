@@ -2048,6 +2048,7 @@ table.prods tr:last-child td{border:none}
     <div class="chips">
       <button class="chip" id="cat595">مشاريع ٥-٩٥ (رحاب / دانية)</button>
       <button class="chip" id="hasPlanChip">بجداول دفعات مرنة 2026</button>
+      <button class="chip" id="daraChip">مشاريع ذرى بلس</button>
       <button class="chip" id="favOnlyChip">⭐ المفضلة فقط</button>
     </div>
     <div class="flabel">نوع الوحدة</div>
@@ -2419,7 +2420,7 @@ let PERMS = Object.assign({}, PERM_ALL);
 let SERVER_ONBOARDED = null; /* null = unknown (older DB without the migration, or fetch failed) */
 
 /* ---------- state ---------- */
-const S = { seg:"b", view:"list", q:"", city:"", dest:"", dev:"", devKind:"", cat595:false, hasPlan:false, favOnly:false, types:new Set(), beds:new Set(),
+const S = { seg:"b", view:"list", q:"", city:"", dest:"", dev:"", devKind:"", cat595:false, hasPlan:false, dara:false, favOnly:false, types:new Set(), beds:new Set(),
   smin:null, smax:null, pmin:null, pmax:null, constr:new Set(), progs:new Set(), sort:"u", sel:null,
   /* selections coming from the contract-preferences view */
   pbands:new Set(), sbands:new Set() };
@@ -2479,6 +2480,7 @@ function vm(p){
   if(S.devKind){ const isNHC=p.dev.trim()==="NHC"; if(S.devKind==="nhc"&&!isNHC) return null; if(S.devKind==="other"&&isNHC) return null; }
   if(S.cat595 && !inCat595(p)) return null;
   if(S.hasPlan && !(ALLOC && ALLOC[p.id])) return null;
+  if(S.dara && !isDanaProject(p)) return null;
   if(S.favOnly && !FAVS.has(p.id)) return null;
   if(S.constr.size && !S.constr.has(p.constr)) return null;
   if(S.progs.size){ const has=p.pg||[]; for(const g of S.progs) if(!has.includes(g)) return null; }
@@ -2510,7 +2512,7 @@ function filtered(){
   return arr;
 }
 function activeFilterCount(){
-  let n=0; if(S.city)n++; if(S.dest)n++; if(S.dev)n++; if(S.devKind)n++; if(S.cat595)n++; if(S.hasPlan)n++; if(S.favOnly)n++; if(S.types.size)n++; if(S.beds.size)n++;
+  let n=0; if(S.city)n++; if(S.dest)n++; if(S.dev)n++; if(S.devKind)n++; if(S.cat595)n++; if(S.hasPlan)n++; if(S.dara)n++; if(S.favOnly)n++; if(S.types.size)n++; if(S.beds.size)n++;
   if(S.smin!=null||S.smax!=null)n++; if(S.pmin!=null||S.pmax!=null)n++;
   if(S.constr.size)n++; if(S.progs.size)n++; if(S.pbands.size)n++; if(S.sbands.size)n++; return n;
 }
@@ -2637,6 +2639,8 @@ function buildFilterUI(){
   c595.onclick=()=>{ S.cat595=!S.cat595; c595.classList.toggle("on",S.cat595); preview(); };
   const hpc=$("hasPlanChip");
   hpc.onclick=()=>{ S.hasPlan=!S.hasPlan; hpc.classList.toggle("on",S.hasPlan); preview(); };
+  const dc=$("daraChip");
+  dc.onclick=()=>{ S.dara=!S.dara; dc.classList.toggle("on",S.dara); preview(); };
   const foc=$("favOnlyChip");
   foc.onclick=()=>{ S.favOnly=!S.favOnly; foc.classList.toggle("on",S.favOnly); preview(); };
   const tc=$("typeChips");
@@ -2659,7 +2663,7 @@ function buildFilterUI(){
   $("fReset").onclick=resetAllFilters;
 }
 function resetAllFilters(){
-  S.city="";S.dest="";S.dev="";S.devKind="";S.cat595=false;S.hasPlan=false;S.types.clear();S.beds.clear();S.progs.clear();
+  S.city="";S.dest="";S.dev="";S.devKind="";S.cat595=false;S.hasPlan=false;S.dara=false;S.types.clear();S.beds.clear();S.progs.clear();
   S.smin=S.smax=S.pmin=S.pmax=null;S.constr.clear();
   S.pbands.clear();S.sbands.clear();S.q=""; S.favOnly=false;
   if($("q")) $("q").value="";
@@ -2667,6 +2671,7 @@ function resetAllFilters(){
   ["citySel","devSel","pMin","pMax","sMin","sMax"].forEach(id=>{ if($(id)) $(id).value=""; });
   if($("cat595")) $("cat595").classList.remove("on");
   if($("hasPlanChip")) $("hasPlanChip").classList.remove("on");
+  if($("daraChip")) $("daraChip").classList.remove("on");
   if($("favOnlyChip")) $("favOnlyChip").classList.remove("on");
   ["devKindAll","devKindNHC","devKindOther"].forEach(id=>{ if($(id)) $(id).classList.toggle("on",id==="devKindAll"); });
   document.querySelectorAll("#typeChips .chip,#constrChips .chip,#bedChips .chip,#progChips .chip").forEach(b=>b.classList.remove("on"));
@@ -5153,17 +5158,19 @@ function calcMaxPrincipal(maxInstallment, annualRatePct, years){
    - الحد الأقصى 120,000 ريال إجمالاً، تُقسَّم على كامل مدة التمويل (وليس 500 ريال ثابتة
      دائماً — 500 كانت فقط لحالة 240 شهراً/20 سنة تحديداً)
    - يشترط صافي راتب بين 3,000 و7,000 ريال شهرياً
-   - يقتصر على مشاريع "الدانيات" المحدَّدة بالاسم حصراً — وليس أي مشروع تبدأ تسميته بـ"دانية".
-     صُحِّح هذا بعد أن أوضح المستخدم أن مشروع "دانية وديانا" (بالطائف) رغم بادئة الاسم
-     المطابقة، ليس من المشاريع المشمولة بالبرنامج؛ بينما دانية الأصالة/المشرقية/الغروب
-     (بالرياض والمدينة المنورة) هي المشاريع الثلاثة الفعلية المؤهَّلة حسب قائمة معتمدة منه */
-const DARA_PLUS_PROJECT_NAMES = new Set(["دانية الاصاله","دانية المشرقية","دانية الغروب"]);
+   - يقتصر على قائمة مشاريع معتمدة محدَّدة بالاسم حصراً (وليس بادئة "دانية" أو مطوّر NHC) —
+     14 مشروعاً أكّدها المستخدم صراحة عبر قائمة رسمية، تضم مشاريع "رحاب" و"دانية" معاً وليست
+     حصراً على المسمّاة "دانية" (تصحيح لاحق بعد مراجعة أولى ظنّت الاقتصار على 3 مشاريع فقط) */
+const DARA_PLUS_PROJECT_NAMES = new Set([
+  "رحاب جدة هايتس","رحاب الربى","رشا","أراسي هايتس","رحاب الأصالة","رحاب الواجهة",
+  "دانية المشرقية","دانية الغروب","مرجانة","رحاب السدن","ذا روز هاوس","دانية الاصاله",
+  "رحاب الورود","دانية وديانا"
+]);
 function daraPlusMonthly(months){ return months>0 ? 120000/months : 0; }
 function isDanaProject(p){
   if(!p) return false;
-  const sh=(p.short||"").trim(), nm=(p.name||"").trim();
-  const isDana = DARA_PLUS_PROJECT_NAMES.has(sh) || [...DARA_PLUS_PROJECT_NAMES].some(n=>nm.endsWith(n));
-  return isDana && (p.dev||"").trim()==="NHC";
+  const sh=(p.short||"").trim();
+  return DARA_PLUS_PROJECT_NAMES.has(sh);
 }
 /* منهجية REDF الأساسية (بلا تعديل عن حاسبة المستفيدين) — مُستخرجة بدالة مستقلة
    ليعاد استخدامها في مسح تلقائي عبر كل المشاريع (بحث "أي مشروع يناسب راتبي") دون تكرار الصيغة.
