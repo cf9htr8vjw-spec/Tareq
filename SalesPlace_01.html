@@ -878,6 +878,7 @@ main{flex:1;min-height:0;position:relative}
 .pill.t{background:var(--purple-soft);color:var(--purple)}
 .pill.geo{background:var(--green-soft);color:var(--green);font-weight:500}
 .pill.doc{background:var(--gold-soft);color:var(--gold-text3);font-weight:500}
+.pill.sale{background:var(--bg);color:var(--muted);font-weight:500;border:1px solid var(--line)}
 .pill.loc{background:var(--loc-bg);color:var(--loc-text);font-weight:500}
 .crow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);gap:8px}
 .crow .units b{font-size:17px;font-family:"Noto Kufi Arabic"}
@@ -1165,18 +1166,21 @@ main{flex:1;min-height:0;position:relative}
 .uactions button{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:9px;border:1.5px solid var(--line);color:var(--ink)}
 .uactions button.danger{color:var(--rust);border-color:var(--rust-soft-border)}
 .uactions button.warn{color:var(--gold-text);border-color:var(--gold-soft-border)}
-.newsHead{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--green);margin:0 2px 6px}
-.newsHead .dot{width:6px;height:6px;border-radius:50%;background:var(--rust);flex:none;animation:newsPulse 1.6s ease-in-out infinite}
+/* شريط أخبار رفيع بلون لافت (ذهبي) بدل شريط البطاقات السابق — كان "كبيراً نسبياً" ويبدو
+   "متكرراً" مع قلة الأخبار لأن كل بطاقة كانت تُكرَّر بذاتها ضمن حلقة التمرير. الآن الأخبار
+   كلها تُدمَج بسطر واحد مستمر (مفصول بفاصلة نقطية)، والتمرير لا يُفعَّل إطلاقاً إن كان
+   النص أقصر من عرض الشريط (يظهر ثابتاً بالمنتصف بدل تكرار مصطنع) */
+#newsBar{display:flex;align-items:stretch;height:26px;border-radius:8px;overflow:hidden;
+  background:linear-gradient(90deg,var(--gold),#caa452 85%);box-shadow:var(--shadow);margin-bottom:10px}
+#newsBarLabel{flex:none;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.2);
+  color:#fff;font-size:9.5px;font-weight:800;padding:0 9px;white-space:nowrap}
+#newsBarLabel .dot{width:5px;height:5px;border-radius:50%;background:#fff;animation:newsPulse 1.6s ease-in-out infinite}
 @keyframes newsPulse{0%,100%{opacity:1}50%{opacity:.25}}
-#newsTicker{overflow:hidden;padding:2px 2px 12px;-webkit-overflow-scrolling:touch}
-.newsTrack{display:flex;gap:7px;width:max-content;animation:newsScroll 16s linear infinite}
-#newsTicker.paused .newsTrack{animation-play-state:paused}
-@media (prefers-reduced-motion:reduce){.newsTrack{animation:none;overflow-x:auto}}
-@keyframes newsScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.newsCard{flex:0 0 auto;max-width:180px;min-width:130px;background:linear-gradient(135deg,var(--green),#1a5c3d 80%);color:#fff;border-radius:10px;padding:6px 9px;box-shadow:var(--shadow)}
-.newsCard .newsCat{font-size:8px;font-weight:700;opacity:.85;background:rgba(255,255,255,.16);border-radius:99px;padding:1.5px 7px;display:inline-block;margin-bottom:4px}
-.newsCard .newsTitle{font-size:10px;font-weight:700;line-height:1.35}
-.newsCard .newsDate{font-size:8px;opacity:.75;margin-top:3px}
+#newsBarTrack{flex:1;overflow:hidden;position:relative;display:flex;align-items:center}
+#newsBarText{white-space:nowrap;color:#3a2a08;font-size:11px;font-weight:700;padding-inline-start:12px}
+#newsBarText.scroll{will-change:transform}
+@media (prefers-reduced-motion:reduce){#newsBarText.scroll{animation:none!important;overflow-x:auto}}
+@keyframes newsBarScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .uperm{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
 .chip.small{padding:4.5px 10px;font-size:11.5px}
 .btn.sm{padding:6px 12px;font-size:11.5px;border-radius:9px}
@@ -1585,8 +1589,10 @@ table.prods tr:last-child td{border:none}
   <div class="view on" id="homeView">
     <div id="homeScroll">
       <div id="newsSection" style="display:none">
-        <div class="newsHead"><span class="dot"></span><span>📰 أخبار اليوم</span></div>
-        <div id="newsTicker"><div class="newsTrack" id="newsTrack"></div></div>
+        <div id="newsBar">
+          <div id="newsBarLabel"><span class="dot"></span><span>📰 اليوم</span></div>
+          <div id="newsBarTrack"><span id="newsBarText"></span></div>
+        </div>
       </div>
       <div class="htiles">
         <button type="button" class="htile" id="hTileDest">
@@ -2506,6 +2512,15 @@ function absPill(id){
 function typePills(types){
   return TYPES.filter(t=>types[t]).map(t=>`<span class="pill ${TCLS[t]}">${t} (${fmt(types[t])})</span>`).join("");
 }
+/* تاريخ بدء البيع — من أول سجل بيع حقيقي بلقطة الأداء (PERF[id].first)، نفس المصدر
+   المستخدم أصلاً بقسم "أداء المشروع" داخل التفاصيل، لكن معروضاً هنا كتاريخ مباشر بدل عمر نسبي */
+function saleStartPill(id){
+  const f = PERF ? PERF[id] : null;
+  if(!f || !f.first) return "";
+  const d = new Date(f.first);
+  if(isNaN(d)) return "";
+  return `<span class="pill sale">🗓️ البيع منذ ${d.toLocaleDateString("ar-SA-u-ca-gregory",{month:"long",year:"numeric"})}</span>`;
+}
 function render(){
   renderRecent();
   const arr=filtered();
@@ -2538,7 +2553,7 @@ function render(){
     const scarce = v.u>0 && v.u<10;
     el.innerHTML=`<button type="button" class="favBtn${FAVS.has(p.id)?" on":""}" data-fav="${p.id}">${FAVS.has(p.id)?"★":"☆"}</button>
       <div class="nm">${p.short}</div><div class="dv">${p.dev} · ${p.city}${p.dest?` · وجهة ${p.dest}`:""}</div>
-      <div class="cmeta">${typePills(v.types)}${progPills}${absPill(p.id)}${p.f?'<span class="pill doc">📄 مميزات</span>':""}${p.lat!=null?'<button type="button" class="pill geo" data-goto="'+p.id+'">📍 عرض على الخريطة</button>':""}</div>
+      <div class="cmeta">${typePills(v.types)}${progPills}${absPill(p.id)}${saleStartPill(p.id)}${p.f?'<span class="pill doc">📄 مميزات</span>':""}${p.lat!=null?'<button type="button" class="pill geo" data-goto="'+p.id+'">📍 عرض على الخريطة</button>':""}</div>
       <div class="crow">
         <div class="units"><b class="${scarce?"scarce":""}">${fmt(v.u)}</b><span class="${scarce?"scarce":""}">${scarce?`⚡ كمية محدودة`:narrowed?"وحدة مطابقة للفلاتر":"وحدة متاحة الآن"}</span></div>
         <div class="pr"><b>${compact(v.minP)} – ${compact(v.maxP)} ريال</b><span>متوسط المتر ${fmt(v.pps)} ريال · ${priceLbl()}</span></div>
@@ -4954,14 +4969,16 @@ function calcMaxPrincipal(maxInstallment, annualRatePct, years){
    - الحد الأقصى 120,000 ريال إجمالاً، تُقسَّم على كامل مدة التمويل (وليس 500 ريال ثابتة
      دائماً — 500 كانت فقط لحالة 240 شهراً/20 سنة تحديداً)
    - يشترط صافي راتب بين 3,000 و7,000 ريال شهرياً
-   - يقتصر على مشاريع "الدانيات" التابعة لـNHC (دانية الأصالة/المشرقية/الفرسان/الغروب/
-     الحيوية/السدن) — نتحقق بمطابقة بادئة اسم المشروع "دانية"/"دانيات" + مطوّر NHC
-   مصدر: تقرير بحثي مرفق حول برنامج ذرى بلس (منصة سكني ومؤسسة سكن الرسميتين) */
+   - يقتصر على مشاريع "الدانيات" المحدَّدة بالاسم حصراً — وليس أي مشروع تبدأ تسميته بـ"دانية".
+     صُحِّح هذا بعد أن أوضح المستخدم أن مشروع "دانية وديانا" (بالطائف) رغم بادئة الاسم
+     المطابقة، ليس من المشاريع المشمولة بالبرنامج؛ بينما دانية الأصالة/المشرقية/الغروب
+     (بالرياض والمدينة المنورة) هي المشاريع الثلاثة الفعلية المؤهَّلة حسب قائمة معتمدة منه */
+const DARA_PLUS_PROJECT_NAMES = new Set(["دانية الاصاله","دانية المشرقية","دانية الغروب"]);
 function daraPlusMonthly(months){ return months>0 ? 120000/months : 0; }
 function isDanaProject(p){
   if(!p) return false;
-  const nm=p.name||"", sh=p.short||"";
-  const isDana = nm.startsWith("دانية")||sh.startsWith("دانية")||nm.startsWith("دانيات")||sh.startsWith("دانيات");
+  const sh=(p.short||"").trim(), nm=(p.name||"").trim();
+  const isDana = DARA_PLUS_PROJECT_NAMES.has(sh) || [...DARA_PLUS_PROJECT_NAMES].some(n=>nm.endsWith(n));
   return isDana && (p.dev||"").trim()==="NHC";
 }
 /* منهجية REDF الأساسية (بلا تعديل عن حاسبة المستفيدين) — مُستخرجة بدالة مستقلة
@@ -5838,24 +5855,36 @@ async function refreshLiveBanks(){
   populateBankSelect();
 }
 async function refreshNewsTicker(){
-  const wrap=$("newsSection"), track=$("newsTrack"); if(!wrap||!track) return;
+  const wrap=$("newsSection"); if(!wrap) return;
   let rows;
   try{ rows=await sbSelect("news_items",{select:"*",active:"eq.true",order:"created_at.desc",limit:"10"}); }
   catch(e){ wrap.style.display="none"; return; } /* news_items.sql قد لا يكون شُغّل بعد — لا نكسر الشاشة الرئيسية */
   if(!Array.isArray(rows) || !rows.length){ wrap.style.display="none"; return; }
-  const cardsHtml=rows.map(n=>`<div class="newsCard">
-      ${n.category?`<div class="newsCat">${n.category}</div>`:""}
-      <div class="newsTitle">${n.title}</div>
-      <div class="newsDate">${new Date(n.created_at).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})}</div>
-    </div>`).join("");
-  /* تكرار البطاقات مرتين لتفعيل حلقة تمرير سلسة بلا فجوة عبر إزاحة 50% فقط */
-  track.innerHTML = cardsHtml + cardsHtml;
+  const joined = rows.map(n=>(n.category?`${n.category}: `:"")+n.title).join("   •   ");
+  const textEl=$("newsBarText"), track=$("newsBarTrack");
+  textEl.classList.remove("scroll");
+  textEl.style.animation="none";
+  textEl.style.textAlign="";
+  textEl.textContent=joined;
   wrap.style.display="block";
-  const ticker=$("newsTicker");
-  if(!ticker.dataset.pauseWired){
-    ticker.dataset.pauseWired="1";
-    ["touchstart","mouseenter"].forEach(ev=>ticker.addEventListener(ev,()=>ticker.classList.add("paused")));
-    ["touchend","mouseleave"].forEach(ev=>ticker.addEventListener(ev,()=>setTimeout(()=>ticker.classList.remove("paused"),500)));
+  /* التمرير يُفعَّل فقط إن كان النص فعلاً أطول من عرض الشريط — وإلا يظهر ثابتاً بالمنتصف
+     بدل تكراره مصطنعاً كما كان يحدث سابقاً مع قلة الأخبار (بطاقة أو بطاقتين مكرَّرتين) */
+  requestAnimationFrame(()=>{
+    if(textEl.scrollWidth > track.clientWidth){
+      textEl.textContent = joined + "   •   " + joined;
+      const dur = Math.max(14, Math.round(textEl.scrollWidth/45));
+      textEl.style.animation = `newsBarScroll ${dur}s linear infinite`;
+      textEl.classList.add("scroll");
+    } else {
+      textEl.style.textAlign="center";
+      track.style.justifyContent="center";
+    }
+  });
+  const bar=$("newsBar");
+  if(!bar.dataset.pauseWired){
+    bar.dataset.pauseWired="1";
+    ["touchstart","mouseenter"].forEach(ev=>bar.addEventListener(ev,()=>{ textEl.style.animationPlayState="paused"; }));
+    ["touchend","mouseleave"].forEach(ev=>bar.addEventListener(ev,()=>setTimeout(()=>{ textEl.style.animationPlayState="running"; },500)));
   }
 }
 let LAST_SYNC_DATE=null;
