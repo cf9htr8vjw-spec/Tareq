@@ -2172,6 +2172,22 @@ table.prods tr:last-child td{border:none}
 
       <div class="cfield"><label>عدد أفراد الأسرة <em>اختياري — للاسترشاد فقط</em></label><input id="afFamily" type="number" inputmode="numeric" placeholder="مثال: 5"></div>
 
+      <div class="cfrow2" style="margin-bottom:11px">
+        <div class="cfield" style="margin-bottom:0"><label>منسوب وزارة الدفاع</label>
+          <div class="chips" id="afModChips">
+            <button type="button" class="chip" data-mod="نعم">نعم</button>
+            <button type="button" class="chip on" data-mod="لا">لا</button>
+          </div>
+        </div>
+        <div class="cfield" style="margin-bottom:0"><label>ترغب بدعم ذرى بلس؟</label>
+          <div class="chips" id="afDaraChips">
+            <button type="button" class="chip" data-dara="نعم">نعم</button>
+            <button type="button" class="chip on" data-dara="لا">لا</button>
+          </div>
+        </div>
+      </div>
+      <div class="src" style="margin:-4px 0 11px">تُحسب هذه الدعومات لكل مشروع على حدة (دعم المشروع الفعلي، وذرى بلس فقط لمشاريع الدانيات ولراتب 3,000–7,000) فتتغيّر فرصة كل مشروع تبعاً لدعمه الخاص، لا سقف واحد موحّد للجميع.</div>
+
       <div class="flabel" style="margin-top:2px">نوع المنتج <em style="font-style:normal;font-weight:400;color:var(--muted)">(اختياري)</em></div>
       <div class="chips" id="afTypeChips" style="margin-bottom:11px">
         <button type="button" class="chip on" data-type="">الكل</button>
@@ -4054,7 +4070,7 @@ $("bankInfoBtn").onclick=()=>{ renderBankInfo(); openSheet("bankInfoSheet"); };
 $("bankInfoScrim").onclick=()=>closeSheet("bankInfoSheet");
 
 /* ---------- "أي مشروع يناسب راتبك؟" — مسح تلقائي للمشاريع حسب القدرة الشرائية ---------- */
-let AF={salary:null,oblig:null,city:"",type:"",areaMin:null,areaMax:null,family:null};
+let AF={salary:null,oblig:null,city:"",type:"",areaMin:null,areaMax:null,family:null,mod:false,dara:false};
 let afResults=[];
 function populateAffordSelects(){
   const cities=[...new Set(DATA.map(p=>p.city))].sort((a,b)=>a.localeCompare(b,"ar"));
@@ -4062,6 +4078,8 @@ function populateAffordSelects(){
   $("afArea").innerHTML=`<option value="">كل المساحات</option>`+Object.keys(SBAND).map(k=>`<option value="${k}">${k}</option>`).join("");
 }
 wireChipGroup("afTypeChips","type",v=>{ AF.type=v; });
+wireChipGroup("afModChips","mod",v=>{ AF.mod=v==="نعم"; });
+wireChipGroup("afDaraChips","dara",v=>{ AF.dara=v==="نعم"; });
 function openAffordSheet(){
   if($("afCity").options.length<2) populateAffordSelects();
   $("affordResultsWrap").style.display="none";
@@ -4087,8 +4105,8 @@ $("afSearchBtn").onclick=()=>{
   AF={salary,oblig,city,type,
     areaMin:areaRange?areaRange[0]:null,
     areaMax:(areaRange && isFinite(areaRange[1]))?areaRange[1]:null,
-    family};
-  afResults = scanAffordableProjects({salary,oblig,city:city||undefined,type:type||undefined,areaMin:AF.areaMin,areaMax:AF.areaMax});
+    family, mod:AF.mod, dara:AF.dara};
+  afResults = scanAffordableProjects({salary,oblig,city:city||undefined,type:type||undefined,areaMin:AF.areaMin,areaMax:AF.areaMax,mod:AF.mod,dara:AF.dara});
   renderAffordResults();
   $("affordForm").style.display="none";
   $("affordResultsWrap").style.display="block";
@@ -4108,12 +4126,17 @@ function renderAffordResults(){
     const p=r.project, pr=r.product;
     const banksTxt = (r.topBanks&&r.topBanks.length) ? r.topBanks.map(b=>`${b.bank} ${(b.rate*100).toFixed(2)}%`).join(" · ") : "—";
     const badge=TIER_BADGE[r.affordTier]||TIER_BADGE.unknown;
+    const supportBits=[`دعم الصندوق ${fmt(r.redfSupport)} ريال`];
+    if(r.modSupport) supportBits.push(`دعم دفاع ${fmt(r.modSupport)} ريال`);
+    if(r.daraApplicable) supportBits.push(`ذرى بلس ${fmt(Math.round(r.daraMonthlyAmt))} ريال/شهر`);
+    if(r.projectSupport) supportBits.push(`دعم المشروع ${fmt(Math.round(r.projectSupport))} ريال`);
     return `<div class="ucard" data-idx="${i}" style="cursor:pointer;margin-bottom:9px">
       <div class="uhead">
         <div><div class="nm">${p.short}</div><div class="un">${p.city}${p.dest?" · "+p.dest:""} · ${pr.type}${pr.beds?" ("+pr.beds+" غرف)":""}</div></div>
         <span class="pill ab ${badge.cls}">${badge.txt}</span>
       </div>
-      <div class="umeta">السعر التقريبي ${fmt(Math.round(r.price))} ريال · القسط التقديري ${fmt(Math.round(r.installment))} ريال/شهر · دعم الصندوق ${fmt(r.redfSupport)} ريال</div>
+      <div class="umeta">السعر التقريبي ${fmt(Math.round(r.price))} ريال · القسط التقديري ${fmt(Math.round(r.installment))} ريال/شهر</div>
+      <div class="umeta">${supportBits.join(" · ")}</div>
       <div class="umeta">أنسب البنوك: ${banksTxt}</div>
     </div>`;
   }).join("") : "";
@@ -4129,6 +4152,11 @@ function openAffordDetail(r){
   $("cPickedNote").innerHTML=`✓ ${r.product.type}${r.product.beds?" ("+r.product.beds+" غرف)":""} من <b>${r.project.short}</b> — أرخص خيار متاح تقريبياً بحسب "أي مشروع يناسب راتبك؟"`;
   cElig="نعم";
   $("cEligChips").querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.elig==="نعم"));
+  /* نطابق اختياري منسوب الدفاع/ذرى بلس بشاشة البحث، بنفس مبدأ "الحاسبة لازم تطابق آخر تحديث" */
+  cMod = AF.mod ? "نعم" : "لا";
+  $("cModChips").querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.mod===cMod));
+  cDara = AF.dara ? "نعم" : "لا";
+  $("cDaraChips").querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.dara===cDara));
   $("cSalary").value=AF.salary;
   $("cOblig").value=AF.oblig;
   if(r.bestBank){
@@ -5173,7 +5201,7 @@ function computeRedfAffordability(price, salary, oblig, rate, years, eligible, m
    سعره ضمن هذا النطاق يُعتبر "مناسباً تقريباً" وليس مرفوضاً فوراً لتجاوزه المبلغ الدقيق */
 const AFFORD_TOLERANCE=0.10;
 function scanAffordableProjects(params){
-  const {salary, oblig, city, type, areaMin, areaMax} = params;
+  const {salary, oblig, city, type, areaMin, areaMax, mod, dara} = params;
   const bankCandidates=(BANKS||[]).filter(b=>typeof b.rate==="number").sort((a,b)=>a.rate-b.rate);
   const transferBanks=bankCandidates.filter(b=>b.salaryTransfer==="نعم");
   const bestBank = transferBanks[0] || bankCandidates[0] || null;
@@ -5185,22 +5213,7 @@ function scanAffordableProjects(params){
     topBanksSeen.add(b.bank); topBanks.push(b);
     if(topBanks.length>=3) break;
   }
-  /* القدرة الشرائية القصوى محسوبة مرة واحدة من الدخل فقط (بمعزل عن سعر وحدة بعينها) —
-     نفس محرك الحاسبة المتقدمة المتحقق من صحته مقابل حاسبة الراجحي الفعلية.
-     دعم الصندوق نمطان لا يجتمعان (قسط شهري أو دفعة مقدمة 100/150 ألف) ولا نعرف مسبقاً
-     أيّهما سيُتاح فعلياً للعميل، فنحسب الاثنين ونعتمد الأقل (الأكثر تحفظاً) كسقف — نمط
-     القسط الشهري وحده كان يعطي سقفاً متفائلاً دائماً لأنه يراكم عبر كامل مدة التمويل */
-  const advInstallment = computeAdvancedAffordability({
-    price:0, salary, oblig, annualRate:rate, years, eligible:true, mod:false, downPct:10,
-    supportMode:"installment", dob:null, sector:null, rank:null, yearsService:null,
-    baseSalary:null, familyAssets:null, priorUse:false, projectSupport:0
-  });
-  const advDownpayment = computeAdvancedAffordability({
-    price:0, salary, oblig, annualRate:rate, years, eligible:true, mod:false, downPct:10,
-    supportMode:"downpayment", dob:null, sector:null, rank:null, yearsService:null,
-    baseSalary:null, familyAssets:null, priorUse:false, projectSupport:0
-  });
-  const maxProperty = Math.min(advInstallment.maxPropertyValue, advDownpayment.maxPropertyValue);
+  const daraSalaryOk = salary>=3000 && salary<=7000;
   const out=[];
   for(const p of DATA){
     const sg=p.b; if(!sg || !Array.isArray(sg.prods) || !sg.prods.length) continue;
@@ -5213,7 +5226,33 @@ function scanAffordableProjects(params){
     let best=null;
     for(const pr of prods){ if(!best || pr.minP<best.minP) best=pr; }
     const price=best.minP;
-    const calc=computeRedfAffordability(price, salary, oblig, rate, years, true, "لا", 0);
+
+    /* دعم خاص بهذا المشروع تحديداً — يختلف من مشروع لآخر، فيغيّر فرصة كل مشروع على حدة
+       بدل سقف واحد موحّد لكل المشاريع:
+       - ذرى بلس: فقط لو المستخدم رغب به + الراتب 3,000–7,000 + المشروع من الدانيات المعتمدة
+       - دعم المشروع/الوحدة الفعلي (خصم القسط الميسّر + خصم المرحلة) من ملف التخصيص */
+    const danaProject = isDanaProject(p);
+    const daraApplicable = dara && daraSalaryOk && danaProject;
+    const daraMonthlyAmt = daraApplicable ? daraPlusMonthly(years*12) : 0;
+    const sup = SUPP && SUPP[String(p.id)] && SUPP[String(p.id)][best.type];
+    const projectSupport = sup ? (sup.instl||0)+(sup.phase||0) : 0;
+
+    /* القدرة الشرائية القصوى لهذا المشروع تحديداً — نفس محرك الحاسبة المتقدمة، بنمطي دعم
+       الصندوق (نعتمد الأقل تحفظاً منهما كسقف)، زائد دعم المشروع الفعلي على السقف مباشرة
+       لأنه يخصم من مبلغ التمويل بنفس أثر دعم الدفعة الأولى */
+    const advInstallment = computeAdvancedAffordability({
+      price:0, salary, oblig, annualRate:rate, years, eligible:true, mod, downPct:10,
+      supportMode:"installment", dob:null, sector:null, rank:null, yearsService:null,
+      baseSalary:null, familyAssets:null, priorUse:false, projectSupport:0, dara, danaProject
+    });
+    const advDownpayment = computeAdvancedAffordability({
+      price:0, salary, oblig, annualRate:rate, years, eligible:true, mod, downPct:10,
+      supportMode:"downpayment", dob:null, sector:null, rank:null, yearsService:null,
+      baseSalary:null, familyAssets:null, priorUse:false, projectSupport:0, dara, danaProject
+    });
+    const maxProperty = Math.min(advInstallment.maxPropertyValue, advDownpayment.maxPropertyValue) + projectSupport;
+
+    const calc=computeRedfAffordability(price, salary, oblig, rate, years, true, mod?"نعم":"لا", daraMonthlyAmt);
     /* تصنيف وفق القدرة الشرائية البنكية بهامش ±10% — بدل الاعتماد فقط على منطق
        الدفعة الأولى الإضافية (capped) بالحاسبة المبسّطة */
     const affordRatio = maxProperty>0 ? price/maxProperty : null;
@@ -5222,7 +5261,7 @@ function scanAffordableProjects(params){
       : affordRatio<=(1+AFFORD_TOLERANCE) ? "close"
       : "over";
     out.push(Object.assign({project:p, product:best, price, rate, years, bestBank, topBanks,
-      maxProperty, affordRatio, affordTier}, calc));
+      maxProperty, affordRatio, affordTier, projectSupport, daraApplicable, daraMonthlyAmt}, calc));
   }
   const tierRank={comfortable:0, close:1, unknown:2, over:3};
   out.sort((a,b)=>{
