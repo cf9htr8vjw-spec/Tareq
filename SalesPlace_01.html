@@ -954,6 +954,10 @@ main{flex:1;min-height:0;position:relative}
 .mb i{width:100%;max-width:24px;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--gold),#c9a875);display:block}
 .mb span{font-size:9px;color:var(--muted);white-space:nowrap}
 .mbVal{font-size:8.5px;font-weight:700;color:var(--ink);white-space:nowrap;min-height:11px}
+.mbTgt{font-size:8px;font-weight:800;white-space:nowrap}
+.mbTgt.hi{color:var(--green)}
+.mbTgt.mid{color:var(--gold-text3)}
+.mbTgt.lo{color:var(--rust)}
 .mtrend{position:absolute;top:0;right:0;pointer-events:none}
 .qbandRow{display:flex;gap:8px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);flex-wrap:wrap}
 .qbandRow .qb{font-size:9.5px;color:var(--muted);display:flex;align-items:center;gap:4px}
@@ -2392,7 +2396,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <script>
 "use strict";
 let DATA = [], PREFS = null, PERF = null, SUPP = null, FN = null, GAL = null, BLDG = null, ALLOC = null, MODELS = null, BOOK = null, PRODSTAT = null, SALESDAILY = null, FUNNEL = null, BANKS = [];
-let MODELSTAT = {}, SEGSTAT = {}; // إحصاءات حيّة من project_model_stats/project_segment_stats — تُحدَّث حصراً بالتحديث اليومي، لا جزء من الحزمة المشفَّرة
+let MODELSTAT = {}, SEGSTAT = {}, ISTISNASTAT = {}; // إحصاءات حيّة من project_model_stats/project_segment_stats/project_istisna_stats — تُحدَّث حصراً بالتحديث اليومي، لا جزء من الحزمة المشفَّرة
 const PERM_ALL = {dest:true,search:true,deal:true,cmp:true,calc:true,sales:true};
 const PERM_LABELS = {dest:"الوجهات",search:"البحث والتصفية",deal:"الصفقات",cmp:"المقارنة",calc:"الحاسبات",sales:"مبيعاتنا"};
 let PERMS = Object.assign({}, PERM_ALL);
@@ -3545,6 +3549,25 @@ async function renderSales(){
   }
   if(myReq!==salesReqId) return;
 
+  /* مستهدف كل عمود (شهر أو ربع) على حدة — بطاقة الإجمالي أعلاه تعرض نسبة واحدة عن كامل
+     المدى المعروض فقط، ولا تكفي لمعرفة أي شهر/ربع بعينه حقّق هدفه. نستدعي نفس دالة
+     get_target_summary لكن لكل فترة على حدة (بالتوازي) — كل الفترات المعروضة تقع ضمن
+     salesYear نفسها لأن get_sales_report يُقيَّد أصلاً بـJan–Dec لتلك السنة فقط */
+  let periodTargets=null;
+  if(salesGran!=="day" && targetSummary){
+    try{
+      const calls = shown.map(r=>{
+        const m=+r.period.split("-")[1];
+        let fromM=m, toM=m;
+        if(salesGran==="quarter"){ const q=Math.ceil(m/3); fromM=(q-1)*3+1; toM=q*3; }
+        return sbCall("get_target_summary",{p_year:+salesYear,p_from_month:fromM,p_to_month:toM,p_sector:secParam,p_dev_kind:devParam});
+      });
+      const results = await Promise.all(calls);
+      periodTargets = results.map(t=> (t && t.total>0) ? Number(t.total) : null);
+    }catch(e){ periodTargets=null; }
+  }
+  if(myReq!==salesReqId) return;
+
   /* بطاقات الإجمالي — تُعرض أعلى الشارت مباشرة كما طُلب، بدل دفنها بعنوان صغير داخل البطاقة.
      الإجمالي أكبر بصرياً من البقية (أهم رقم بالشاشة)، والاتجاه له حالة محايدة عند تغيّر طفيف
      بدل إجباره ▲ أو ▼ على فروق لا دلالة لها. */
@@ -3580,9 +3603,14 @@ async function renderSales(){
     const q = salesGran==="month" ? Math.ceil(+r.period.split("-")[1]/3) : null;
     const shade = q!=null && q%2===0 ? " qshade" : "";
     const lbl = (salesGran==="month" && sameYear) ? MNAMES[r.period.split("-")[1]] : barLabel(r.period,salesGran);
-    return `<div class="mb${shade}" data-i="${i}" style="width:${BAR_W}px" title="${periodLabel(r.period,salesGran)}: ${fmt(val)}">
+    const pt = periodTargets ? periodTargets[i] : null;
+    const ptPct = pt!=null ? Math.round(val/pt*100) : null;
+    const ptCls = ptPct==null ? "" : ptPct>=100 ? "hi" : ptPct<70 ? "lo" : "mid";
+    const ptTxt = ptPct!=null ? `<div class="mbTgt ${ptCls}">${ptPct}%</div>` : "";
+    const titleTgt = pt!=null ? ` — الهدف ${fmt(Math.round(pt))} (${ptPct}%)` : "";
+    return `<div class="mb${shade}" data-i="${i}" style="width:${BAR_W}px" title="${periodLabel(r.period,salesGran)}: ${fmt(val)}${titleTgt}">
       <div class="mbVal">${val?fmt(val):""}</div>
-      <i style="height:${heightPct(r)}%;${val?"":"opacity:.25"}"></i><span>${lbl}</span></div>`;
+      <i style="height:${heightPct(r)}%;${val?"":"opacity:.25"}"></i>${ptTxt}<span>${lbl}</span></div>`;
   }).join("");
   const totalW = shown.length*BAR_W;
   const qLegend = salesGran==="month" ? `<div class="qbandRow"><span class="qb"><i></i>الربع الأول والثالث</span><span class="qb" style="opacity:.6"><i style="background:transparent"></i>الربع الثاني والرابع</span></div>` : "";
@@ -3626,8 +3654,10 @@ async function renderSales(){
     </div>`;
   const mbw=document.querySelector(".mbarsWrap"); if(mbw) mbw.scrollLeft=mbw.scrollWidth; /* أحدث الفترات مرئية افتراضياً بلا الحاجة للسحب */
   document.querySelectorAll(".mb").forEach(el=>el.onclick=()=>{
-    const r=shown[+el.dataset.i];
-    toast(`${periodLabel(r.period,salesGran)}: ${fmt(Number(r.cnt))} ${METLBL[salesMetric]}`,"ok");
+    const i=+el.dataset.i, r=shown[i];
+    const pt=periodTargets?periodTargets[i]:null;
+    const tgtTxt=pt!=null?` — ${Math.round(Number(r.cnt)/pt*100)}% من هدف ${fmt(Math.round(pt))}`:"";
+    toast(`${periodLabel(r.period,salesGran)}: ${fmt(Number(r.cnt))} ${METLBL[salesMetric]}${tgtTxt}`,"ok");
   });
   const goProjList=()=>$("projListCard").scrollIntoView({behavior:"smooth",block:"start"});
   const kt=$("kpiTotal"), ka=$("kpiAvg");
@@ -4557,6 +4587,7 @@ async function syncLiveData(){
     }
     const {book,prodstat}=deriveBookProdstat(unitStatusRows);
     BOOK=book; PRODSTAT=prodstat;
+    applyIstisnaOverlay(); /* unit_status لا يحمل عقود الاستصناع المعلّقة — مصدر منفصل، يُعاد دمجه هنا لأن BOOK استُبدل بالكامل للتو */
     saveLiveCache(unitStatusRows);
     setLiveBadge("live",`🟢 بيانات حيّة`);
     render();
@@ -4567,6 +4598,7 @@ async function syncLiveData(){
     if(cached){
       const {book,prodstat}=deriveBookProdstat(cached.unitStatusRows);
       BOOK=book; PRODSTAT=prodstat;
+      applyIstisnaOverlay();
       const d=new Date(cached.fetched_at);
       setLiveBadge("cached",`🟡 بيانات محفوظة من ${d.toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})} — فشل التحديث: ${e.message||e}`);
       render();
@@ -4596,6 +4628,24 @@ async function syncLiveModelSegmentData(){
     for(const r of rows) ss[String(r.project_id)]={beneficiary:r.beneficiary_count,nonBeneficiary:r.non_beneficiary_count};
     SEGSTAT=ss;
   }catch(e){ /* الجدول قد لا يكون موجوداً بعد */ }
+  try{
+    const rows = await sbSelect("project_istisna_stats",{select:"*"});
+    const is={};
+    for(const r of rows) is[String(r.project_id)]=r.istisna_active_count||0;
+    ISTISNASTAT=is;
+  }catch(e){ /* الجدول قد لا يكون موجوداً بعد */ }
+  /* دمج عقود الاستصناع المعلّقة على BOOK الحالي — بمعزل عن ترتيب استدعاء syncLiveData()،
+     لأن unit_status لا يحمل هذا البُعد أصلاً (مصدر منفصل تماماً) */
+  applyIstisnaOverlay();
+  render();
+  if(S.view==="sales") renderSales();
+}
+function applyIstisnaOverlay(){
+  if(!BOOK) return;
+  for(const pid in ISTISNASTAT){
+    const bt=BOOK[pid] || (BOOK[pid]={avail:0,reserved:0,contracted:0,istisna_active:0});
+    bt.istisna_active = ISTISNASTAT[pid]||0;
+  }
 }
 
 async function sbCall(fn,body){
@@ -4770,6 +4820,7 @@ async function processSyncFile(){
   const statusAgg=new Map(); // key -> {project_id,unit_type,beds,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY
   const modelAgg=new Map(); // key `${pid}|${model}` -> {project_id,model,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY، من عمود model
   const segAgg=new Map(); // pid -> {project_id,beneficiary_count,non_beneficiary_count} — من عمود target_segments
+  const istisnaAgg=new Map(); // pid -> count — صفوف "حجز" (لم تتحوّل لعقد نهائي) ولها تاريخ عقد استصناع فعلي
   const unmatchedNames=new Map(); // raw project_name -> row count, for admin review
   const mirrorRows=[]; // صف واحد لكل وحدة صالحة — لا تجميع مسبق، التقارير تُبنى بـSQL مباشرة من هذا
   const todayISO = new Date().toISOString().slice(0,10);
@@ -4819,6 +4870,11 @@ async function processSyncFile(){
         sg[segTag+"_count"]++;
         segAgg.set(pid,sg);
       }
+      /* عقد استصناع موقّع لوحدة "حجز" لم تتحوّل بعد لعقد نهائي — عقود الاستصناع الفعلية
+         بالنظام يُعقَد أثناء مرحلة الحجز، قبل توقيع العقد النهائي (بحالة "عقد") */
+      if(bucket==="reserved" && toISODate(row["تاريخ عقد الاستصناع"])){
+        istisnaAgg.set(pid,(istisnaAgg.get(pid)||0)+1);
+      }
     } else {
       /* مشروع خارج الداشبورد (باع كل وحداته مثلاً) — لا يدخل المخزون، لكن مبيعاته التاريخية حقيقية وتُحتسب بأداء الشركة الكلي.
          نستخدم أعمدة الملف نفسها (لا بياناتنا) لأن المشروع غير موجود لدينا أصلاً. */
@@ -4844,6 +4900,7 @@ async function processSyncFile(){
   const statusRows=[...statusAgg.values()];
   const modelRows=[...modelAgg.values()];
   const segRows=[...segAgg.values()];
+  const istisnaRows=[...istisnaAgg.entries()].map(([project_id,istisna_active_count])=>({project_id,istisna_active_count}));
 
   /* تمييز الأسماء غير المطابقة الجديدة فعلاً عن تلك المتكررة يومياً (مشاريع مباعة بالكامل مثلاً) */
   let seenBefore=new Set();
@@ -4874,17 +4931,18 @@ async function processSyncFile(){
     <div class="cresrow"><span class="cl">أنواع وحدات ستُحدَّث بالمخزون</span><span class="cv">${fmt(statusRows.length)}</span></div>
     <div class="cresrow"><span class="cl">نماذج تصميم ستُحدَّث (متاح/محجوز/متعاقَد)</span><span class="cv">${fmt(modelRows.length)}</span></div>
     <div class="cresrow"><span class="cl">مشاريع ستُحدَّث بنسبة شريحة المعروض</span><span class="cv">${fmt(segRows.length)}</span></div>
+    <div class="cresrow"><span class="cl">مشاريع ستُحدَّث بعدد عقود الاستصناع المعلّقة</span><span class="cv">${fmt(istisnaRows.length)}</span></div>
     <div class="cresrow"><span class="cl">وحدات ستُرسَل لمرآة التخصيص الكاملة</span><span class="cv">${fmt(mirrorRows.length)}</span></div>
   </div>
   ${unmatchedHtml}
   <button class="btn" id="syncUpload" style="width:100%;margin-top:12px">رفع التحديث إلى القاعدة</button>`;
   $("syncStart").disabled=false;
   syncSetStatus("");
-  $("syncUpload").onclick=()=>uploadSyncData(statusRows,mirrorRows,modelRows,segRows);
+  $("syncUpload").onclick=()=>uploadSyncData(statusRows,mirrorRows,modelRows,segRows,istisnaRows);
 }
 $("syncStart").onclick=processSyncFile;
 
-async function uploadSyncData(statusRows,mirrorRows,modelRows,segRows){
+async function uploadSyncData(statusRows,mirrorRows,modelRows,segRows,istisnaRows){
   $("syncUpload").disabled=true;
   syncSetStatus("جارٍ رفع حالة الوحدات…");
   try{
@@ -4892,8 +4950,8 @@ async function uploadSyncData(statusRows,mirrorRows,modelRows,segRows){
     if(!r1||!r1.ok){ syncSetStatus("فشل تحديث حالة الوحدات: "+((r1&&r1.msg)||"خطأ غير معروف"),"err"); return; }
   }catch(e){ syncSetStatus("تعذّر الاتصال بالخادم أثناء تحديث حالة الوحدات","err"); return; }
 
-  /* إحصاءات النماذج وشريحة المعروض — خطوتان إضافيتان لا توقفان الرفع الرئيسي إن فشلتا
-     (مثلاً قبل تشغيل model_segment_stats.sql على القاعدة) */
+  /* إحصاءات النماذج وشريحة المعروض وعقود الاستصناع المعلّقة — خطوات إضافية لا توقف الرفع
+     الرئيسي إن فشلت (مثلاً قبل تشغيل model_segment_stats.sql / istisna_stats.sql على القاعدة) */
   if(modelRows && modelRows.length){
     try{
       const rm=await adminCall("admin_sync_model_stats",{p_rows:modelRows});
@@ -4905,6 +4963,12 @@ async function uploadSyncData(statusRows,mirrorRows,modelRows,segRows){
       const rs=await adminCall("admin_sync_segment_stats",{p_rows:segRows});
       if(!rs||!rs.ok) console.error("[تشخيص] فشل تحديث شريحة المعروض:",(rs&&rs.msg)||"خطأ غير معروف");
     }catch(e){ console.error("[تشخيص] فشل تحديث شريحة المعروض:",e.message||e); }
+  }
+  if(istisnaRows && istisnaRows.length){
+    try{
+      const ri=await adminCall("admin_sync_istisna_stats",{p_rows:istisnaRows});
+      if(!ri||!ri.ok) console.error("[تشخيص] فشل تحديث عقود الاستصناع المعلّقة:",(ri&&ri.msg)||"خطأ غير معروف");
+    }catch(e){ console.error("[تشخيص] فشل تحديث عقود الاستصناع المعلّقة:",e.message||e); }
   }
 
   /* خطوة مسح منفصلة ومضمونة — لو فشلت هذه، نتوقف فوراً بلا رفع أي شيء، لمنع أي تراكم فوق بيانات قديمة */
