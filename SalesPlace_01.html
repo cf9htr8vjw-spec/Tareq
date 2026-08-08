@@ -2392,6 +2392,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <script>
 "use strict";
 let DATA = [], PREFS = null, PERF = null, SUPP = null, FN = null, GAL = null, BLDG = null, ALLOC = null, MODELS = null, BOOK = null, PRODSTAT = null, SALESDAILY = null, FUNNEL = null, BANKS = [];
+let MODELSTAT = {}, SEGSTAT = {}; // إحصاءات حيّة من project_model_stats/project_segment_stats — تُحدَّث حصراً بالتحديث اليومي، لا جزء من الحزمة المشفَّرة
 const PERM_ALL = {dest:true,search:true,deal:true,cmp:true,calc:true,sales:true};
 const PERM_LABELS = {dest:"الوجهات",search:"البحث والتصفية",deal:"الصفقات",cmp:"المقارنة",calc:"الحاسبات",sales:"مبيعاتنا"};
 let PERMS = Object.assign({}, PERM_ALL);
@@ -2831,13 +2832,23 @@ function openDetail(id){
       if(mSpecs){
         const sorted = Object.entries(mSpecs).sort((a,b)=>b[1].n-a[1].n);
         const priceKey = S.seg==="b" ? ["bMin","bAvg","bMax"] : ["nMin","nAvg","nMax"];
+        const modelLive = MODELSTAT ? MODELSTAT[String(p.id)] : null;
         const cards = sorted.map(([mkey,ms],i)=>{
           const [lo,,hi]=priceKey.map(k=>ms[k]);
           const priceTxt = (lo&&hi) ? `${compact(lo)} – ${compact(hi)} ريال` : "غير متوفر لهذه الشريحة";
-          /* المتاح الآن من مخزون التخصيص الحي (PRODSTAT) — قد يختلف عن إجمالي النموذج
-             الثابت أدناه لأن الأخير من كتالوج التصميم ولا يعكس ما بيع أو حُجز فعلياً */
-          const liveSt = pstat ? pstat[`${ms.type}|${ms.beds}`] : null;
-          const liveTxt = liveSt ? `<div class="mcCount" style="color:var(--green);font-weight:600">متاح الآن: ${fmt(liveSt.avail)} وحدة</div>` : "";
+          /* الأعداد الحيّة (متاح/محجوز/متعاقَد) من آخر تحديث لملف التخصيص — بمفتاح النموذج
+             نفسه (model_1، model_2...) وليس النوع/الغرف فقط، لتفادي تداخل نماذج مختلفة
+             بنفس النوع والغرف. المواصفات (النوع/الغرف/المساحة/السعر) تبقى من كتالوج
+             التصميم الثابت لأنها لا تتغير — العدد الإجمالي والمتاح فقط يتغيّران */
+          const liveM = modelLive ? modelLive[mkey] : null;
+          const liveSt = !liveM && pstat ? pstat[`${ms.type}|${ms.beds}`] : null; // احتياط قديم بالنوع/الغرف لو النماذج غير متوفرة بعد
+          let liveTxt="";
+          if(liveM){
+            const liveTotal=liveM.avail+liveM.reserved+liveM.contracted;
+            liveTxt=`<div class="mcCount" style="color:var(--green);font-weight:600">متاح الآن: ${fmt(liveM.avail)} · محجوز: ${fmt(liveM.reserved)} · متعاقَد: ${fmt(liveM.contracted)} (إجمالي حيّ ${fmt(liveTotal)})</div>`;
+          } else if(liveSt){
+            liveTxt=`<div class="mcCount" style="color:var(--green);font-weight:600">متاح الآن: ${fmt(liveSt.avail)} وحدة</div>`;
+          }
           return `<div class="modelcard">
             <div class="mcHead"><b>النموذج ${i+1}</b><span class="mcType">${ms.type||""}</span></div>
             <div class="mcIcons">
@@ -2910,11 +2921,22 @@ function openDetail(id){
   /* ownership / segment — دعم الصندوق العقاري REDF-only دائماً؛ لا تُعرض لغير المستفيدين مهما كانت
      قيمة الفئة بالمصدر، ولا نعرض نص الفئة الخام حتى للمستفيدين (قد يصف المصدر الفئة بشكل عام
      كـ"مستفيدين وغير مستفيدين" وهو تناقض مع كون الدعم حصرياً للمستفيدين) — نطبّع العرض دائماً */
-  if(p.sup){
-    const s=p.sup, rows=[];
-    if(s.land) rows.push(["ملكية الأرض",s.land]);
-    if(s.tseg) rows.push(["شريحة المشروع",s.tseg]);
-    if(s.redf && S.seg==="b") rows.push(["دعم الصندوق العقاري","مستفيدين فقط"]);
+  {
+    const s=p.sup||null, rows=[];
+    if(s && s.land) rows.push(["ملكية الأرض",s.land]);
+    if(s && s.tseg) rows.push(["شريحة المشروع",s.tseg]);
+    if(s && s.redf && S.seg==="b") rows.push(["دعم الصندوق العقاري","مستفيدين فقط"]);
+    /* نسبة المستفيدين/غير المستفيدين بالمعروض الحيّ — من عمود target_segments بآخر تحديث
+       لملف التخصيص (project_segment_stats)، بديل حيّ لنص "شريحة المشروع" الثابت أعلاه —
+       مستقلة عن وجود p.sup لأنها من مصدر بيانات مختلف تماماً (تحديث حيّ لا كتالوج ثابت) */
+    const segLive = SEGSTAT ? SEGSTAT[String(p.id)] : null;
+    if(segLive){
+      const segTot=segLive.beneficiary+segLive.nonBeneficiary;
+      if(segTot>0){
+        const benPct=Math.round(segLive.beneficiary/segTot*100);
+        rows.push(["نسبة المستفيدين/غير المستفيدين بالمعروض",`${benPct}% مستفيدين / ${100-benPct}% غير مستفيدين`]);
+      }
+    }
     if(rows.length) h+=`<div class="sect"><h3>بيانات المشروع</h3>${kvRows(rows)}</div>`;
   }
 
@@ -4554,6 +4576,27 @@ async function syncLiveData(){
     }
   }
 }
+/* إحصاءات النماذج الحيّة (project_model_stats) وشريحة المعروض (project_segment_stats) —
+   تفشل بصمت إن لم يُشغَّل model_segment_stats.sql بعد على القاعدة (نفس نمط الأخبار وبنوك
+   التمويل)، فلا تكسر أي شاشة؛ تبقى MODELSTAT/SEGSTAT فارغتين وتتراجع الواجهة تلقائياً
+   للكتالوج الثابت */
+async function syncLiveModelSegmentData(){
+  try{
+    const rows = await sbSelect("project_model_stats",{select:"*"});
+    const ms={};
+    for(const r of rows){
+      const pid=String(r.project_id);
+      (ms[pid]||(ms[pid]={}))[r.model]={avail:r.avail_count,reserved:r.reserved_count,contracted:r.contracted_count};
+    }
+    MODELSTAT=ms;
+  }catch(e){ /* الجدول قد لا يكون موجوداً بعد */ }
+  try{
+    const rows = await sbSelect("project_segment_stats",{select:"*"});
+    const ss={};
+    for(const r of rows) ss[String(r.project_id)]={beneficiary:r.beneficiary_count,nonBeneficiary:r.non_beneficiary_count};
+    SEGSTAT=ss;
+  }catch(e){ /* الجدول قد لا يكون موجوداً بعد */ }
+}
 
 async function sbCall(fn,body){
   const r=await fetch(`${window.SB_URL}/rest/v1/rpc/${fn}`,{
@@ -4664,6 +4707,18 @@ function syncBucket(status){
   if(status==="عقد") return "contracted";
   return null;
 }
+/* عمود target_segments بملف التخصيص قيمته نص شبه-مصفوفة مثل "{beneficiary}" أو
+   "{beneficiary,non_bene,company}" — أي قيمة تتضمن غير "beneficiary" (أي non_bene أو
+   company) تُحتسب "غير مستفيدين" بنسبة المعروض، وإلا (بالضبط {beneficiary} فقط) "مستفيدين" */
+function parseSegmentTag(raw){
+  if(raw==null) return null;
+  const s=String(raw).trim().replace(/^\{|\}$/g,"");
+  if(!s) return null;
+  const parts=s.split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
+  if(!parts.length) return null;
+  const hasOther = parts.some(x=>x!=="beneficiary");
+  return hasOther ? "non_beneficiary" : "beneficiary";
+}
 function toISODate(v){
   if(v==null||v==="") return null;
   if(v instanceof Date && !isNaN(v)){
@@ -4713,6 +4768,8 @@ async function processSyncFile(){
   await new Promise(r=>setTimeout(r,30));
 
   const statusAgg=new Map(); // key -> {project_id,unit_type,beds,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY
+  const modelAgg=new Map(); // key `${pid}|${model}` -> {project_id,model,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY، من عمود model
+  const segAgg=new Map(); // pid -> {project_id,beneficiary_count,non_beneficiary_count} — من عمود target_segments
   const unmatchedNames=new Map(); // raw project_name -> row count, for admin review
   const mirrorRows=[]; // صف واحد لكل وحدة صالحة — لا تجميع مسبق، التقارير تُبنى بـSQL مباشرة من هذا
   const todayISO = new Date().toISOString().slice(0,10);
@@ -4747,6 +4804,21 @@ async function processSyncFile(){
         a[bucket+"_count"]++;
         statusAgg.set(key,a);
       }
+      /* عدد النموذج الحيّ — يطابق مفاتيح كتالوج النماذج الثابت بالتطبيق (model_1، model_2، ...) حرفياً */
+      const modelVal=row.model!=null?String(row.model).trim():"";
+      if(modelVal){
+        const mkey=`${pid}|${modelVal}`;
+        const m=modelAgg.get(mkey) || {project_id:pid,model:modelVal,avail_count:0,reserved_count:0,contracted_count:0};
+        m[bucket+"_count"]++;
+        modelAgg.set(mkey,m);
+      }
+      /* شريحة المعروض (مستفيدين/غير مستفيدين) — على كل صف مطابق بصرف النظر عن توفر عمود model */
+      const segTag=parseSegmentTag(row.target_segments);
+      if(segTag){
+        const sg=segAgg.get(pid) || {project_id:pid,beneficiary_count:0,non_beneficiary_count:0};
+        sg[segTag+"_count"]++;
+        segAgg.set(pid,sg);
+      }
     } else {
       /* مشروع خارج الداشبورد (باع كل وحداته مثلاً) — لا يدخل المخزون، لكن مبيعاته التاريخية حقيقية وتُحتسب بأداء الشركة الكلي.
          نستخدم أعمدة الملف نفسها (لا بياناتنا) لأن المشروع غير موجود لدينا أصلاً. */
@@ -4770,6 +4842,8 @@ async function processSyncFile(){
   }
 
   const statusRows=[...statusAgg.values()];
+  const modelRows=[...modelAgg.values()];
+  const segRows=[...segAgg.values()];
 
   /* تمييز الأسماء غير المطابقة الجديدة فعلاً عن تلك المتكررة يومياً (مشاريع مباعة بالكامل مثلاً) */
   let seenBefore=new Set();
@@ -4798,23 +4872,40 @@ async function processSyncFile(){
     <div class="cresrow"><span class="cl">صفوف مستبعدة (حالة غير معتمدة — محجوب/تنموي وغيرها)</span><span class="cv">${fmt(excludedStatus)}</span></div>
     <div class="cresrow"><span class="cl">صفوف مستبعدة (سعر غير منطقي — بيانات فارغة بالملف)</span><span class="cv">${fmt(excludedPrice)}</span></div>
     <div class="cresrow"><span class="cl">أنواع وحدات ستُحدَّث بالمخزون</span><span class="cv">${fmt(statusRows.length)}</span></div>
+    <div class="cresrow"><span class="cl">نماذج تصميم ستُحدَّث (متاح/محجوز/متعاقَد)</span><span class="cv">${fmt(modelRows.length)}</span></div>
+    <div class="cresrow"><span class="cl">مشاريع ستُحدَّث بنسبة شريحة المعروض</span><span class="cv">${fmt(segRows.length)}</span></div>
     <div class="cresrow"><span class="cl">وحدات ستُرسَل لمرآة التخصيص الكاملة</span><span class="cv">${fmt(mirrorRows.length)}</span></div>
   </div>
   ${unmatchedHtml}
   <button class="btn" id="syncUpload" style="width:100%;margin-top:12px">رفع التحديث إلى القاعدة</button>`;
   $("syncStart").disabled=false;
   syncSetStatus("");
-  $("syncUpload").onclick=()=>uploadSyncData(statusRows,mirrorRows);
+  $("syncUpload").onclick=()=>uploadSyncData(statusRows,mirrorRows,modelRows,segRows);
 }
 $("syncStart").onclick=processSyncFile;
 
-async function uploadSyncData(statusRows,mirrorRows){
+async function uploadSyncData(statusRows,mirrorRows,modelRows,segRows){
   $("syncUpload").disabled=true;
   syncSetStatus("جارٍ رفع حالة الوحدات…");
   try{
     const r1=await adminCall("admin_sync_unit_status",{p_rows:statusRows});
     if(!r1||!r1.ok){ syncSetStatus("فشل تحديث حالة الوحدات: "+((r1&&r1.msg)||"خطأ غير معروف"),"err"); return; }
   }catch(e){ syncSetStatus("تعذّر الاتصال بالخادم أثناء تحديث حالة الوحدات","err"); return; }
+
+  /* إحصاءات النماذج وشريحة المعروض — خطوتان إضافيتان لا توقفان الرفع الرئيسي إن فشلتا
+     (مثلاً قبل تشغيل model_segment_stats.sql على القاعدة) */
+  if(modelRows && modelRows.length){
+    try{
+      const rm=await adminCall("admin_sync_model_stats",{p_rows:modelRows});
+      if(!rm||!rm.ok) console.error("[تشخيص] فشل تحديث إحصاءات النماذج:",(rm&&rm.msg)||"خطأ غير معروف");
+    }catch(e){ console.error("[تشخيص] فشل تحديث إحصاءات النماذج:",e.message||e); }
+  }
+  if(segRows && segRows.length){
+    try{
+      const rs=await adminCall("admin_sync_segment_stats",{p_rows:segRows});
+      if(!rs||!rs.ok) console.error("[تشخيص] فشل تحديث شريحة المعروض:",(rs&&rs.msg)||"خطأ غير معروف");
+    }catch(e){ console.error("[تشخيص] فشل تحديث شريحة المعروض:",e.message||e); }
+  }
 
   /* خطوة مسح منفصلة ومضمونة — لو فشلت هذه، نتوقف فوراً بلا رفع أي شيء، لمنع أي تراكم فوق بيانات قديمة */
   syncSetStatus("جارٍ مسح مرآة التخصيص القديمة…");
@@ -4844,6 +4935,7 @@ async function uploadSyncData(statusRows,mirrorRows){
   /* تحديث فوري لنفس الجلسة — بلا هذا، يبقى التطبيق يعرض بيانات ما قبل الرفع حتى يُعاد تسجيل الدخول */
   syncSetStatus("جارٍ تحديث العرض بالبيانات الجديدة…");
   await syncLiveData();
+  await syncLiveModelSegmentData();
   await refreshLastSyncBadge();
   const liveState = $("liveBadge").className.includes("live");
   if(liveState){
@@ -5917,6 +6009,7 @@ function boot(){
   refreshLastSyncBadge();
   refreshNewsTicker();
   refreshLiveBanks();
+  syncLiveModelSegmentData();
 }
 function lockErr(msg){
   $("lock").classList.remove("busy");
