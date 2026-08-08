@@ -2689,7 +2689,7 @@ function openDetail(id){
     if(showCalcCol){
       const supT = (SUPP && SUPP[String(p.id)]) ? SUPP[String(p.id)][pr.type] : null;
       const marketP = supT ? pr.avgP + supT.avg : "";
-      extraCell=`<td><button type="button" class="calcgo" data-price="${pr.avgP}" data-market="${marketP}">🧮</button></td>`;
+      extraCell=`<td><button type="button" class="calcgo" data-price="${pr.avgP}" data-market="${marketP}" data-pid="${p.id}" data-type="${pr.type}">🧮</button></td>`;
     }
     else if(showCartCol){
       const key=`${p.id}::${pr.type}::${pr.beds}`;
@@ -2978,6 +2978,14 @@ function bindDetailInteractions(){
     setView("calc");
     $("cPrice").value=Math.round(+b.dataset.price);
     calcMarketPrice = b.dataset.market ? Math.round(+b.dataset.market) : null;
+    /* لازم نضبط المشروع/النوع المحدَّدين هنا أيضاً (وليس فقط عبر منتقي الوحدة) — وإلا
+       تبقى قيمة قديمة من مشروع سابق تُستخدم خطأً بفحص أهلية ذرى بلس ولوحة "من أين
+       يأتي الدعم؟" */
+    const pid = b.dataset.pid ? +b.dataset.pid : null;
+    pickedProject = pid!=null ? DATA.find(x=>x.id===pid) : null;
+    pickedType = b.dataset.type || null;
+    pickedMoh=null; pickedFull=null;
+    runCalcDispatch();
     setTimeout(()=>$("cSalary").focus(),200);
   });
   $("dBody").querySelectorAll(".cartchk").forEach(b=>b.onclick=(e)=>{
@@ -4906,9 +4914,26 @@ function calcMaxPrincipal(maxInstallment, annualRatePct, years){
   const r = annualRatePct/100;
   return maxInstallment*(years*12) / (1+r*years);
 }
+/* برنامج "ذرى سكن بلس" — دعم نقدي شهري إضافي (غير دعم الصندوق الأساسي) من REDF بالشراكة
+   مع مؤسسة "سكن"، يُكدَّس فوق دعم الصندوق (لا يُستبدل به):
+   - الحد الأقصى 120,000 ريال إجمالاً، تُقسَّم على كامل مدة التمويل (وليس 500 ريال ثابتة
+     دائماً — 500 كانت فقط لحالة 240 شهراً/20 سنة تحديداً)
+   - يشترط صافي راتب بين 3,000 و7,000 ريال شهرياً
+   - يقتصر على مشاريع "الدانيات" التابعة لـNHC (دانية الأصالة/المشرقية/الفرسان/الغروب/
+     الحيوية/السدن) — نتحقق بمطابقة بادئة اسم المشروع "دانية"/"دانيات" + مطوّر NHC
+   مصدر: تقرير بحثي مرفق حول برنامج ذرى بلس (منصة سكني ومؤسسة سكن الرسميتين) */
+function daraPlusMonthly(months){ return months>0 ? 120000/months : 0; }
+function isDanaProject(p){
+  if(!p) return false;
+  const nm=p.name||"", sh=p.short||"";
+  const isDana = nm.startsWith("دانية")||sh.startsWith("دانية")||nm.startsWith("دانيات")||sh.startsWith("دانيات");
+  return isDana && (p.dev||"").trim()==="NHC";
+}
 /* منهجية REDF الأساسية (بلا تعديل عن حاسبة المستفيدين) — مُستخرجة بدالة مستقلة
-   ليعاد استخدامها في مسح تلقائي عبر كل المشاريع (بحث "أي مشروع يناسب راتبي") دون تكرار الصيغة */
-function computeRedfAffordability(price, salary, oblig, rate, years, eligible, mod, dara){
+   ليعاد استخدامها في مسح تلقائي عبر كل المشاريع (بحث "أي مشروع يناسب راتبي") دون تكرار الصيغة.
+   daraMonthly: القيمة الشهرية الفعلية لذرى بلس بعد التحقق من الأهلية (0 إن لم تنطبق) —
+   يقرّرها المستدعي لأن هذه الدالة لا تعرف عن المشروع المحدَّد */
+function computeRedfAffordability(price, salary, oblig, rate, years, eligible, mod, daraMonthly){
   const redfSupport = eligible ? (salary<10000 ? 150000 : 100000) : 0;
   const modSupport = (eligible && mod==="نعم") ? 160000 : 0;
   const support = redfSupport + modSupport;
@@ -4929,9 +4954,9 @@ function computeRedfAffordability(price, salary, oblig, rate, years, eligible, m
     extraDown = financeTarget - financeUsed;
   }
   const downFinal = downNet + extraDown;
-  const installmentAfterDara = dara==="نعم" ? Math.max(0,installment-500) : installment;
+  const installmentAfterDara = daraMonthly>0 ? Math.max(0,installment-daraMonthly) : installment;
   return {redfSupport,modSupport,support,downStd,downNet,financeTarget,maxInstallment,maxPrincipal,
-    financeUsed,installment,extraDown,capped,downFinal,installmentAfterDara};
+    financeUsed,installment,extraDown,capped,downFinal,installmentAfterDara,daraMonthly};
 }
 /* مسح تلقائي عبر كل المشاريع لمشروع "أي مشروع يناسب راتبي" — يطبّق نفس صيغة REDF أعلاه
    على أرخص منتج مطابق بكل مشروع (شريحة المستفيدين حصراً)، بأفضل نسبة بنك متاحة بافتراض تحويل الراتب.
@@ -4980,7 +5005,7 @@ function scanAffordableProjects(params){
     let best=null;
     for(const pr of prods){ if(!best || pr.minP<best.minP) best=pr; }
     const price=best.minP;
-    const calc=computeRedfAffordability(price, salary, oblig, rate, years, true, "لا", "لا");
+    const calc=computeRedfAffordability(price, salary, oblig, rate, years, true, "لا", 0);
     /* تصنيف وفق القدرة الشرائية البنكية بهامش ±10% — بدل الاعتماد فقط على منطق
        الدفعة الأولى الإضافية (capped) بالحاسبة المبسّطة */
     const affordRatio = maxProperty>0 ? price/maxProperty : null;
@@ -5012,9 +5037,15 @@ function runCalc(){
   if(!rate||rate<=0||!years||years<=0){ box.innerHTML=`<div class="cerr">تحقق من نسبة الفائدة ومدة التمويل</div>`; return; }
 
   const eligible = cElig==="نعم";
+  /* ذرى بلس: يشترط صافي راتب 3,000–7,000 ومشروع من "الدانيات" — نتحقق قبل تطبيقه بدل
+     افتراض انطباقه دائماً عند تفعيل المفتاح */
+  const daraSalaryOk = salary>=3000 && salary<=7000;
+  const daraProjOk = pickedProject ? isDanaProject(pickedProject) : null;
+  const daraApplicable = eligible && cDara==="نعم" && daraSalaryOk && daraProjOk!==false;
+  const daraMonthlyAmt = daraApplicable ? daraPlusMonthly(years*12) : 0;
   const {redfSupport,modSupport,support,downStd,downNet,financeTarget,maxInstallment,
     financeUsed,installment,extraDown,capped,downFinal,installmentAfterDara} =
-    computeRedfAffordability(price, salary, oblig, rate, years, eligible, cMod, cDara);
+    computeRedfAffordability(price, salary, oblig, rate, years, eligible, cMod, daraMonthlyAmt);
 
   let h = ``;
   if(!eligible){
@@ -5024,11 +5055,17 @@ function runCalc(){
     h += `<div class="cwarn" style="background:var(--purple-soft);border-color:var(--purple-soft-border);color:var(--purple)">
       سعر السوق المقارن لهذه الوحدة (غير المستفيدين): <b>${fmt(calcMarketPrice)} ريال</b> — دعم إضافي قدره ${fmt(calcMarketPrice-price)} ريال مقابل سعر الوزارة أعلاه.</div>`;
   }
+  if(cDara==="نعم" && eligible && !daraApplicable){
+    const reasons=[];
+    if(!daraSalaryOk) reasons.push("الراتب خارج نطاق ذرى بلس (3,000–7,000 ريال)");
+    if(daraProjOk===false) reasons.push("الوحدة ليست من مشاريع الدانيات المشمولة بالبرنامج");
+    h += `<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ دعم ذرى بلس غير منطبق هنا: ${reasons.join(" · ")}${daraProjOk===null?" — لم يُحدَّد مشروع بعد للتحقق من شرط الدانيات":""}</div>`;
+  }
   h += `<div class="cresblock">
     <h4>ملخص الدفع</h4>
     <div class="cresrow hi"><span class="cl">الدفعة الأولى المطلوبة</span><span class="cv">${fmt(Math.round(downFinal))} ريال</span></div>
     <div class="cresrow hi"><span class="cl">القسط الشهري</span><span class="cv">${fmt(Math.round(installment))} ريال</span></div>
-    ${cDara==="نعم"?`<div class="cresrow"><span class="cl">القسط بعد دعم ذرى بلس (٥٠٠ ريال/شهر)</span><span class="cv" style="color:var(--green)">${fmt(Math.round(installmentAfterDara))} ريال</span></div>`:""}
+    ${daraApplicable?`<div class="cresrow"><span class="cl">القسط بعد دعم ذرى بلس (${fmt(Math.round(daraMonthlyAmt))} ريال/شهر)</span><span class="cv" style="color:var(--green)">${fmt(Math.round(installmentAfterDara))} ريال</span></div>`:""}
     <h4>التفاصيل</h4>
     <div class="cresrow"><span class="cl">دعم الصندوق العقاري</span><span class="cv">${fmt(redfSupport)} ريال</span></div>
     ${modSupport?`<div class="cresrow"><span class="cl">دعم وزارة الدفاع</span><span class="cv">${fmt(modSupport)} ريال</span></div>`:""}
@@ -5062,7 +5099,7 @@ function runCalc(){
     const months = years*12;
     const totalDebt = netCost*(1+rate/100*years);
     const flatInstallment = totalDebt/months;
-    const flatAfterDara = cDara==="نعم" ? Math.max(0,flatInstallment-500) : flatInstallment;
+    const flatAfterDara = daraApplicable ? Math.max(0,flatInstallment-daraMonthlyAmt) : flatInstallment;
     h += `<div class="cresblock">
       <h4>احتساب مباشر حسب بنك التمويل <span style="font-weight:400;font-size:10.5px;color:var(--muted)">(كامل التكلفة بعد الدعم على القسط، بلا حد أقصى 65%)</span></h4>
       <div class="cresrow"><span class="cl">التكلفة بعد الدعم</span><span class="cv">${fmt(Math.round(netCost))} ريال</span></div>
@@ -5071,7 +5108,7 @@ function runCalc(){
     </div>`;
   }
 
-  h += `<div class="cwarn" style="background:var(--green-soft);border-color:var(--green-soft-border);color:var(--green)">منهجية REDF: دعم 150,000 ريال للرواتب أقل من 10,000، و100,000 ريال لما فوقها (للمستحقين فقط). دعم وزارة الدفاع 160,000 ريال للمنسوبين المستحقين. القسط بنظام الفائدة الفلات = المبلغ × (1 + النسبة السنوية × السنوات) ÷ (السنوات×12). الحد الأقصى للقسط بالاحتساب الرئيسي = 65% من الراتب ناقص الالتزامات.</div>`;
+  h += `<div class="cwarn" style="background:var(--green-soft);border-color:var(--green-soft-border);color:var(--green)">منهجية REDF: دعم 150,000 ريال للرواتب أقل من 10,000، و100,000 ريال لما فوقها (للمستحقين فقط). دعم وزارة الدفاع 160,000 ريال للمنسوبين المستحقين. القسط بنظام الفائدة الفلات = المبلغ × (1 + النسبة السنوية × السنوات) ÷ (السنوات×12). الحد الأقصى للقسط بالاحتساب الرئيسي = 65% من الراتب ناقص الالتزامات. ذرى بلس: دعم شهري إضافي (يُكدَّس فوق دعم الصندوق) = 120,000 ÷ عدد أشهر التمويل، لصافي راتب 3,000–7,000 ريال ومشاريع الدانيات (NHC) حصراً.</div>`;
   h += `<div id="cOffersPanel"></div>`;
   h += `<div class="calcActions">
     <button type="button" class="btn ghost" id="cShareWA">📤 مشاركة واتساب</button>
@@ -5079,7 +5116,7 @@ function runCalc(){
   </div>`;
   box.innerHTML = h;
   if(pickedProject) renderProjectOffersPanel(pickedProject);
-  const waText = `حاسبة القدرة الشرائية — SalesPlace\nسعر الوحدة: ${fmt(Math.round(price))} ريال\nالراتب الشهري: ${fmt(salary)} ريال\n———\nالدفعة الأولى المطلوبة: ${fmt(Math.round(downFinal))} ريال\nالقسط الشهري: ${fmt(Math.round(installment))} ريال\nدعم الصندوق العقاري: ${fmt(redfSupport)} ريال${modSupport?`\nدعم وزارة الدفاع: ${fmt(modSupport)} ريال`:""}\nالتمويل المعتمد: ${fmt(Math.round(financeUsed))} ريال`;
+  const waText = `حاسبة القدرة الشرائية — SalesPlace\nسعر الوحدة: ${fmt(Math.round(price))} ريال\nالراتب الشهري: ${fmt(salary)} ريال\n———\nالدفعة الأولى المطلوبة: ${fmt(Math.round(downFinal))} ريال\nالقسط الشهري: ${fmt(Math.round(installment))} ريال${daraApplicable?`\nالقسط بعد دعم ذرى بلس: ${fmt(Math.round(installmentAfterDara))} ريال`:""}\nدعم الصندوق العقاري: ${fmt(redfSupport)} ريال${modSupport?`\nدعم وزارة الدفاع: ${fmt(modSupport)} ريال`:""}\nالتمويل المعتمد: ${fmt(Math.round(financeUsed))} ريال`;
   $("cShareWA").onclick=()=>shareWA(waText);
   $("cSaveLog").onclick=()=>saveCalcRecord("REDF", `سعر ${fmt(Math.round(price))} · دفعة أولى ${fmt(Math.round(downFinal))} · قسط ${fmt(Math.round(installment))} ريال/شهر`);
 }
@@ -5189,14 +5226,22 @@ function computeAdvancedAffordability(inp){
   const downSupport = (inp.eligible && supportMode==="downpayment") ? (inp.salary<10000?150000:100000) : 0;
   const modSupport = (inp.eligible && inp.mod) ? 160000 : 0;
 
+  /* ذرى بلس: دعم شهري إضافي منفصل عن دعم الصندوق أعلاه (يُكدَّس فوقه، لا يستبدله) —
+     يشترط صافي راتب 3,000–7,000 ومشروع من الدانيات (NHC) — انظر computeRedfAffordability
+     للتفاصيل والمصدر؛ نفس القاعدة هنا لأن الوضع المتقدم كان لا يطبّقها إطلاقاً سابقاً */
+  const daraSalaryOk = inp.salary>=3000 && inp.salary<=7000;
+  const daraApplicable = inp.eligible && inp.dara && daraSalaryOk && inp.danaProject!==false;
+  const daraMonthly = daraApplicable ? daraPlusMonthly(months) : 0;
+
   const dbrBefore = redfDbrPct(inp.salary, inp.eligible);
   const pensionNet = pensionEst!=null ? pensionEst : inp.salary;
   const dbrAfter = redfDbrPct(pensionNet, inp.eligible);
 
-  /* القسط الأقصى المتاح = (الدخل المؤهِّل + قسط الدعم) × نسبة الاستقطاع، ثم تُخصم الالتزامات
-     كاملة (وليس بنسبتها من الاستقطاع) — مطابق حرفياً لصيغة J15/J19 بملف الراجحي */
-  const installmentBefore=Math.max(0, (inp.salary + monthlySupport) * dbrBefore - inp.oblig);
-  const installmentAfter = monthsAfter>0 ? Math.max(0, (pensionNet + monthlySupport) * dbrAfter - inp.oblig) : 0;
+  /* القسط الأقصى المتاح = (الدخل المؤهِّل + قسط الدعم + ذرى بلس) × نسبة الاستقطاع، ثم
+     تُخصم الالتزامات كاملة (وليس بنسبتها من الاستقطاع) — مطابق حرفياً لصيغة J15/J19 بملف
+     الراجحي، مع إضافة ذرى بلس بنفس آلية قسط الدعم لأنه دعم حكومي يرفع القدرة على السداد */
+  const installmentBefore=Math.max(0, (inp.salary + monthlySupport + daraMonthly) * dbrBefore - inp.oblig);
+  const installmentAfter = monthsAfter>0 ? Math.max(0, (pensionNet + monthlySupport + daraMonthly) * dbrAfter - inp.oblig) : 0;
 
   /* مبلغ التمويل الأقصى: بنظام الفائدة الفلات (نفس منهجية الحاسبة المبسّطة وحاسبة الراجحي
      الفعلية) — إجمالي الأقساط المتاحة عبر كامل المدة، مقسوماً على (1 + النسبة×السنوات) */
@@ -5221,8 +5266,11 @@ function computeAdvancedAffordability(inp){
   const financeNeeded = Math.max(0, inp.price - downStd - excessSupport);
   const priceAfterSupport = Math.max(0, inp.price - totalSupport);
 
-  /* القسط الفعلي لهذه الوحدة: نفس صيغة الفلات المستخدمة بالحاسبة المبسّطة والراجحي */
+  /* القسط الفعلي لهذه الوحدة: نفس صيغة الفلات المستخدمة بالحاسبة المبسّطة والراجحي.
+     القسط بعد ذرى بلس رقم معلوماتي إضافي (صافي ما يدفعه العميل فعلياً) — لا يُستخدم
+     بحساب مبلغ التمويل نفسه، تماماً كما بالحاسبة المبسّطة */
   const actualInstallment = years>0 ? calcFlatInstallment(financeNeeded, inp.annualRate, years) : 0;
+  const actualInstallmentAfterDara = daraMonthly>0 ? Math.max(0, actualInstallment-daraMonthly) : actualInstallment;
   const totalPaid = actualInstallment*months;
   const totalProfit = Math.max(0, totalPaid-financeNeeded);
   const fitsBefore = actualInstallment <= installmentBefore + 1;
@@ -5231,9 +5279,10 @@ function computeAdvancedAffordability(inp){
   return {eligibleGate, reasons, requestedMonths, months, termCapped, maxMonthsByAge, maxAgeEnd,
     monthsBefore, monthsAfter, retireAgeUsed, pensionEst, supportMode,
     dbrBefore, dbrAfter, monthlySupport, downSupport, modSupport, installmentBefore, installmentAfter,
+    daraApplicable, daraMonthly, daraSalaryOk,
     maxFinancing, maxPropertyValue, bracket,
     projectSupport, totalSupport, priceAfterSupport, downStd, downNet, financeNeeded,
-    actualInstallment, totalPaid, totalProfit, fitsBefore, fitsAfter};
+    actualInstallment, actualInstallmentAfterDara, totalPaid, totalProfit, fitsBefore, fitsAfter};
 }
 function projectUnitSupportTotal(){
   if(!pickedProject || !pickedType) return 0;
@@ -5253,12 +5302,13 @@ function runAdvancedCalc(){
   const supportMode=$("advSupportMode").value;
   const dob=$("advDob").value||null, sector=$("advSector").value||null, rank=$("advRank").value||null;
   const yearsServiceRaw=$("advYearsService").value, baseSalaryRaw=$("advBaseSalary").value, assetsRaw=$("advAssets").value;
+  const danaProject = pickedProject ? isDanaProject(pickedProject) : null;
   const r=computeAdvancedAffordability({
     price, salary, oblig, annualRate:rate, years, eligible, mod:cMod==="نعم", downPct, supportMode,
     dob, sector, rank, yearsService: yearsServiceRaw!==""?+yearsServiceRaw:null,
     baseSalary: baseSalaryRaw!==""?+baseSalaryRaw:null,
     familyAssets: assetsRaw!==""?+assetsRaw:null, priorUse: $("advPriorUse").checked,
-    projectSupport: projectUnitSupportTotal()
+    projectSupport: projectUnitSupportTotal(), dara: cDara==="نعم", danaProject
   });
 
   let h=``;
@@ -5268,6 +5318,12 @@ function runAdvancedCalc(){
   }
   if(!eligible){
     h+=`<div class="cwarn">هذه الوحدة مضبوطة على "غير مستحق" — لا يُحتسب دعم صندوق، ونسبة الاستقطاع أقل (55%–75% حسب الراتب بدل 65%–75%).</div>`;
+  }
+  if(cDara==="نعم" && eligible && !r.daraApplicable){
+    const reasons=[];
+    if(!r.daraSalaryOk) reasons.push("الراتب خارج نطاق ذرى بلس (3,000–7,000 ريال)");
+    if(danaProject===false) reasons.push("الوحدة ليست من مشاريع الدانيات المشمولة بالبرنامج");
+    h+=`<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ دعم ذرى بلس غير منطبق هنا: ${reasons.join(" · ")}${danaProject===null?" — لم يُحدَّد مشروع بعد للتحقق من شرط الدانيات":""}</div>`;
   }
 
   h+=`<div class="cresblock" style="text-align:center;padding:18px 14px">
@@ -5286,6 +5342,7 @@ function runAdvancedCalc(){
     <div class="cresrow hi"><span class="cl">الدفعة الأولى المطلوبة (بعد خصم الدعم)</span><span class="cv">${fmt(Math.round(r.downNet))} ريال</span></div>
     <div class="cresrow hi"><span class="cl">مبلغ التمويل المطلوب</span><span class="cv">${fmt(Math.round(r.financeNeeded))} ريال</span></div>
     <div class="cresrow hi"><span class="cl">القسط الشهري التقديري</span><span class="cv">${fmt(Math.round(r.actualInstallment))} ريال</span></div>
+    ${r.daraApplicable?`<div class="cresrow"><span class="cl">القسط بعد دعم ذرى بلس (${fmt(Math.round(r.daraMonthly))} ريال/شهر)</span><span class="cv" style="color:var(--green)">${fmt(Math.round(r.actualInstallmentAfterDara))} ريال</span></div>`:""}
     <div class="cresrow"><span class="cl">مدة التمويل الفعلية</span><span class="cv">${Math.round(r.months/12*10)/10} سنة${r.termCapped?" (مخفّضة بسبب سقف العمر)":""}</span></div>
     <div class="cresrow"><span class="cl">إجمالي المسدَّد خلال مدة التمويل</span><span class="cv">${fmt(Math.round(r.totalPaid))} ريال</span></div>
     <div class="cresrow"><span class="cl">قيمة الأرباح البنكية الإجمالية</span><span class="cv">${fmt(Math.round(r.totalProfit))} ريال</span></div>
@@ -5313,7 +5370,7 @@ function runAdvancedCalc(){
   </div>`;
   box.innerHTML=h;
   if(pickedProject) renderProjectOffersPanel(pickedProject);
-  const waText=`حاسبة القدرة الشرائية المتقدمة — SalesPlace\nقيمة الوحدة بعد الدعومات: ${fmt(Math.round(r.priceAfterSupport))} ريال (من أصل ${fmt(Math.round(price))} ريال)\n———\nالدفعة الأولى (${fmt(downPct)}% من السعر — بعد خصم الدعم): ${fmt(Math.round(r.downNet))} ريال\nمبلغ التمويل: ${fmt(Math.round(r.financeNeeded))} ريال\nمدة التمويل: ${Math.round(r.months/12*10)/10} سنة\nالقسط الشهري التقديري: ${fmt(Math.round(r.actualInstallment))} ريال\nإجمالي الأرباح البنكية خلال المدة: ${fmt(Math.round(r.totalProfit))} ريال\n${supportMode==="downpayment"?`دعم الصندوق (دفعة أولى): ${fmt(r.downSupport)} ريال`:`قسط الدعم الشهري: ${fmt(Math.round(r.monthlySupport))} ريال/شهر`}\n(تقدير توجيهي وفق سقوف النظام — وليس عرضاً بنكياً ملزماً)`;
+  const waText=`حاسبة القدرة الشرائية المتقدمة — SalesPlace\nقيمة الوحدة بعد الدعومات: ${fmt(Math.round(r.priceAfterSupport))} ريال (من أصل ${fmt(Math.round(price))} ريال)\n———\nالدفعة الأولى (${fmt(downPct)}% من السعر — بعد خصم الدعم): ${fmt(Math.round(r.downNet))} ريال\nمبلغ التمويل: ${fmt(Math.round(r.financeNeeded))} ريال\nمدة التمويل: ${Math.round(r.months/12*10)/10} سنة\nالقسط الشهري التقديري: ${fmt(Math.round(r.actualInstallment))} ريال${r.daraApplicable?`\nالقسط بعد دعم ذرى بلس: ${fmt(Math.round(r.actualInstallmentAfterDara))} ريال`:""}\nإجمالي الأرباح البنكية خلال المدة: ${fmt(Math.round(r.totalProfit))} ريال\n${supportMode==="downpayment"?`دعم الصندوق (دفعة أولى): ${fmt(r.downSupport)} ريال`:`قسط الدعم الشهري: ${fmt(Math.round(r.monthlySupport))} ريال/شهر`}\n(تقدير توجيهي وفق سقوف النظام — وليس عرضاً بنكياً ملزماً)`;
   $("cShareWA").onclick=()=>shareWA(waText);
   $("cSaveLog").onclick=()=>saveCalcRecord("REDF متقدم", `سعر بعد الدعم ${fmt(Math.round(r.priceAfterSupport))} · دفعة أولى ${fmt(Math.round(r.downNet))} · قسط ${fmt(Math.round(r.actualInstallment))} ريال/شهر`);
 }
@@ -5342,7 +5399,8 @@ function compareAllBanks(){
     dob, sector, rank, yearsService: yearsServiceRaw!==""?+yearsServiceRaw:null,
     baseSalary: baseSalaryRaw!==""?+baseSalaryRaw:null,
     familyAssets: assetsRaw!==""?+assetsRaw:null, priorUse: $("advPriorUse").checked,
-    projectSupport: projectUnitSupportTotal()
+    projectSupport: projectUnitSupportTotal(), dara: cDara==="نعم",
+    danaProject: pickedProject ? isDanaProject(pickedProject) : null
   };
   /* بيانات البنوك المضمّنة قد تحوي صفوفاً مكررة لنفس البنك/تحويل الراتب (بيانات قديمة قبل
      تبسيط جدول البنوك) — نستبعد التكرار هنا كما بميزة "أي مشروع يناسب راتبك؟" */
