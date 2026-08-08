@@ -1796,7 +1796,7 @@ table.prods tr:last-child td{border:none}
             <div class="flabel" style="margin-top:2px">نوع دعم الصندوق <em style="font-style:normal;font-weight:400;color:var(--muted)">(نمطان لا يجتمعان معاً)</em></div>
             <select id="advSupportMode" style="width:100%;border:1.5px solid var(--line);border-radius:11px;padding:10px 11px;background:var(--surface);color:var(--ink);margin-bottom:11px;font-size:13px">
               <option value="installment">قسط شهري (يُضاف لقدرة السداد)</option>
-              <option value="downpayment">دفعة مقدمة (مبلغ مقطوع 100/150 ألف)</option>
+              <option value="downpayment" selected>دفعة مقدمة (مبلغ مقطوع 100/150 ألف)</option>
             </select>
 
             <button type="button" class="btn ghost" id="advMoreToggle" style="width:100%;margin:2px 0 9px">بيانات إضافية لدقة أعلى (اختياري) ▾</button>
@@ -5459,8 +5459,20 @@ function computeAdvancedAffordability(inp){
   const downStd = inp.price*(inp.downPct/100);
   const downNet = Math.max(0, downStd-totalSupport);
   const excessSupport = Math.max(0, totalSupport-downStd);
-  const financeNeeded = Math.max(0, inp.price - downStd - excessSupport);
   const priceAfterSupport = Math.max(0, inp.price - totalSupport);
+
+  /* لو الراتب لا يدعم كامل مبلغ التمويل المطلوب بالقسط والمدة الحاليين، نُخفِّض مبلغ
+     التمويل لسقف قدرة الراتب (maxFinancing) وننقل الفرق للدفعة الأولى بدل ترك القسط
+     يتجاوز الحد — تماماً كمنطق الحاسبة المبسّطة، بدل عرض قسط لن يوافق عليه البنك فعلياً
+     مع تحذير فقط بلا أي تعديل */
+  const financeNeededRaw = Math.max(0, inp.price - downStd - excessSupport);
+  let financeNeeded = financeNeededRaw, capped=false, extraDown=0;
+  if(financeNeededRaw > maxFinancing){
+    capped = true;
+    extraDown = financeNeededRaw - Math.max(0,maxFinancing);
+    financeNeeded = Math.max(0, maxFinancing);
+  }
+  const downFinal = downNet + extraDown;
 
   /* القسط الفعلي لهذه الوحدة: نفس صيغة الفلات المستخدمة بالحاسبة المبسّطة والراجحي.
      القسط بعد ذرى بلس رقم معلوماتي إضافي (صافي ما يدفعه العميل فعلياً) — لا يُستخدم
@@ -5475,7 +5487,7 @@ function computeAdvancedAffordability(inp){
   return {eligibleGate, reasons, requestedMonths, months, termCapped, maxMonthsByAge, maxAgeEnd,
     monthsBefore, monthsAfter, retireAgeUsed, pensionEst, supportMode,
     dbrBefore, dbrAfter, monthlySupport, downSupport, modSupport, installmentBefore, installmentAfter,
-    daraApplicable, daraMonthly, daraSalaryOk,
+    daraApplicable, daraMonthly, daraSalaryOk, capped, extraDown, downFinal,
     maxFinancing, maxPropertyValue, bracket,
     projectSupport, totalSupport, priceAfterSupport, downStd, downNet, financeNeeded,
     actualInstallment, actualInstallmentAfterDara, totalPaid, totalProfit, fitsBefore, fitsAfter};
@@ -5545,7 +5557,7 @@ function runAdvancedCalc(){
   h+=`<div class="cresblock">
     <h4>ملخص الدفع (فائدة فلات — نفس منهجية الحاسبة المبسّطة)</h4>
     <div class="cresrow"><span class="cl">الدفعة الأولى القياسية (${fmt(downPct)}% من سعر العقار)</span><span class="cv">${fmt(Math.round(r.downStd))} ريال</span></div>
-    <div class="cresrow hi"><span class="cl">الدفعة الأولى المطلوبة (بعد خصم الدعم)</span><span class="cv">${fmt(Math.round(r.downNet))} ريال</span></div>
+    <div class="cresrow hi"><span class="cl">الدفعة الأولى المطلوبة (بعد خصم الدعم${r.capped?" + فرق سقف الراتب":""})</span><span class="cv">${fmt(Math.round(r.downFinal))} ريال</span></div>
     <div class="cresrow hi"><span class="cl">مبلغ التمويل المطلوب</span><span class="cv">${fmt(Math.round(r.financeNeeded))} ريال</span></div>
     <div class="cresrow hi"><span class="cl">القسط الشهري التقديري</span><span class="cv">${fmt(Math.round(r.actualInstallment))} ريال</span></div>
     ${r.daraApplicable?`<div class="cresrow"><span class="cl">القسط بعد دعم ذرى بلس (${fmt(Math.round(r.daraMonthly))} ريال/شهر)</span><span class="cv" style="color:var(--green)">${fmt(Math.round(r.actualInstallmentAfterDara))} ريال</span></div>`:""}
@@ -5553,6 +5565,7 @@ function runAdvancedCalc(){
     <div class="cresrow"><span class="cl">إجمالي المسدَّد خلال مدة التمويل</span><span class="cv">${fmt(Math.round(r.totalPaid))} ريال</span></div>
     <div class="cresrow"><span class="cl">قيمة الأرباح البنكية الإجمالية</span><span class="cv">${fmt(Math.round(r.totalProfit))} ريال</span></div>
     ${r.termCapped?`<div class="cwarn" style="margin-top:8px">⚠ المدة المطلوبة ${fmt(Math.round(r.requestedMonths/12*10)/10)} سنة خُفِّضت إلى ${fmt(Math.round(r.months/12*10)/10)} سنة لأن العمر عند نهاية التمويل يتجاوز الحد المسموح (${r.maxAgeEnd} سنة).</div>`:""}
+    ${r.capped?`<div class="cwarn" style="margin-top:8px">⚠ الراتب لا يدعم كامل مبلغ التمويل بالقسط والمدة الحاليين (${fmt(Math.round(r.months/12*10)/10)} سنة). الفرق البالغ <b>${fmt(Math.round(r.extraDown))}</b> ريال أُضيف للدفعة الأولى بدل زيادة القسط. بديل آخر: تمديد مدة التمويل يخفّض القسط الشهري ويقلّل الحاجة لدفعة أولى أكبر.</div>`:""}
     <h4>سقف القدرة الشرائية وفق الراتب</h4>
     <div class="cresrow"><span class="cl">أقصى قسط قبل التقاعد (${fmt(Math.round(r.dbrBefore*100))}%)</span><span class="cv">${fmt(Math.round(r.installmentBefore))} ريال</span></div>
     ${r.monthsAfter>0?`<div class="cresrow"><span class="cl">أقصى قسط بعد التقاعد (${fmt(Math.round(r.dbrAfter*100))}%)</span><span class="cv">${fmt(Math.round(r.installmentAfter))} ريال</span></div>
@@ -5573,9 +5586,9 @@ function runAdvancedCalc(){
   </div>`;
   box.innerHTML=h;
   if(pickedProject) renderProjectOffersPanel(pickedProject);
-  const waText=`حاسبة القدرة الشرائية المتقدمة — SalesPlace\nقيمة الوحدة بعد الدعومات: ${fmt(Math.round(r.priceAfterSupport))} ريال (من أصل ${fmt(Math.round(price))} ريال)\n———\nالدفعة الأولى (${fmt(downPct)}% من السعر — بعد خصم الدعم): ${fmt(Math.round(r.downNet))} ريال\nمبلغ التمويل: ${fmt(Math.round(r.financeNeeded))} ريال\nمدة التمويل: ${Math.round(r.months/12*10)/10} سنة\nالقسط الشهري التقديري: ${fmt(Math.round(r.actualInstallment))} ريال${r.daraApplicable?`\nالقسط بعد دعم ذرى بلس: ${fmt(Math.round(r.actualInstallmentAfterDara))} ريال`:""}\nإجمالي الأرباح البنكية خلال المدة: ${fmt(Math.round(r.totalProfit))} ريال\n${supportMode==="downpayment"?`دعم الصندوق (دفعة أولى): ${fmt(r.downSupport)} ريال`:`قسط الدعم الشهري: ${fmt(Math.round(r.monthlySupport))} ريال/شهر`}\n(تقدير توجيهي وفق سقوف النظام — وليس عرضاً بنكياً ملزماً)`;
+  const waText=`حاسبة القدرة الشرائية المتقدمة — SalesPlace\nقيمة الوحدة بعد الدعومات: ${fmt(Math.round(r.priceAfterSupport))} ريال (من أصل ${fmt(Math.round(price))} ريال)\n———\nالدفعة الأولى (${fmt(downPct)}% من السعر — بعد خصم الدعم${r.capped?" وفرق سقف الراتب":""}): ${fmt(Math.round(r.downFinal))} ريال\nمبلغ التمويل: ${fmt(Math.round(r.financeNeeded))} ريال\nمدة التمويل: ${Math.round(r.months/12*10)/10} سنة\nالقسط الشهري التقديري: ${fmt(Math.round(r.actualInstallment))} ريال${r.daraApplicable?`\nالقسط بعد دعم ذرى بلس: ${fmt(Math.round(r.actualInstallmentAfterDara))} ريال`:""}\nإجمالي الأرباح البنكية خلال المدة: ${fmt(Math.round(r.totalProfit))} ريال\n${supportMode==="downpayment"?`دعم الصندوق (دفعة أولى): ${fmt(r.downSupport)} ريال`:`قسط الدعم الشهري: ${fmt(Math.round(r.monthlySupport))} ريال/شهر`}\n(تقدير توجيهي وفق سقوف النظام — وليس عرضاً بنكياً ملزماً)`;
   $("cShareWA").onclick=()=>shareWA(waText);
-  $("cSaveLog").onclick=()=>saveCalcRecord("REDF متقدم", `سعر بعد الدعم ${fmt(Math.round(r.priceAfterSupport))} · دفعة أولى ${fmt(Math.round(r.downNet))} · قسط ${fmt(Math.round(r.actualInstallment))} ريال/شهر`);
+  $("cSaveLog").onclick=()=>saveCalcRecord("REDF متقدم", `سعر بعد الدعم ${fmt(Math.round(r.priceAfterSupport))} · دفعة أولى ${fmt(Math.round(r.downFinal))} · قسط ${fmt(Math.round(r.actualInstallment))} ريال/شهر`);
 }
 /* لوحة الدعومات الجانبية — تُحدَّث حيّاً مع كل تبديل مفتاح أو تغيير راتب/مدة، بمعزل عن ضغط
    زر "احسب"، ليتمكن الموظف من عرضها فوراً للمستفيد أثناء تعبئة البيانات. تُصنَّف كل قيمة
