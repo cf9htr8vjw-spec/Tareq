@@ -1127,10 +1127,10 @@ main{flex:1;min-height:0;position:relative}
 .csupports .ctag.nr{background:var(--green-soft);color:var(--green)}
 .csupports .ctag.r{background:var(--rust-soft);color:var(--rust)}
 .csupports .ctag.d{background:var(--purple-soft);color:var(--purple)}
+.csupports .ctag.inc{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
 .csupports .camt{font-weight:700;font-size:12.5px;white-space:nowrap;font-family:"Noto Kufi Arabic"}
 .csupports .ctotal{display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:9px;border-top:1.5px solid var(--line);font-size:12.5px;font-weight:800}
 .csupports .cempty{font-size:11.5px;color:var(--muted);text-align:center;padding:6px 0}
-.csupports .cinfonote{font-size:10px;color:var(--muted);margin-top:9px;line-height:1.7}
 @media(min-width:900px){
   #calcScroll{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
   #calcScroll>.cintro{flex-basis:100%}
@@ -1727,9 +1727,13 @@ table.prods tr:last-child td{border:none}
           <b>حاسبة القدرة الشرائية للمستفيدين</b>
           <span>الدفعة الأولى، دعم الصندوق العقاري، والقسط الشهري — حسب منهجية REDF</span>
         </div>
-        <div class="chips" id="calcModeChips" style="margin:10px 0 11px">
-          <button type="button" class="chip on" data-mode="simple">مبسّط</button>
-          <button type="button" class="chip" data-mode="advanced">متقدم (تقديري وفق النظام)</button>
+        <!-- تبديل مبسّط/متقدم أُخفي بطلب المستخدم (الاحتساب المتقدم بات هو المعتمد وحده على
+             الشاشة — الفرق بين الوضعين لم يعد يُبرِّر التبديل)، مع إبقاء الشيفرة القديمة
+             (runCalc/computeRedfAffordability) لأن "أي مشروع يناسب راتبك؟" لا يزال يستخدمها
+             داخلياً لعرض نتائج المسح — انظر scanAffordableProjects -->
+        <div class="chips" id="calcModeChips" style="margin:10px 0 11px;display:none">
+          <button type="button" class="chip" data-mode="simple">مبسّط</button>
+          <button type="button" class="chip on" data-mode="advanced">متقدم (تقديري وفق النظام)</button>
         </div>
         <div class="cform">
           <button type="button" class="btn ghost" id="cPickUnitBtn" style="width:100%;margin-bottom:11px">🔎 اختر وحدة متاحة من مشروع</button>
@@ -1776,7 +1780,7 @@ table.prods tr:last-child td{border:none}
             <div class="cfield"><label>مدة التمويل (سنة)</label><input id="cYears" type="number" value="20"></div>
           </div>
 
-          <div id="advOnlyFields" style="display:none">
+          <div id="advOnlyFields">
             <div class="cfield"><label>نسبة الدفعة الأولى (%)</label><input id="advDownPct" type="number" step="0.5" value="10"></div>
 
             <div class="flabel" style="margin-top:2px">نوع دعم الصندوق <em style="font-style:normal;font-weight:400;color:var(--muted)">(نمطان لا يجتمعان معاً)</em></div>
@@ -1815,7 +1819,7 @@ table.prods tr:last-child td{border:none}
           </div>
 
           <button class="btn" id="cCalc" style="width:100%;margin-top:6px">احسب</button>
-          <button type="button" class="btn ghost" id="advCompareBanksBtn" style="width:100%;margin-top:9px;display:none">🏦 قارن كل البنوك</button>
+          <button type="button" class="btn ghost" id="advCompareBanksBtn" style="width:100%;margin-top:9px">🏦 قارن كل البنوك</button>
         </div>
         <div id="calcSupportsPanel" class="csupports"></div>
         <div id="cResult"></div>
@@ -5151,7 +5155,9 @@ function runCalc(){
    تُطبَّق تناقصياً لا فلات). الاحتساب المبسّط (الفلات) يبقى كما هو لأنه
    منهجية ملف REDF الأصلي المعتمد سابقاً بالتطبيق.
    ===================================================================== */
-let calcMode="simple";
+/* الشاشة تعتمد الاحتساب المتقدم حصراً الآن (زر التبديل مخفي بـ CSS أعلاه) — القيمة الافتراضية
+   هنا "advanced" بدل "simple" لتطابق ذلك؛ runCalcDispatch يبقى كما هو لأنه محايد تجاه القيمة */
+let calcMode="advanced";
 const REDF_RANK_RETIRE_AGE={
   "ملازم":44,"ملازم أول":44,"نقيب":48,"رائد":50,"مقدم":52,"عقيد":54,"عميد":56,"لواء":58,
   "جندي":44,"جندي أول":44,"عريف":46,"وكيل رقيب":48,"رقيب":50,"رقيب أول":50,"رئيس رقباء":52
@@ -5436,8 +5442,16 @@ function renderSupportsPanel(){
     if(sup.instl) lump.push({label:"خصم القسط الميسّر", note:"خصم مباشر على سعر الوحدة", amount:sup.instl, tag:"خصم مباشر", cls:"d"});
     if(sup.phase) lump.push({label:"خصم المرحلة", note:"خصم مباشر على سعر الوحدة", amount:sup.phase, tag:"خصم مباشر", cls:"d"});
   }
+  /* دعم عيني وبنية تحتية: نعرضهما كبندين ضمن القائمة (وليس كملاحظة هامشية فقط) حتى يراهما
+     الموظف بوضوح، لكن بوسم مختلف "متضمن بالسعر" ومستبعدَين من المجموع أدناه — لأنهما ليسا
+     دعماً إضافياً يُخصم من التمويل، بل جزء من سعر الوزارة المعروض للعميل أصلاً */
+  const included=[];
+  if(sup){
+    if(sup.inKind) included.push({label:"دعم عيني", note:"متضمَّن ضمن سعر الوزارة أعلاه", amount:sup.inKind, tag:"متضمَّن بالسعر", cls:"inc"});
+    if(sup.infra) included.push({label:"دعم البنية التحتية", note:"متضمَّن ضمن سعر الوزارة أعلاه", amount:sup.infra, tag:"متضمَّن بالسعر", cls:"inc"});
+  }
 
-  if(!lump.length && !monthly.length){
+  if(!lump.length && !monthly.length && !included.length){
     panel.innerHTML=`<h4>💰 الدعومات المتاحة</h4><div class="cempty">فعّل الخيارات المنطبقة (وزارة الدفاع، ذرى بلس...) لعرض الدعومات هنا</div>`;
     return;
   }
@@ -5447,12 +5461,15 @@ function renderSupportsPanel(){
   h += monthly.map(it=>row(Object.assign({},it,{unit:"ريال/شهر"}))).join("");
   const lumpTotal=lump.reduce((s,it)=>s+it.amount,0);
   const monthlyTotal=monthly.reduce((s,it)=>s+it.amount,0);
-  const parts=[];
-  if(lumpTotal) parts.push(`${fmt(Math.round(lumpTotal))} ريال`);
-  if(monthlyTotal) parts.push(`${fmt(Math.round(monthlyTotal))} ريال/شهر`);
-  h += `<div class="ctotal"><span>الإجمالي</span><span>${parts.join(" + ")}</span></div>`;
-  if(sup && (sup.inKind||sup.infra)){
-    h += `<div class="cinfonote">ℹ️ دعم عيني (${fmt(sup.inKind||0)} ريال) ودعم بنية تحتية (${fmt(sup.infra||0)} ريال) مضمَّنان مسبقاً ضمن سعر الوزارة المعروض أعلاه — غير محتسَبين هنا تفادياً للاحتساب المزدوج.</div>`;
+  if(lump.length || monthly.length){
+    const parts=[];
+    if(lumpTotal) parts.push(`${fmt(Math.round(lumpTotal))} ريال`);
+    if(monthlyTotal) parts.push(`${fmt(Math.round(monthlyTotal))} ريال/شهر`);
+    h += `<div class="ctotal"><span>الإجمالي</span><span>${parts.join(" + ")}</span></div>`;
+  }
+  if(included.length){
+    h += `<div class="cnote" style="margin-top:9px;margin-bottom:2px">مبالغ متضمَّنة أصلاً بسعر الوزارة (لا تُضاف لمبلغ التمويل):</div>`;
+    h += included.map(row).join("");
   }
   panel.innerHTML=h;
 }
