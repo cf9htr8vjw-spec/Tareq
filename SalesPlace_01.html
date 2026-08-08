@@ -4953,13 +4953,21 @@ function scanAffordableProjects(params){
     if(topBanks.length>=3) break;
   }
   /* القدرة الشرائية القصوى محسوبة مرة واحدة من الدخل فقط (بمعزل عن سعر وحدة بعينها) —
-     نفس محرك الحاسبة المتقدمة المتحقق من صحته مقابل حاسبة الراجحي الفعلية */
-  const advRef = computeAdvancedAffordability({
+     نفس محرك الحاسبة المتقدمة المتحقق من صحته مقابل حاسبة الراجحي الفعلية.
+     دعم الصندوق نمطان لا يجتمعان (قسط شهري أو دفعة مقدمة 100/150 ألف) ولا نعرف مسبقاً
+     أيّهما سيُتاح فعلياً للعميل، فنحسب الاثنين ونعتمد الأقل (الأكثر تحفظاً) كسقف — نمط
+     القسط الشهري وحده كان يعطي سقفاً متفائلاً دائماً لأنه يراكم عبر كامل مدة التمويل */
+  const advInstallment = computeAdvancedAffordability({
     price:0, salary, oblig, annualRate:rate, years, eligible:true, mod:false, downPct:10,
     supportMode:"installment", dob:null, sector:null, rank:null, yearsService:null,
     baseSalary:null, familyAssets:null, priorUse:false, projectSupport:0
   });
-  const maxProperty = advRef.maxPropertyValue;
+  const advDownpayment = computeAdvancedAffordability({
+    price:0, salary, oblig, annualRate:rate, years, eligible:true, mod:false, downPct:10,
+    supportMode:"downpayment", dob:null, sector:null, rank:null, yearsService:null,
+    baseSalary:null, familyAssets:null, priorUse:false, projectSupport:0
+  });
+  const maxProperty = Math.min(advInstallment.maxPropertyValue, advDownpayment.maxPropertyValue);
   const out=[];
   for(const p of DATA){
     const sg=p.b; if(!sg || !Array.isArray(sg.prods) || !sg.prods.length) continue;
