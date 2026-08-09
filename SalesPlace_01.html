@@ -4980,6 +4980,26 @@ async function processSyncFile(){
   syncSetStatus(`جارٍ المعالجة — ${fmt(rows.length)} صف…`);
   await new Promise(r=>setTimeout(r,30));
 
+  /* عمود رمز الوحدة (unit_code) بملف التخصيص — لوحظ فعلياً أن اسم العمود الحقيقي قد لا يطابق
+     "unit_code" حرفياً (اختلاف حالة أحرف/مسافات/شرطات سفلية، كما حصل بملف الدعومات التفصيلي
+     سابقاً)، ومطابقة حرفية صارمة (row.unit_code) كانت تُرجع فارغاً لكل الصفوف بصمت في هذه
+     الحالة. هنا نبحث عن العمود الفعلي بمطابقة مُطبَّعة (بلا حالة أحرف/مسافات/شرطات) بدل الاعتماد
+     على اسم واحد بالضبط — يبقى بقية المحلّل (project_name، price، حالة الحجز...) بلا تغيير */
+  function normalizeHeaderKey(s){ return String(s==null?"":s).trim().toLowerCase().replace(/[\s_\-]+/g,""); }
+  function resolveHeaderKey(rowsArr, candidateNames){
+    const wanted=new Set(candidateNames.map(normalizeHeaderKey));
+    const seen=new Set();
+    for(let i=0;i<Math.min(rowsArr.length,50);i++){
+      for(const k of Object.keys(rowsArr[i])){
+        if(seen.has(k)) continue;
+        seen.add(k);
+        if(wanted.has(normalizeHeaderKey(k))) return k;
+      }
+    }
+    return null;
+  }
+  const unitCodeKey = resolveHeaderKey(rows, ["unit_code","unitcode","unit id","unitid","uid"]);
+
   const statusAgg=new Map(); // key -> {project_id,unit_type,beds,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY
   const modelAgg=new Map(); // key `${pid}|${model}` -> {project_id,model,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY، من عمود model
   const segAgg=new Map(); // pid -> {project_id,beneficiary_count,non_beneficiary_count} — من عمود target_segments
@@ -5061,7 +5081,7 @@ async function processSyncFile(){
       snapshot_date: todayISO,
       /* المعرّف الفريد للوحدة — نفس unit_code بملف بيانات الدعومات، يمكّن ربط الوحدة الحيّة
          المختارة من المنتقي بدعمها الفعلي الدقيق بدل متوسط النوع فقط */
-      unit_code: row.unit_code!=null ? String(row.unit_code).trim() : null,
+      unit_code: (unitCodeKey && row[unitCodeKey]!=null) ? String(row[unitCodeKey]).trim() : null,
       model: modelVal||null,
     });
   }
@@ -5102,7 +5122,11 @@ async function processSyncFile(){
     <div class="cresrow"><span class="cl">مشاريع ستُحدَّث بنسبة شريحة المعروض</span><span class="cv">${fmt(segRows.length)}</span></div>
     <div class="cresrow"><span class="cl">مشاريع ستُحدَّث بعدد عقود الاستصناع المعلّقة</span><span class="cv">${fmt(istisnaRows.length)}</span></div>
     <div class="cresrow"><span class="cl">وحدات ستُرسَل لمرآة التخصيص الكاملة</span><span class="cv">${fmt(mirrorRows.length)}</span></div>
+    <div class="cresrow"><span class="cl">عمود رمز الوحدة (unit_code) بالملف</span><span class="cv">${unitCodeKey?`تم التعرّف عليه ("${unitCodeKey}")`:"لم يُعثر عليه بالملف"}</span></div>
+    ${unitCodeKey?`<div class="cresrow"><span class="cl">وحدات معها رمز فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.unit_code).length)}</span></div>`:""}
   </div>
+  ${unitCodeKey && mirrorRows.length && mirrorRows.filter(r=>r.unit_code).length===0 ? `<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ عمود رمز الوحدة موجود بالملف لكن كل قيمه فارغة بهذه الرفعة — تحقق من الملف المصدر</div>` : ""}
+  ${!unitCodeKey ? `<div class="cwarn">لا يحتوي هذا الملف على عمود يمكن التعرّف عليه كرمز وحدة (unit_code) — ستُرفع كل الوحدات بدون رمز، ولن تعمل ميزات البحث المباشر والدعم الدقيق لكل وحدة حتى يُضاف هذا العمود للملف المصدر</div>` : ""}
   ${unmatchedHtml}
   <button class="btn" id="syncUpload" style="width:100%;margin-top:12px">رفع التحديث إلى القاعدة</button>`;
   $("syncStart").disabled=false;
