@@ -1122,6 +1122,12 @@ main{flex:1;min-height:0;position:relative}
 .unmAll summary{cursor:pointer;color:var(--muted);font-weight:600}
 .cerr{background:var(--rust-soft);border:1px solid var(--rust-soft-border);color:var(--rust);border-radius:12px;padding:11px 13px;font-size:12.5px;margin-top:12px}
 .csupports{background:var(--surface);border:1.5px solid var(--gold-soft-border);border-radius:14px;padding:12px 14px;margin-top:12px;box-shadow:var(--shadow)}
+.cpriceHead{display:flex;align-items:center;justify-content:space-between;gap:4px;margin:-2px 0 12px;padding-bottom:12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.cpItem{text-align:center;flex:1;min-width:78px}
+.cpLabel{font-size:9.5px;color:var(--muted);font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cpVal{font-size:16px;font-weight:800}
+.cpItem.hi .cpVal{color:var(--green);font-size:18px}
+.cpDivider{color:var(--muted);font-size:13px;flex:none}
 .csupports h4{font-size:12.5px;font-weight:700;color:var(--gold-text3);margin:0 0 6px;display:flex;align-items:center;gap:7px}
 .csupports .citem{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
 .csupports .citem:last-of-type{border-bottom:none}
@@ -4039,7 +4045,18 @@ async function fetchUnitSupportDetail(unitCode){
 function mapUnitSupportRow(row){
   if(!row) return null;
   const avg = (row.full_price!=null && row.moh_price!=null) ? Math.max(0, row.full_price-row.moh_price) : null;
-  return { inKind: row.in_kind||0, infra: row.infra_simple||0, instl: row.installment_discount||0, phase: row.phase_discount||0, avg, exact:true };
+  /* كل مكوّنات الدعم بملف الدعومات التفصيلي (عيني، بنية تحتية، قسط ميسّر، مرحلة) مضمَّنة أصلاً
+     بسعر الوزارة (moh_price) — أكّد المستخدم هذا صراحة لكل الأربعة، بخلاف متوسط SUPP القديم
+     على مستوى المشروع/النوع حيث خصم القسط الميسّر وخصم المرحلة يُحتسبان خصماً إضافياً حقيقياً
+     ينقص مبلغ التمويل (عبر projectUnitSupportTotal). لذا هنا لا نضع قيمة بحقلي instl/phase
+     (فيبقى الخصم الإضافي صفراً لوحدة مُختارة بدقة)، ونمرّر القيمتين بحقلين منفصلين تُعرَضان
+     فقط ضمن قسم "متضمَّن بالسعر" بلوحة الدعومات (انظر renderSupportsPanel) */
+  return {
+    inKind: row.in_kind||0, infra: row.infra_simple||0,
+    instl: 0, phase: 0,
+    instlIncluded: row.installment_discount||0, phaseIncluded: row.phase_discount||0,
+    avg, exact:true
+  };
 }
 function applyUnitPick(row){
   const priceVal = unitPickMode==="b" ? row.moh_price : row.price;
@@ -5929,12 +5946,48 @@ function runAdvancedCalc(){
    زر "احسب"، ليتمكن الموظف من عرضها فوراً للمستفيد أثناء تعبئة البيانات. تُصنَّف كل قيمة
    "مسترد" (يُستَرجَع لاحقاً) أو "غير مسترد" (منحة نهائية) أو "خصم مباشر" (خصم سعر لا يُصنَّف
    كمنحة/دين) — دعم عيني ودعم البنية التحتية مستثنيان هنا لأنهما مضمَّنان مسبقاً بسعر الوحدة */
+/* رأس الأسعار الكبير أعلى لوحة الدعومات — أهم عرض بالحاسبة: سعر السوق (لغير المستفيدين)،
+   سعر الوزارة، والسعر بعد الدعومات الإضافية (الصندوق/وزارة الدفاع) جنباً لجنب. السعر بعد
+   الدعومات يحتاج راتباً ومدة صالحين ليُحتسب (نفس مدخلات computeAdvancedAffordability)؛ بدونها
+   يُعرض فقط سعر السوق/الوزارة. عنصر واحد فقط (سعر الوزارة وحده) لا يستحق رأساً كاملاً فيُخفى */
+function renderPriceHeader(){
+  const price=+$("cPrice").value||0;
+  if(!price) return "";
+  const eligible=cElig==="نعم";
+  let afterSupport=null;
+  if(eligible){
+    const salary=+$("cSalary").value||0, rate=+$("cRate").value||0, years=+$("cYears").value||0;
+    if(salary>0 && rate>0 && years>0){
+      try{
+        const supportMode=$("advSupportMode").value||"downpayment";
+        const dob=$("advDob").value||null, sector=$("advSector").value||null, rank=$("advRank").value||null;
+        const yearsServiceRaw=$("advYearsService").value, baseSalaryRaw=$("advBaseSalary").value, assetsRaw=$("advAssets").value;
+        const danaProject = pickedProject ? isDanaProject(pickedProject) : null;
+        const r=computeAdvancedAffordability({
+          price, salary, oblig:+$("cOblig").value||0, annualRate:rate, years, eligible, mod:cMod==="نعم", downPct:+$("advDownPct").value||10, supportMode,
+          dob, sector, rank, yearsService: yearsServiceRaw!==""?+yearsServiceRaw:null,
+          baseSalary: baseSalaryRaw!==""?+baseSalaryRaw:null,
+          familyAssets: assetsRaw!==""?+assetsRaw:null, priorUse: $("advPriorUse").checked,
+          projectSupport: projectUnitSupportTotal(), dara: cDara==="نعم", danaProject
+        });
+        afterSupport=r.priceAfterSupport;
+      }catch(e){}
+    }
+  }
+  const items=[];
+  if(calcMarketPrice && eligible) items.push({label:"سعر السوق (غير المستفيدين)", val:calcMarketPrice});
+  items.push({label:"سعر الوزارة", val:price});
+  if(afterSupport!=null) items.push({label:"بعد الدعومات الإضافية", val:afterSupport, hi:true});
+  if(items.length<2) return "";
+  return `<div class="cpriceHead">${items.map(it=>`<div class="cpItem${it.hi?" hi":""}"><div class="cpLabel">${it.label}</div><div class="cpVal">${fmt(Math.round(it.val))}</div></div>`).join(`<span class="cpDivider">‹</span>`)}</div>`;
+}
 function renderSupportsPanel(){
   const panel=$("calcSupportsPanel");
   if(!panel) return;
+  const priceHead=renderPriceHeader();
   const eligible=cElig==="نعم";
   if(!eligible){
-    panel.innerHTML=`<h4>💰 الدعومات المتاحة</h4><div class="cempty">الوحدة مضبوطة على "غير مستحق" — لا دعومات محتسبة</div>`;
+    panel.innerHTML=`${priceHead}<h4>💰 الدعومات المتاحة</h4><div class="cempty">الوحدة مضبوطة على "غير مستحق" — لا دعومات محتسبة</div>`;
     return;
   }
   const salary=+$("cSalary").value||0;
@@ -5970,14 +6023,19 @@ function renderSupportsPanel(){
   if(sup){
     if(sup.inKind) included.push({label:"دعم عيني", note:"متضمَّن ضمن سعر الوزارة أعلاه", amount:sup.inKind, tag:"متضمَّن بالسعر", cls:"inc"});
     if(sup.infra) included.push({label:"دعم البنية التحتية", note:"متضمَّن ضمن سعر الوزارة أعلاه", amount:sup.infra, tag:"متضمَّن بالسعر", cls:"inc"});
+    /* خصم القسط الميسّر وخصم المرحلة لوحدة دقيقة (مصدرها unit_support_detail): مضمَّنان أصلاً
+       بسعر الوزارة (أكّد المستخدم هذا صراحة)، بخلاف متوسط SUPP القديم أعلاه — يُعرَضان هنا فقط
+       كمتضمَّن بالسعر، لا كخصم إضافي حقيقي */
+    if(sup.instlIncluded) included.push({label:"خصم القسط الميسّر", note:"متضمَّن ضمن سعر الوزارة أعلاه", amount:sup.instlIncluded, tag:"متضمَّن بالسعر", cls:"inc"});
+    if(sup.phaseIncluded) included.push({label:"خصم المرحلة", note:"متضمَّن ضمن سعر الوزارة أعلاه", amount:sup.phaseIncluded, tag:"متضمَّن بالسعر", cls:"inc"});
   }
 
   if(!lump.length && !monthly.length && !included.length){
-    panel.innerHTML=`<h4>💰 الدعومات المتاحة</h4><div class="cempty">فعّل الخيارات المنطبقة (وزارة الدفاع، ذرى بلس...) لعرض الدعومات هنا</div>`;
+    panel.innerHTML=`${priceHead}<h4>💰 الدعومات المتاحة</h4><div class="cempty">فعّل الخيارات المنطبقة (وزارة الدفاع، ذرى بلس...) لعرض الدعومات هنا</div>`;
     return;
   }
   const row=it=>`<div class="citem"><div class="cname"><b>${it.label}</b><span class="cnote">${it.note}</span><span class="ctag ${it.cls}">${it.tag}</span></div><div class="camt">${fmt(Math.round(it.amount))} ${it.unit||"ريال"}</div></div>`;
-  let h=`<h4>💰 الدعومات المتاحة${sup&&sup.exact?` <span class="ctag d" style="margin-right:6px">دقيق لهذه الوحدة (${pickedUnitCode})</span>`:""}</h4>`;
+  let h=`${priceHead}<h4>💰 الدعومات المتاحة${sup&&sup.exact?` <span class="ctag d" style="margin-right:6px">دقيق لهذه الوحدة (${pickedUnitCode})</span>`:""}</h4>`;
   h += lump.map(row).join("");
   h += monthly.map(it=>row(Object.assign({},it,{unit:"ريال/شهر"}))).join("");
   const lumpTotal=lump.reduce((s,it)=>s+it.amount,0);
