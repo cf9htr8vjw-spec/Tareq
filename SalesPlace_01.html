@@ -1899,6 +1899,19 @@ table.prods tr:last-child td{border:none}
         </div>
         <div id="syncStatus"></div>
         <div id="syncSummary" style="display:none"></div>
+
+        <div class="cintro" style="margin-top:20px">
+          <b>تحديث بيانات دعم الوحدات (تفصيلي)</b>
+          <span>ملف منفصل بدعم كل وحدة تحديداً (دعم عيني، بنية تحتية، قسط ميسّر، خصم مراحل) بمفتاح unit_code — يُستخدم لعرض الدعم الدقيق عند اختيار وحدة فعلية من المنتقي، بدل متوسط النوع فقط</span>
+        </div>
+        <div class="cform">
+          <div class="flabel">ملف بيانات الدعم (xlsx)</div>
+          <input type="file" id="suppFile" accept=".xlsx">
+          <div class="src" style="margin-top:6px">ملف كبير (عشرات آلاف الصفوف) — يُفضَّل من حاسوب مكتبي، وقد يستغرق دقائق</div>
+          <button class="btn" id="suppStart" style="width:100%;margin-top:12px" disabled>عالج الملف</button>
+        </div>
+        <div id="suppStatus"></div>
+        <div id="suppSummary" style="display:none"></div>
       </div>
       <div id="aOffers" style="display:none">
         <div class="cintro">
@@ -3073,7 +3086,7 @@ function bindDetailInteractions(){
     const pid = b.dataset.pid ? +b.dataset.pid : null;
     pickedProject = pid!=null ? DATA.find(x=>x.id===pid) : null;
     pickedType = b.dataset.type || null;
-    pickedMoh=null; pickedFull=null;
+    pickedMoh=null; pickedFull=null; pickedUnitCode=null; pickedUnitSupport=null;
     runCalcDispatch();
     setTimeout(()=>$("cSalary").focus(),200);
   });
@@ -3964,7 +3977,21 @@ async function selectUnitPickType(type,btnEl){
   }).join("");
   $("unitPickUnitsList").querySelectorAll("[data-idx]").forEach(el=>el.onclick=()=>applyUnitPick(rows[+el.dataset.idx]));
 }
-let pickedMoh=null, pickedFull=null, pickedProject=null, pickedType=null;
+let pickedMoh=null, pickedFull=null, pickedProject=null, pickedType=null, pickedUnitCode=null, pickedUnitSupport=null;
+/* يجلب دعم الوحدة الدقيق (من ملف الدعومات التفصيلي على مستوى unit_code) — يُستخدم بدل
+   متوسط SUPP[project][type] كلما تم اختيار وحدة فعلية عبر المنتقي الحيّ */
+async function fetchUnitSupportDetail(unitCode){
+  if(!unitCode) return null;
+  try{
+    const rows = await sbSelect("unit_support_detail", {select:"*", unit_code:`eq.${unitCode}`});
+    return (rows && rows[0]) || null;
+  }catch(e){ return null; }
+}
+function mapUnitSupportRow(row){
+  if(!row) return null;
+  const avg = (row.full_price!=null && row.moh_price!=null) ? Math.max(0, row.full_price-row.moh_price) : null;
+  return { inKind: row.in_kind||0, infra: row.infra_simple||0, instl: row.installment_discount||0, phase: row.phase_discount||0, avg, exact:true };
+}
 function applyUnitPick(row){
   const priceVal = unitPickMode==="b" ? row.moh_price : row.price;
   if(priceVal==null){ toast("لا يوجد سعر مسجّل لهذه الوحدة بهذه الشريحة","err"); return; }
@@ -3978,9 +4005,22 @@ function applyUnitPick(row){
     pickedMoh = row.moh_price!=null ? Math.round(row.moh_price) : null;
     pickedFull = row.price!=null ? Math.round(row.price) : null;
     pickedProject = unitPickProject; pickedType = unitPickType;
+    pickedUnitCode = row.unit_code!=null ? String(row.unit_code).trim() : null;
+    pickedUnitSupport = null;
     const sup = SUPP && SUPP[String(unitPickProject.id)] && SUPP[String(unitPickProject.id)][unitPickType];
     calcMarketPrice = sup ? Math.round(priceVal+sup.avg) : null;
     runCalcDispatch();
+    if(pickedUnitCode){
+      const thisUnitCode = pickedUnitCode;
+      fetchUnitSupportDetail(thisUnitCode).then(detailRow=>{
+        if(pickedUnitCode!==thisUnitCode) return; // تغيّر الاختيار قبل اكتمال الجلب — تجاهل نتيجة قديمة
+        const mapped = mapUnitSupportRow(detailRow);
+        if(!mapped) return;
+        pickedUnitSupport = mapped;
+        if(mapped.avg!=null) calcMarketPrice = Math.round(priceVal+mapped.avg);
+        runCalcDispatch();
+      });
+    }
   }else{
     runNCalc();
     const infra = unitPickProject.pgd && unitPickProject.pgd.infra;
@@ -3996,7 +4036,7 @@ function applyUnitPick(row){
 $("unitPickScrim").onclick=()=>closeSheet("unitPickSheet");
 $("cPickUnitBtn").onclick=()=>openUnitPicker("b");
 $("nPickUnitBtn").onclick=()=>openUnitPicker("n");
-$("cPrice").addEventListener("input",()=>{ $("cPickedNote").style.display="none"; pickedMoh=null; pickedFull=null; });
+$("cPrice").addEventListener("input",()=>{ $("cPickedNote").style.display="none"; pickedMoh=null; pickedFull=null; pickedUnitCode=null; pickedUnitSupport=null; });
 $("nPrice").addEventListener("input",()=>{ $("nPickedNote").style.display="none"; });
 /* الراتب والمدة يؤثران على مبالغ الدعومات (150/100 ألف، ذرى بلس، قسط الدعم الشهري) —
    نحدّث لوحة الدعومات الجانبية حيّاً بمجرد الكتابة، بمعزل عن ضغط زر "احسب" */
@@ -4151,7 +4191,7 @@ function openAffordDetail(r){
   closeSheet("affordSheet");
   setSeg("b"); setView("calc");
   pickedProject=r.project; pickedType=r.product.type;
-  pickedMoh=Math.round(r.price); pickedFull=null; calcMarketPrice=null;
+  pickedMoh=Math.round(r.price); pickedFull=null; calcMarketPrice=null; pickedUnitCode=null; pickedUnitSupport=null;
   $("cPrice").value=Math.round(r.price);
   $("cPickedNote").style.display="block";
   $("cPickedNote").innerHTML=`✓ ${r.product.type}${r.product.beds?" ("+r.product.beds+" غرف)":""} من <b>${r.project.short}</b> — أرخص خيار متاح تقريبياً بحسب "أي مشروع يناسب راتبك؟"`;
@@ -4927,6 +4967,9 @@ async function processSyncFile(){
       istisna_date: toISODate(row["تاريخ عقد الاستصناع"]),
       contract_date: toISODate(row["تاريخ توقيع العقد"]),
       snapshot_date: todayISO,
+      /* المعرّف الفريد للوحدة — نفس unit_code بملف بيانات الدعومات، يمكّن ربط الوحدة الحيّة
+         المختارة من المنتقي بدعمها الفعلي الدقيق بدل متوسط النوع فقط */
+      unit_code: row.unit_code!=null ? String(row.unit_code).trim() : null,
     });
   }
 
@@ -5040,6 +5083,119 @@ async function uploadSyncData(statusRows,mirrorRows,modelRows,segRows,istisnaRow
   } else {
     syncSetStatus("تم رفع البيانات بنجاح، لكن تعذّر تحديث العرض في هذه الجلسة تحديداً — السبب: "+($("liveBadge").title||"غير معروف")+" — أعد تسجيل الدخول لعرض البيانات الجديدة.","err");
   }
+}
+
+/* ---------- تحديث بيانات دعم الوحدات التفصيلي (unit_support_detail) — ملف منفصل، أعمدته
+   قد تحمل مسافات زائدة بالعناوين (لاحظناها فعلياً بالملف المرجعي) فنقرأ بالفهرس بعد تقليم
+   كل عنوان، بدل الاعتماد على تطابق نصي حرفي حسّاس للمسافات كما بمعالج ملف التخصيص اليومي ---------- */
+function suppSetStatus(msg,type){
+  const el=$("suppStatus");
+  el.innerHTML=msg?`<div class="cwarn"${type==="err"?' style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)"':""}>${msg}</div>`:"";
+}
+$("suppFile").onchange=()=>{ $("suppStart").disabled = !$("suppFile").files.length; };
+async function processSuppFile(){
+  const file=$("suppFile").files[0];
+  if(!file) return;
+  $("suppStart").disabled=true;
+  $("suppSummary").style.display="none";
+  suppSetStatus("جارٍ تحميل مكتبة القراءة…");
+  try{ await loadSheetJS(); }
+  catch(e){ suppSetStatus(e.message,"err"); $("suppStart").disabled=false; return; }
+
+  buildSyncNameIndex();
+  suppSetStatus("جارٍ قراءة الملف — قد يستغرق دقائق لملف كبير…");
+  await new Promise(r=>setTimeout(r,30));
+
+  let aoa;
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:"array"});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+  }catch(e){ suppSetStatus("تعذّر قراءة الملف: "+e.message,"err"); $("suppStart").disabled=false; return; }
+  if(!aoa.length){ suppSetStatus("الملف فارغ","err"); $("suppStart").disabled=false; return; }
+
+  const headerRow=aoa[0].map(h=>String(h==null?"":h).trim());
+  const col=name=>headerRow.indexOf(name);
+  const idx={
+    project_name:col("project_name"), unit_code:col("unit_code"), project_code:col("project_code"),
+    unit_type:col("unit_type"), unit_size:col("unit_size"), living_area:col("living_area"),
+    inKind:col("قيمة الدعم العيني"), infra:col("قيمة خصم البنية التحتية البسيطة"),
+    instl:col("قيمة خصم القسط الميسر"), phase:col("قيمة خصم المراحل (الفرسان)"),
+    moh:col("MOH PRICE"), full:col("PRICE"), total:col("اجمالي الدعومات المطبقة"),
+  };
+  const missing=Object.entries(idx).filter(([,v])=>v===-1).map(([k])=>k);
+  if(missing.length){ suppSetStatus("أعمدة غير موجودة بالملف: "+missing.join("، "),"err"); $("suppStart").disabled=false; return; }
+
+  suppSetStatus(`جارٍ المعالجة — ${fmt(aoa.length-1)} صف…`);
+  await new Promise(r=>setTimeout(r,30));
+
+  const rows=[];
+  let matched=0, unmatched=0, skipped=0;
+  for(let i=1;i<aoa.length;i++){
+    const r=aoa[i]; if(!r) continue;
+    const unitCode = r[idx.unit_code]!=null ? String(r[idx.unit_code]).trim() : "";
+    if(!unitCode){ skipped++; continue; }
+    const pname = r[idx.project_name]!=null ? String(r[idx.project_name]).trim() : "";
+    const pid = pname ? findProjectId(pname) : null;
+    if(pid!=null) matched++; else unmatched++;
+    rows.push({
+      unit_code:unitCode, project_id:pid,
+      project_code: r[idx.project_code]!=null?String(r[idx.project_code]).trim():null,
+      project_name: pname||null,
+      unit_type: r[idx.unit_type]!=null?String(r[idx.unit_type]).trim():null,
+      unit_size: r[idx.unit_size]!=null?Number(r[idx.unit_size]):null,
+      living_area: r[idx.living_area]!=null?Number(r[idx.living_area]):null,
+      in_kind: Number(r[idx.inKind])||0,
+      infra_simple: Number(r[idx.infra])||0,
+      installment_discount: Number(r[idx.instl])||0,
+      phase_discount: Number(r[idx.phase])||0,
+      moh_price: r[idx.moh]!=null?Number(r[idx.moh]):null,
+      full_price: r[idx.full]!=null?Number(r[idx.full]):null,
+      total_support: Number(r[idx.total])||0,
+    });
+  }
+
+  suppSetStatus("");
+  $("suppSummary").style.display="block";
+  $("suppSummary").innerHTML=`<div class="cresblock">
+    <h4>ملخّص المعالجة</h4>
+    <div class="cresrow"><span class="cl">وحدات صالحة للرفع</span><span class="cv">${fmt(rows.length)}</span></div>
+    <div class="cresrow"><span class="cl">مطابقة لمشاريع الداشبورد</span><span class="cv">${fmt(matched)}</span></div>
+    <div class="cresrow"><span class="cl">غير مطابقة (اسم مشروع لم يُتعرَّف عليه)</span><span class="cv">${fmt(unmatched)}</span></div>
+    <div class="cresrow"><span class="cl">صفوف مستبعدة (بلا unit_code)</span><span class="cv">${fmt(skipped)}</span></div>
+  </div>
+  <button class="btn" id="suppUpload" style="width:100%;margin-top:12px">رفع بيانات الدعم إلى القاعدة</button>`;
+  $("suppStart").disabled=false;
+  $("suppUpload").onclick=()=>uploadSuppData(rows);
+}
+$("suppStart").onclick=processSuppFile;
+
+async function uploadSuppData(rows){
+  $("suppUpload").disabled=true;
+  suppSetStatus("جارٍ مسح بيانات الدعم القديمة…");
+  try{
+    const rReset=await adminCall("admin_reset_unit_support_detail",{});
+    if(!rReset||!rReset.ok){ suppSetStatus("فشل مسح البيانات القديمة — تم إيقاف الرفع لمنع التكرار: "+((rReset&&rReset.msg)||"خطأ غير معروف"),"err"); return; }
+  }catch(e){ suppSetStatus("تعذّر الاتصال بالخادم أثناء مسح البيانات القديمة — تم إيقاف الرفع لمنع التكرار","err"); return; }
+
+  const CHUNK=3000;
+  let inserted=0, failedChunks=0;
+  const totalChunks=Math.ceil(rows.length/CHUNK);
+  for(let i=0;i<rows.length;i+=CHUNK){
+    const chunk=rows.slice(i,i+CHUNK);
+    suppSetStatus(`جارٍ رفع بيانات الدعم — دفعة ${Math.floor(i/CHUNK)+1} من ${totalChunks}…`);
+    try{
+      const r2=await adminCall("admin_upsert_unit_support_detail",{p_rows:chunk});
+      if(r2 && r2.ok){ const m=r2.msg.match(/\d+/); if(m) inserted+=(+m[0]); }
+      else failedChunks++;
+    }catch(e){ failedChunks++; }
+  }
+  suppSetStatus(failedChunks
+    ? `اكتمل الرفع، لكن ${failedChunks} دفعة فشلت — بيانات الدعم قد تكون ناقصة`
+    : `اكتمل رفع بيانات دعم ${fmt(inserted)} وحدة بنجاح`,
+    failedChunks?"err":null);
+  toast(failedChunks?"اكتمل الرفع مع بعض الأخطاء":"اكتمل رفع بيانات دعم الوحدات بنجاح", failedChunks?"err":"ok");
 }
 
 async function loadAdminUsers(){
@@ -5539,6 +5695,7 @@ function computeAdvancedAffordability(inp){
     actualInstallment, actualInstallmentAfterDara, totalPaid, totalProfit, fitsBefore, fitsAfter};
 }
 function projectUnitSupportBreakdown(){
+  if(pickedUnitSupport) return pickedUnitSupport;
   if(!pickedProject || !pickedType) return null;
   return (SUPP && SUPP[String(pickedProject.id)] && SUPP[String(pickedProject.id)][pickedType]) || null;
 }
@@ -5688,7 +5845,7 @@ function renderSupportsPanel(){
     return;
   }
   const row=it=>`<div class="citem"><div class="cname"><b>${it.label}</b><span class="cnote">${it.note}</span><span class="ctag ${it.cls}">${it.tag}</span></div><div class="camt">${fmt(Math.round(it.amount))} ${it.unit||"ريال"}</div></div>`;
-  let h=`<h4>💰 الدعومات المتاحة</h4>`;
+  let h=`<h4>💰 الدعومات المتاحة${sup&&sup.exact?` <span class="ctag d" style="margin-right:6px">دقيق لهذه الوحدة (${pickedUnitCode})</span>`:""}</h4>`;
   h += lump.map(row).join("");
   h += monthly.map(it=>row(Object.assign({},it,{unit:"ريال/شهر"}))).join("");
   const lumpTotal=lump.reduce((s,it)=>s+it.amount,0);
