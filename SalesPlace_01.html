@@ -1184,6 +1184,18 @@ main{flex:1;min-height:0;position:relative}
 .ubadge.on{background:var(--green-soft);color:var(--green)}
 .ubadge.off{background:var(--rust-soft);color:var(--rust)}
 .ubadge.adm{background:var(--gold-soft);color:var(--gold-text)}
+.ubadge.pri-high{background:var(--rust-soft);color:var(--rust)}
+.ubadge.pri-med{background:var(--gold-soft);color:var(--gold)}
+.ubadge.pri-low{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.ubadge.st-open{background:var(--rust-soft);color:var(--rust)}
+.ubadge.st-progress{background:var(--gold-soft);color:var(--gold)}
+.ubadge.st-resolved{background:var(--green-soft);color:var(--green)}
+.ubadge.st-deferred{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.dmScore{font-size:13px;font-weight:800;padding:3px 11px;border-radius:99px;flex:none}
+.dmScore.tier-high{background:var(--green-soft);color:var(--green)}
+.dmScore.tier-mid{background:var(--gold-soft);color:var(--gold)}
+.dmScore.tier-low{background:var(--rust-soft);color:var(--rust)}
+.dmScore.tier-none{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
 .umeta{font-size:11px;color:var(--muted);margin-top:6px}
 .uactions{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
 .uactions button{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:9px;border:1.5px solid var(--line);color:var(--ink)}
@@ -1642,6 +1654,10 @@ table.prods tr:last-child td{border:none}
           <div class="hticon">📊</div>
           <div class="httxt"><b>مبيعاتنا هذا الشهر</b><span>حجوزات واستصناع وعقود — أداء الوجهات</span></div>
         </button>
+        <button type="button" class="htile" id="hTileDevMgmt">
+          <div class="hticon">🏗️</div>
+          <div class="httxt"><b>إدارة المطورين</b><span>تقييم المطورين وسجل التحديات</span></div>
+        </button>
       </div>
     </div>
   </div>
@@ -1897,6 +1913,7 @@ table.prods tr:last-child td{border:none}
         <button class="atab" data-a="offers">دعومات المشاريع</button>
         <button class="atab" data-a="news">أخبار الشاشة الرئيسية</button>
         <button class="atab" data-a="banks">بنوك التمويل</button>
+        <button class="atab" data-a="deveval">تقييم المطورين</button>
       </div>
       <div id="aUsers">
         <button class="btn" id="aAddBtn" style="margin-bottom:12px">+ إضافة مستخدم</button>
@@ -1959,6 +1976,130 @@ table.prods tr:last-child td{border:none}
         </div>
         <button class="btn" id="aBankAddBtn" style="margin:10px 0">+ إضافة بنك</button>
         <div id="aBanksList"></div>
+      </div>
+      <div id="aDevEval" style="display:none">
+        <div class="cintro">
+          <b>تقييم المطورين الشهري</b>
+          <span>ملف تقرير إدارة المطورين الشهري — يُستبدل بالكامل مع كل رفعة (يعكس آخر تقييم فقط، لا تراكم تاريخي بهذا الإصدار)</span>
+        </div>
+        <div class="cform">
+          <div class="flabel">ملف التقييم (xlsx)</div>
+          <input type="file" id="devEvalFile" accept=".xlsx">
+          <div class="src" style="margin-top:6px">شيت "المستهدف" بالملف — نفس الصيغة الشهرية المعتادة</div>
+          <button class="btn" id="devEvalStart" style="width:100%;margin-top:12px" disabled>عالج الملف</button>
+        </div>
+        <div id="devEvalStatus"></div>
+        <div id="devEvalSummary" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+  <div class="view" id="devMgmtView">
+    <div id="devMgmtScroll">
+      <div class="atabs" id="dmTabsBar">
+        <button class="atab on" data-dm="devs">المطورون</button>
+        <button class="atab" data-dm="challenges">التحديات</button>
+      </div>
+      <div id="dmDevs">
+        <input type="search" id="dmDevSearch" class="dateInp" style="width:100%;text-align:start;margin-bottom:10px" placeholder="ابحث باسم المطوّر…" autocomplete="off">
+        <div id="dmDevList"></div>
+      </div>
+      <div id="dmChallenges" style="display:none">
+        <button class="btn" id="dmChAddBtn" style="width:100%;margin-bottom:10px">+ تسجيل تحدٍ جديد</button>
+        <div class="chips" id="dmChStatusChips" style="margin-bottom:10px">
+          <button type="button" class="chip on" data-st="all">الكل</button>
+          <button type="button" class="chip" data-st="open">مفتوح</button>
+          <button type="button" class="chip" data-st="in_progress">قيد المعالجة</button>
+          <button type="button" class="chip" data-st="resolved">محلول</button>
+          <button type="button" class="chip" data-st="deferred">مؤجَّل</button>
+        </div>
+        <div id="dmChList"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Developer detail sheet -->
+  <div class="scrim" id="devDetailScrim"></div>
+  <div class="sheet" id="devDetailSheet">
+    <div class="handle" data-drag="devDetailSheet"></div>
+    <div class="sheetbody">
+      <div id="devDetailBody"></div>
+    </div>
+  </div>
+  <!-- Challenge add/edit sheet -->
+  <div class="scrim" id="chFormScrim"></div>
+  <div class="sheet" id="chFormSheet">
+    <div class="handle" data-drag="chFormSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 12px" id="chFormTitle">تسجيل تحدٍ جديد</h2>
+      <div class="cform">
+        <div class="flabel">اسم المطوّر</div>
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="chDevInp" list="chDevList" placeholder="اكتب اسم المطوّر…">
+        <datalist id="chDevList"></datalist>
+        <div class="flabel" style="margin-top:9px">المشروع (اختياري)</div>
+        <input type="search" class="dateInp" style="width:100%;text-align:start" id="chProjSearch" placeholder="ابحث باسم المشروع…" autocomplete="off">
+        <div id="chProjList" class="projList" style="max-height:150px;display:none"></div>
+        <div id="chProjPicked" class="src" style="display:none;margin-top:4px"></div>
+        <div class="flabel" style="margin-top:9px">العنوان</div>
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="chTitleInp">
+        <div class="flabel" style="margin-top:9px">الوصف</div>
+        <textarea class="dateInp" style="width:100%;text-align:start;min-height:70px" id="chDescInp"></textarea>
+        <div class="flabel" style="margin-top:9px">الأولوية</div>
+        <div class="chips" id="chPriorityChips">
+          <button type="button" class="chip" data-p="high">عالية</button>
+          <button type="button" class="chip on" data-p="medium">متوسطة</button>
+          <button type="button" class="chip" data-p="low">منخفضة</button>
+        </div>
+        <div class="flabel" style="margin-top:9px">تصنيف السبب (اختياري)</div>
+        <select id="chReasonSel" class="dateInp" style="width:100%;text-align:start">
+          <option value="">— بدون تصنيف —</option>
+          <option value="ضعف التسويق من المطور">ضعف التسويق من المطور</option>
+          <option value="ضعف فريق المبيعات">ضعف فريق المبيعات</option>
+          <option value="إعادة تصاميم">إعادة تصاميم</option>
+          <option value="محجوب">محجوب</option>
+          <option value="موقوف مؤقتا">موقوف مؤقتاً</option>
+          <option value="تعديل اسعار">تعديل أسعار</option>
+          <option value="لايوجد حمله تسويقية">لا يوجد حملة تسويقية</option>
+          <option value="أخرى">أخرى</option>
+        </select>
+        <div class="flabel" style="margin-top:9px">ملاحظات إضافية</div>
+        <textarea class="dateInp" style="width:100%;text-align:start;min-height:60px" id="chNotesInp" placeholder="متابعة مستمرة، محادثات، قرارات…"></textarea>
+      </div>
+      <div id="chFormMsg" class="src" style="margin-top:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button type="button" class="btn" id="chFormSave" style="flex:1">💾 حفظ</button>
+        <button type="button" class="btn ghost" id="chFormCancel">إلغاء</button>
+      </div>
+    </div>
+  </div>
+  <!-- Challenge resolve/update sheet -->
+  <div class="scrim" id="chResolveScrim"></div>
+  <div class="sheet" id="chResolveSheet">
+    <div class="handle" data-drag="chResolveSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 12px">تحديث حالة التحدي</h2>
+      <div id="chResolveInfo" class="src" style="margin-bottom:10px"></div>
+      <div class="cform">
+        <div class="flabel">الحالة</div>
+        <div class="chips" id="chStatusChips">
+          <button type="button" class="chip" data-s="open">مفتوح</button>
+          <button type="button" class="chip" data-s="in_progress">قيد المعالجة</button>
+          <button type="button" class="chip" data-s="resolved">محلول</button>
+          <button type="button" class="chip" data-s="deferred">مؤجَّل</button>
+        </div>
+        <div class="flabel" style="margin-top:9px">الأولوية</div>
+        <div class="chips" id="chResolvePriorityChips">
+          <button type="button" class="chip" data-p="high">عالية</button>
+          <button type="button" class="chip" data-p="medium">متوسطة</button>
+          <button type="button" class="chip" data-p="low">منخفضة</button>
+        </div>
+        <div class="flabel" style="margin-top:9px">ملاحظات إضافية</div>
+        <textarea class="dateInp" style="width:100%;text-align:start;min-height:60px" id="chResolveNotesInp"></textarea>
+        <div class="flabel" style="margin-top:9px">وصف الحل (عند الإغلاق)</div>
+        <textarea class="dateInp" style="width:100%;text-align:start;min-height:60px" id="chResolutionInp" placeholder="كيف تم حل التحدي؟"></textarea>
+      </div>
+      <div id="chResolveMsg" class="src" style="margin-top:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button type="button" class="btn" id="chResolveSave" style="flex:1">💾 حفظ</button>
+        <button type="button" class="btn ghost" id="chResolveCancel">إلغاء</button>
       </div>
     </div>
   </div>
@@ -2447,8 +2588,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 "use strict";
 let DATA = [], PREFS = null, PERF = null, SUPP = null, FN = null, GAL = null, BLDG = null, ALLOC = null, MODELS = null, BOOK = null, PRODSTAT = null, SALESDAILY = null, FUNNEL = null, BANKS = [];
 let MODELSTAT = {}, SEGSTAT = {}, ISTISNASTAT = {}; // إحصاءات حيّة من project_model_stats/project_segment_stats/project_istisna_stats — تُحدَّث حصراً بالتحديث اليومي، لا جزء من الحزمة المشفَّرة
-const PERM_ALL = {dest:true,search:true,deal:true,cmp:true,calc:true,sales:true};
-const PERM_LABELS = {dest:"الوجهات",search:"البحث والتصفية",deal:"الصفقات",cmp:"المقارنة",calc:"الحاسبات",sales:"مبيعاتنا"};
+const PERM_ALL = {dest:true,search:true,deal:true,cmp:true,calc:true,sales:true,devmgmt:true};
+const PERM_LABELS = {dest:"الوجهات",search:"البحث والتصفية",deal:"الصفقات",cmp:"المقارنة",calc:"الحاسبات",sales:"مبيعاتنا",devmgmt:"إدارة المطورين"};
 let PERMS = Object.assign({}, PERM_ALL);
 let SERVER_ONBOARDED = null; /* null = unknown (older DB without the migration, or fetch failed) */
 
@@ -2720,7 +2861,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -2729,7 +2870,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -3412,29 +3553,31 @@ function setView(v){
   if(!window.__isAdmin){
     const denied = (v==="dest"&&!PERMS.dest) || (v==="sales"&&!PERMS.sales) ||
                    (v==="calc"&&!PERMS.calc) || (v==="admin") ||
+                   (v==="devmgmt"&&!PERMS.devmgmt) ||
                    ((v==="list"||v==="map"||v==="pref")&&!(PERMS.search||PERMS.cmp));
     if(denied){ toast("لا تملك صلاحية الوصول لهذا القسم","err"); v="home"; }
   }
   const prevView=S.view;
   S.view=v;
-  for(const [id,name] of [["homeView","home"],["destView","dest"],["listView","list"],["mapView","map"],["prefView","pref"],["adminView","admin"],["calcView","calc"],["salesView","sales"]])
+  for(const [id,name] of [["homeView","home"],["destView","dest"],["listView","list"],["mapView","map"],["prefView","pref"],["adminView","admin"],["calcView","calc"],["salesView","sales"],["devMgmtView","devmgmt"]])
     $(id).classList.toggle("on",v===name);
   for(const [id,name] of [["nvList","list"],["nvMap","map"],["nvPref","pref"],["nvCalc","calc"],
                           ["dvList","list"],["dvMap","map"],["dvPref","pref"],["dvCalc","calc"]])
     $(id).classList.toggle("on",v===name);
   $("adminBtn").classList.toggle("on",v==="admin");
   /* search+filter apply to inventory, not contracts/users/calculator/home/destinations/sales */
-  const away = v==="pref" || v==="admin" || v==="calc" || v==="home" || v==="dest" || v==="sales";
+  const away = v==="pref" || v==="admin" || v==="calc" || v==="home" || v==="dest" || v==="sales" || v==="devmgmt";
   $("invControls").style.display = away ? "none" : "contents";
   $("toolbar").style.display = (away && window.innerWidth<900) ? "none" : "flex";
   $("resline").style.display = away ? "none" : "flex";
   $("kpisWrap").style.display = away ? "none" : "flex";
-  const hideSeg = v==="home" || v==="dest" || v==="sales" || v==="admin";
+  const hideSeg = v==="home" || v==="dest" || v==="sales" || v==="admin" || v==="devmgmt";
   $("segWrap").style.display = hideSeg ? "none" : "flex";
   if(v==="map"){ if(!map){ initMap(); } setTimeout(()=>map.invalidateSize(),80); }
   if(v==="admin") loadAdminUsers();
   if(v==="dest") renderDestinations();
   if(v==="sales") renderSales();
+  if(v==="devmgmt" && typeof renderDevMgmt==="function") renderDevMgmt();
   if(v==="calc" && typeof renderSupportsPanel==="function") renderSupportsPanel();
   if(!__suppressNavPush && !__bootingNav && v!==prevView){
     try{ history.pushState({navView:v}, "", "#"+v); }catch(e){}
@@ -3475,6 +3618,7 @@ $("hTileCmp").onclick=()=>{
   $("dealBanner").style.display="flex";
 };
 $("hTileSales").onclick=()=>setView("sales");
+$("hTileDevMgmt").onclick=()=>setView("devmgmt");
 $("hTileAfford").onclick=()=>openAffordSheet();
 
 const _now=new Date();
@@ -4885,6 +5029,7 @@ function buildAdminTab(){
     $("aOffers").style.display = which==="offers" ? "block" : "none";
     $("aNews").style.display = which==="news" ? "block" : "none";
     $("aBanks").style.display = which==="banks" ? "block" : "none";
+    $("aDevEval").style.display = which==="deveval" ? "block" : "none";
     if(which==="log") loadAdminLog();
     if(which==="offers") loadAdminOffers();
     if(which==="news") loadAdminNews();
@@ -5346,6 +5491,398 @@ async function uploadSuppData(rows){
     failedChunks?"err":null);
   toast(failedChunks?"اكتمل الرفع مع بعض الأخطاء":"اكتمل رفع بيانات دعم الوحدات بنجاح", failedChunks?"err":"ok");
 }
+
+/* ---------- تقييم المطورين الشهري (رفع يدوي) — شيت "المستهدف" بالملف يحتوي عناوين
+   أعمدة مكرّرة حرفياً (مثل "التقييم" أربع مرات، و"أسباب عدم تحقيق المستهدف" مرتين
+   بمحتوى مختلف تماماً — الأولى قائمة منسدلة مقيَّدة، الثانية نص حر) — فالمطابقة
+   بالاسم غير موثوقة هنا، نعتمد مواضع الأعمدة الثابتة (raw index) بدل ذلك، مع فحص
+   مرجعي (sanity check) على عناوين أعمدة رئيسية قبل الثقة بالمواضع ---------- */
+const DEV_EVAL_COL = {
+  code:0, name:1, dev:2, monthlyTargetHeader:8, monthlyAchieved:9, monthlyRate:10,
+  reservations:18, reasonCategory:19, reasonNotes:20, lastUpdate:43, escrowBank:44,
+  generalOffers:45, modOffers:46, salesStaff:47, brokerPresent:48, brokerType:49,
+  brokerCompanies:50, brokerIndividuals:51, brokerAgreement:52, annualTarget:57,
+  annualAchieved:58, scoreTarget:59, scoreTimeBonus:61, paymentPlans:62, scorePlans:63,
+  scoreChannels:68, scoreFinal:69, nonBenef:71,
+};
+function numOrNull(v){
+  if(v==null || v==="") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function devEvalSetStatus(msg,type){
+  const el=$("devEvalStatus");
+  el.innerHTML=msg?`<div class="cwarn"${type==="err"?' style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)"':""}>${msg}</div>`:"";
+}
+$("devEvalFile").onchange=()=>{ $("devEvalStart").disabled = !$("devEvalFile").files.length; };
+async function processDevEvalFile(){
+  const file=$("devEvalFile").files[0];
+  if(!file) return;
+  $("devEvalStart").disabled=true;
+  $("devEvalSummary").style.display="none";
+  devEvalSetStatus("جارٍ تحميل مكتبة القراءة…");
+  try{ await loadSheetJS(); }
+  catch(e){ devEvalSetStatus(e.message,"err"); $("devEvalStart").disabled=false; return; }
+
+  buildSyncNameIndex();
+  devEvalSetStatus("جارٍ قراءة الملف…");
+  await new Promise(r=>setTimeout(r,30));
+
+  let aoa;
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:"array"});
+    /* نبحث عن شيت "المستهدف" تحديداً — الملف يحتوي شيتات أخرى (pivot، قوائم منسدلة، بيانات يدوية) لا علاقة لها بالتقييم */
+    let sheetName = wb.SheetNames.find(n=>n.trim()==="المستهدف") || wb.SheetNames.find(n=>n.includes("مستهدف"));
+    if(!sheetName){ devEvalSetStatus(`تعذّر العثور على شيت "المستهدف" بالملف — الشيتات الموجودة: ${wb.SheetNames.join("، ")}`,"err"); $("devEvalStart").disabled=false; return; }
+    const ws=wb.Sheets[sheetName];
+    aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+  }catch(e){ devEvalSetStatus("تعذّر قراءة الملف: "+e.message,"err"); $("devEvalStart").disabled=false; return; }
+  if(!aoa.length){ devEvalSetStatus("الملف فارغ","err"); $("devEvalStart").disabled=false; return; }
+
+  const headerRow=aoa[0].map(h=>String(h==null?"":h).trim());
+  const anchors=[[DEV_EVAL_COL.code,"كود المشروع"],[DEV_EVAL_COL.name,"اسم المشروع"],[DEV_EVAL_COL.dev,"اسم المطور"]];
+  const badAnchor=anchors.find(([idx,expected])=>headerRow[idx]!==expected);
+  if(badAnchor || !(headerRow[DEV_EVAL_COL.scoreFinal]||"").includes("التقييم النهائي")){
+    devEvalSetStatus(`شكل الملف مختلف عمّا هو متوقَّع (العمود ${badAnchor?badAnchor[0]+1:DEV_EVAL_COL.scoreFinal+1} — المتوقَّع "${badAnchor?badAnchor[1]:"التقييم النهائي"}" والموجود فعلياً "${badAnchor?headerRow[badAnchor[0]]:headerRow[DEV_EVAL_COL.scoreFinal]}") — تم إيقاف المعالجة لمنع قراءة خاطئة للأعمدة`,"err");
+    $("devEvalStart").disabled=false; return;
+  }
+  const monthlyTargetLabel = (headerRow[DEV_EVAL_COL.monthlyTargetHeader]||"").replace("الهدف لشهر","").trim();
+
+  devEvalSetStatus(`جارٍ المعالجة — ${fmt(aoa.length-1)} صف…`);
+  await new Promise(r=>setTimeout(r,30));
+
+  const rows=[];
+  let matched=0, unmatched=0, skipped=0;
+  const unmatchedNames=new Map();
+  for(let i=1;i<aoa.length;i++){
+    const r=aoa[i]; if(!r || !r[DEV_EVAL_COL.code]) { skipped++; continue; }
+    const pname = r[DEV_EVAL_COL.name]!=null ? String(r[DEV_EVAL_COL.name]).trim() : "";
+    const pid = pname ? findProjectId(pname) : null;
+    if(pid!=null) matched++; else { unmatched++; unmatchedNames.set(pname,(unmatchedNames.get(pname)||0)+1); continue; } /* التقييم مربوط بمشروع بالداشبورد فقط — لا قيمة لتجميعه لمشروع غير موجود عندنا */
+    rows.push({
+      project_id: pid,
+      project_code: String(r[DEV_EVAL_COL.code]).trim(),
+      project_name: pname,
+      developer_name: r[DEV_EVAL_COL.dev]!=null ? String(r[DEV_EVAL_COL.dev]).trim() : null,
+      eval_period_label: monthlyTargetLabel || null,
+      monthly_target: numOrNull(r[DEV_EVAL_COL.monthlyTargetHeader]),
+      monthly_achieved: numOrNull(r[DEV_EVAL_COL.monthlyAchieved]),
+      monthly_rate: numOrNull(r[DEV_EVAL_COL.monthlyRate]),
+      reservations_count: numOrNull(r[DEV_EVAL_COL.reservations]),
+      reason_category: r[DEV_EVAL_COL.reasonCategory]!=null ? String(r[DEV_EVAL_COL.reasonCategory]).trim() : null,
+      reason_notes: r[DEV_EVAL_COL.reasonNotes]!=null ? String(r[DEV_EVAL_COL.reasonNotes]).trim() : null,
+      last_update_date: toISODate(r[DEV_EVAL_COL.lastUpdate]),
+      escrow_bank: r[DEV_EVAL_COL.escrowBank]!=null ? String(r[DEV_EVAL_COL.escrowBank]).trim() : null,
+      general_offers: r[DEV_EVAL_COL.generalOffers]!=null ? String(r[DEV_EVAL_COL.generalOffers]).trim() : null,
+      mod_offers: r[DEV_EVAL_COL.modOffers]!=null ? String(r[DEV_EVAL_COL.modOffers]).trim() : null,
+      sales_staff_count: numOrNull(r[DEV_EVAL_COL.salesStaff]),
+      broker_present: r[DEV_EVAL_COL.brokerPresent]!=null ? String(r[DEV_EVAL_COL.brokerPresent]).trim() : null,
+      broker_type: r[DEV_EVAL_COL.brokerType]!=null ? String(r[DEV_EVAL_COL.brokerType]).trim() : null,
+      broker_company_names: r[DEV_EVAL_COL.brokerCompanies]!=null ? String(r[DEV_EVAL_COL.brokerCompanies]).trim() : null,
+      broker_individual_count: numOrNull(r[DEV_EVAL_COL.brokerIndividuals]),
+      broker_agreement_status: r[DEV_EVAL_COL.brokerAgreement]!=null ? String(r[DEV_EVAL_COL.brokerAgreement]).trim() : null,
+      annual_target: numOrNull(r[DEV_EVAL_COL.annualTarget]),
+      annual_achieved: numOrNull(r[DEV_EVAL_COL.annualAchieved]),
+      score_target_pct: numOrNull(r[DEV_EVAL_COL.scoreTarget]),
+      score_time_bonus_pct: numOrNull(r[DEV_EVAL_COL.scoreTimeBonus]),
+      payment_schedule_count: numOrNull(r[DEV_EVAL_COL.paymentPlans]),
+      score_payment_plans_pct: numOrNull(r[DEV_EVAL_COL.scorePlans]),
+      score_channels_pct: numOrNull(r[DEV_EVAL_COL.scoreChannels]),
+      score_final_pct: numOrNull(r[DEV_EVAL_COL.scoreFinal]),
+      non_beneficiary_status: r[DEV_EVAL_COL.nonBenef]!=null ? String(r[DEV_EVAL_COL.nonBenef]).trim() : null,
+    });
+  }
+  devEvalSetStatus("");
+  $("devEvalSummary").style.display="block";
+  $("devEvalSummary").innerHTML=`<div class="cresblock">
+    <h4>ملخّص المعالجة${monthlyTargetLabel?` — شهر ${monthlyTargetLabel}`:""}</h4>
+    <div class="cresrow"><span class="cl">مشاريع مطابقة لكتالوج الداشبورد (ستُرفع)</span><span class="cv">${fmt(matched)}</span></div>
+    <div class="cresrow"><span class="cl">مشاريع غير مطابقة (لن تُرفع)</span><span class="cv">${fmt(unmatched)}</span></div>
+    <div class="cresrow"><span class="cl">صفوف مستبعدة (بلا كود مشروع)</span><span class="cv">${fmt(skipped)}</span></div>
+  </div>
+  ${unmatched ? `<details class="unmAll" style="margin-top:8px"><summary>عرض المشاريع غير المطابقة (${fmt(unmatchedNames.size)})</summary>${[...unmatchedNames.entries()].map(([nm,c])=>`<div class="unmRow"><b>${nm}</b><span>${fmt(c)} صف</span></div>`).join("")}</details>` : ""}
+  <button class="btn" id="devEvalUpload" style="width:100%;margin-top:12px">رفع التقييم إلى القاعدة</button>`;
+  $("devEvalStart").disabled=false;
+  $("devEvalUpload").onclick=()=>uploadDevEvalData(rows);
+}
+$("devEvalStart").onclick=processDevEvalFile;
+async function uploadDevEvalData(rows){
+  $("devEvalUpload").disabled=true;
+  devEvalSetStatus("جارٍ مسح تقييم المطورين القديم…");
+  try{
+    const rReset=await adminCall("admin_reset_dev_eval",{});
+    if(!rReset||!rReset.ok){ devEvalSetStatus("فشل مسح البيانات القديمة — تم إيقاف الرفع لمنع التكرار: "+((rReset&&rReset.msg)||"خطأ غير معروف"),"err"); return; }
+  }catch(e){ devEvalSetStatus("تعذّر الاتصال بالخادم أثناء مسح البيانات القديمة — تم إيقاف الرفع لمنع التكرار","err"); return; }
+
+  const CHUNK=1000;
+  let inserted=0, failedChunks=0;
+  const totalChunks=Math.ceil(rows.length/CHUNK) || 1;
+  for(let i=0;i<rows.length;i+=CHUNK){
+    const chunk=rows.slice(i,i+CHUNK);
+    devEvalSetStatus(`جارٍ رفع تقييم المطورين — دفعة ${Math.floor(i/CHUNK)+1} من ${totalChunks}…`);
+    try{
+      const r2=await adminCall("admin_upsert_dev_eval",{p_rows:chunk});
+      if(r2 && r2.ok){ const m=r2.msg.match(/\d+/); if(m) inserted+=(+m[0]); }
+      else failedChunks++;
+    }catch(e){ failedChunks++; }
+  }
+  devEvalSetStatus(failedChunks
+    ? `اكتمل الرفع، لكن ${failedChunks} دفعة فشلت — البيانات قد تكون ناقصة`
+    : `اكتمل رفع تقييم ${fmt(inserted)} مشروع بنجاح`,
+    failedChunks?"err":null);
+  toast(failedChunks?"اكتمل الرفع مع بعض الأخطاء":"اكتمل رفع تقييم المطورين بنجاح", failedChunks?"err":"ok");
+}
+
+/* ---------- إدارة المطورين: قائمة/تفاصيل المطورين (من project_dev_eval) + سجل
+   تحديات (dev_challenges) — يملؤه فريق إدارة المطورين مباشرة من التطبيق ---------- */
+let DEVEVAL=[], DEVCHALLENGES=[], dmTab="devs", chStatusFilter="all", chPickedProject=null, chResolveId=null;
+async function renderDevMgmt(){
+  await loadDevEvalData();
+  await loadChallenges();
+  renderDevList();
+  renderChallenges();
+}
+async function loadDevEvalData(){
+  try{ DEVEVAL = await sbSelect("project_dev_eval",{select:"*"}); }
+  catch(e){ DEVEVAL=[]; }
+}
+async function loadChallenges(){
+  try{ DEVCHALLENGES = await sbSelect("dev_challenges",{select:"*",order:"created_at.desc"}); }
+  catch(e){ DEVCHALLENGES=[]; }
+}
+function avgScore(rows){
+  const vals=rows.map(r=>r.score_final_pct).filter(v=>typeof v==="number");
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+}
+function scoreTier(pct){
+  if(pct==null) return "none";
+  if(pct>=0.5) return "high";
+  if(pct>=0.25) return "mid";
+  return "low";
+}
+function priorityLabel(p){ return p==="high"?"عالية":p==="low"?"منخفضة":"متوسطة"; }
+function statusLabel(s){ return {open:"مفتوح",in_progress:"قيد المعالجة",resolved:"محلول",deferred:"مؤجَّل"}[s]||s||"—"; }
+function renderDevList(){
+  const q=($("dmDevSearch").value||"").trim();
+  const byDev=new Map();
+  DEVEVAL.forEach(r=>{
+    if(!r.developer_name) return;
+    const arr=byDev.get(r.developer_name)||[];
+    arr.push(r); byDev.set(r.developer_name,arr);
+  });
+  let devs=[...byDev.entries()];
+  if(q) devs = devs.filter(([name])=>name.includes(q));
+  devs.sort((a,b)=>{
+    const sa=avgScore(a[1]), sb=avgScore(b[1]);
+    return (sa==null?1:sa)-(sb==null?1:sb);
+  });
+  if(!devs.length){
+    $("dmDevList").innerHTML = DEVEVAL.length
+      ? `<div class="src" style="padding:20px 2px;text-align:center">لا يوجد مطوّر مطابق</div>`
+      : `<div class="src" style="padding:20px 2px;text-align:center">لا توجد بيانات تقييم بعد — ارفع ملف تقييم المطورين الشهري من لوحة التحكم (تبويب "تقييم المطورين")</div>`;
+    return;
+  }
+  $("dmDevList").innerHTML = devs.map(([name,rows])=>{
+    const avg=avgScore(rows), tier=scoreTier(avg);
+    const openCh = DEVCHALLENGES.filter(c=>c.developer_name===name && c.status!=="resolved").length;
+    return `<div class="ucard" style="cursor:pointer;margin-bottom:8px" data-dev="${encodeURIComponent(name)}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div><div style="font-weight:700;font-size:13.5px">${name}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:3px">${fmt(rows.length)} مشروع${openCh?` · ${fmt(openCh)} تحدٍّ مفتوح`:""}</div></div>
+        <span class="dmScore tier-${tier}">${avg!=null?Math.round(avg*100)+"%":"—"}</span>
+      </div>
+    </div>`;
+  }).join("");
+  $("dmDevList").querySelectorAll("[data-dev]").forEach(el=>el.onclick=()=>openDevDetail(decodeURIComponent(el.dataset.dev)));
+}
+$("dmDevSearch").addEventListener("input",renderDevList);
+function openDevDetail(name){
+  const rows = DEVEVAL.filter(r=>r.developer_name===name);
+  const avg=avgScore(rows), tier=scoreTier(avg);
+  const reasonCounts=new Map();
+  rows.forEach(r=>{ if(r.reason_category && r.reason_category!=="-"){ reasonCounts.set(r.reason_category,(reasonCounts.get(r.reason_category)||0)+1); } });
+  const reasonsHtml=[...reasonCounts.entries()].sort((a,b)=>b[1]-a[1])
+    .map(([rc,c])=>`<div class="citem"><div class="cname"><b>${rc}</b></div><div class="camt">${fmt(c)}</div></div>`).join("")
+    || `<div class="cempty">لا توجد أسباب مسجَّلة</div>`;
+  const brokerRow = rows.find(r=>r.broker_present==="نعم");
+  const projectsHtml = rows.map(r=>{
+    const pt=scoreTier(r.score_final_pct);
+    return `<div class="ucard" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div><div style="font-weight:700;font-size:12.5px">${r.project_name||"—"}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${r.reason_category&&r.reason_category!=="-"?r.reason_category:"لا يوجد سبب مسجَّل"}${r.monthly_rate!=null?` · تحقيق الشهر ${Math.round(r.monthly_rate*100)}%`:""}</div></div>
+        <span class="dmScore tier-${pt}" style="font-size:11px">${r.score_final_pct!=null?Math.round(r.score_final_pct*100)+"%":"—"}</span>
+      </div>
+    </div>`;
+  }).join("");
+  const devChallenges = DEVCHALLENGES.filter(c=>c.developer_name===name);
+  const challengesHtml = devChallenges.length ? devChallenges.map(challengeCardHtml).join("") : `<div class="cempty">لا توجد تحديات مسجَّلة لهذا المطوّر</div>`;
+  $("devDetailBody").innerHTML = `
+    <h2 class="kufi" style="font-size:16px">${name}</h2>
+    <div style="display:flex;align-items:center;gap:10px;margin:10px 0 16px">
+      <span class="dmScore tier-${tier}" style="font-size:20px;padding:6px 14px">${avg!=null?Math.round(avg*100)+"%":"—"}</span>
+      <div class="src">متوسط التقييم النهائي عبر ${fmt(rows.length)} مشروع (متوسط بسيط)</div>
+    </div>
+    ${brokerRow?`<div class="cwarn" style="margin-bottom:14px"><b>الوسطاء:</b> ${brokerRow.broker_type||""}${brokerRow.broker_company_names?" — "+brokerRow.broker_company_names:""} — حالة الاتفاقية: ${brokerRow.broker_agreement_status||"—"}</div>`:""}
+    <h4 style="margin:0 0 8px;font-size:13px">أسباب عدم تحقيق المستهدف عبر المشاريع</h4>
+    <div class="csupports" style="margin-bottom:16px">${reasonsHtml}</div>
+    <h4 style="margin:0 0 8px;font-size:13px">المشاريع (${fmt(rows.length)})</h4>
+    ${projectsHtml}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px">
+      <h4 style="margin:0;font-size:13px">التحديات المسجَّلة</h4>
+      <button class="btn ghost sm" id="devDetailAddCh">+ تحدٍّ جديد</button>
+    </div>
+    ${challengesHtml}
+  `;
+  $("devDetailAddCh").onclick=()=>{ closeSheet("devDetailSheet"); openChallengeForm(null,name); };
+  openSheet("devDetailSheet");
+}
+$("devDetailScrim").onclick=()=>closeSheet("devDetailSheet");
+function challengeCardHtml(c){
+  const pCls = c.priority==="high"?"pri-high":c.priority==="low"?"pri-low":"pri-med";
+  const sCls = c.status==="resolved"?"st-resolved":c.status==="open"?"st-open":c.status==="deferred"?"st-deferred":"st-progress";
+  return `<div class="ucard" style="margin-bottom:8px;cursor:pointer" data-chid="${c.id}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:13px">${c.title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.developer_name}${c.project_name?" · "+c.project_name:""}</div>
+        ${c.description?`<div style="font-size:11.5px;margin-top:5px">${c.description}</div>`:""}
+        ${c.notes?`<div style="font-size:11px;color:var(--muted);margin-top:5px">ملاحظات: ${c.notes}</div>`:""}
+        ${c.status==="resolved"&&c.resolution_notes?`<div style="font-size:11px;color:var(--green);margin-top:5px">✓ الحل: ${c.resolution_notes}</div>`:""}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex:none">
+        <span class="ubadge ${pCls}">${priorityLabel(c.priority)}</span>
+        <span class="ubadge ${sCls}">${statusLabel(c.status)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+function renderChallenges(){
+  let rows = DEVCHALLENGES;
+  if(chStatusFilter!=="all") rows = rows.filter(c=>c.status===chStatusFilter);
+  if(!rows.length){ $("dmChList").innerHTML=`<div class="src" style="padding:20px 2px;text-align:center">لا توجد تحديات مطابقة</div>`; return; }
+  $("dmChList").innerHTML = rows.map(challengeCardHtml).join("");
+  $("dmChList").querySelectorAll("[data-chid]").forEach(el=>el.onclick=()=>openChallengeResolve(+el.dataset.chid));
+}
+document.querySelectorAll("#dmTabsBar .atab").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll("#dmTabsBar .atab").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    dmTab=b.dataset.dm;
+    $("dmDevs").style.display = dmTab==="devs" ? "block" : "none";
+    $("dmChallenges").style.display = dmTab==="challenges" ? "block" : "none";
+  };
+});
+document.querySelectorAll("#dmChStatusChips .chip").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll("#dmChStatusChips .chip").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    chStatusFilter=b.dataset.st;
+    renderChallenges();
+  };
+});
+$("chProjSearch").addEventListener("input",e=>{
+  const q=e.target.value.trim();
+  if(!q){ $("chProjList").style.display="none"; return; }
+  const list=DATA.filter(p=>p.name.includes(q)||p.city.includes(q)).slice(0,15);
+  $("chProjList").style.display="block";
+  $("chProjList").innerHTML = list.length ? list.map(p=>`<div class="projRow" data-pid="${p.id}" style="cursor:pointer">
+      <div class="projName">${p.name}</div><div class="projStats"><span>${p.city}</span></div>
+    </div>`).join("") : `<div class="src" style="padding:8px 2px">لا يوجد مشروع مطابق</div>`;
+  $("chProjList").querySelectorAll("[data-pid]").forEach(el=>el.onclick=()=>{
+    chPickedProject = DATA.find(p=>p.id===+el.dataset.pid);
+    $("chProjPicked").style.display="block";
+    $("chProjPicked").textContent = `✓ ${chPickedProject.name}`;
+    $("chProjSearch").value=""; $("chProjList").style.display="none";
+    if(!$("chDevInp").value.trim()) $("chDevInp").value = chPickedProject.dev;
+  });
+});
+function openChallengeForm(project, devName){
+  chPickedProject = project||null;
+  $("chFormTitle").textContent="تسجيل تحدٍ جديد";
+  $("chDevInp").value = devName||"";
+  $("chProjSearch").value=""; $("chProjList").style.display="none";
+  $("chProjPicked").style.display = project?"block":"none";
+  if(project) $("chProjPicked").textContent = `✓ ${project.name}`;
+  $("chTitleInp").value=""; $("chDescInp").value=""; $("chNotesInp").value=""; $("chReasonSel").value="";
+  document.querySelectorAll("#chPriorityChips .chip").forEach(c=>c.classList.toggle("on", c.dataset.p==="medium"));
+  $("chFormMsg").textContent="";
+  const devNames=new Set(DEVEVAL.map(r=>r.developer_name).filter(Boolean));
+  $("chDevList").innerHTML=[...devNames].map(n=>`<option value="${n}">`).join("");
+  openSheet("chFormSheet");
+}
+$("dmChAddBtn").onclick=()=>openChallengeForm(null,null);
+$("chFormCancel").onclick=()=>closeSheet("chFormSheet");
+$("chFormScrim").onclick=()=>closeSheet("chFormSheet");
+document.querySelectorAll("#chPriorityChips .chip").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#chPriorityChips .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+});
+async function submitChallenge(){
+  const dev=$("chDevInp").value.trim();
+  const title=$("chTitleInp").value.trim();
+  if(!dev){ $("chFormMsg").textContent="أدخل اسم المطوّر"; return; }
+  if(!title){ $("chFormMsg").textContent="أدخل عنوان التحدي"; return; }
+  const priority = document.querySelector("#chPriorityChips .chip.on")?.dataset.p || "medium";
+  $("chFormSave").disabled=true; $("chFormMsg").textContent="جارٍ الحفظ…";
+  let r;
+  try{
+    r = await adminCall("dev_challenge_create", {
+      p_project_id: chPickedProject?chPickedProject.id:null,
+      p_project_name: chPickedProject?chPickedProject.name:null,
+      p_developer_name: dev, p_title: title,
+      p_description: $("chDescInp").value.trim()||null,
+      p_priority: priority, p_reason_category: $("chReasonSel").value||null,
+      p_notes: $("chNotesInp").value.trim()||null,
+    });
+  }catch(e){ r=null; }
+  $("chFormSave").disabled=false;
+  if(!r||!r.ok){ $("chFormMsg").textContent=(r&&r.msg)||"تعذّر الحفظ — تحقّق من تشغيل developer_management.sql على القاعدة"; return; }
+  toast("تم تسجيل التحدي","ok");
+  closeSheet("chFormSheet");
+  await loadChallenges(); renderChallenges();
+}
+$("chFormSave").onclick=submitChallenge;
+function openChallengeResolve(id){
+  const c = DEVCHALLENGES.find(x=>x.id===id);
+  if(!c) return;
+  chResolveId=id;
+  $("chResolveInfo").innerHTML = `<b>${c.title}</b><br>${c.developer_name}${c.project_name?" · "+c.project_name:""}`;
+  document.querySelectorAll("#chStatusChips .chip").forEach(b=>b.classList.toggle("on", b.dataset.s===c.status));
+  document.querySelectorAll("#chResolvePriorityChips .chip").forEach(b=>b.classList.toggle("on", b.dataset.p===c.priority));
+  $("chResolveNotesInp").value = c.notes||"";
+  $("chResolutionInp").value = c.resolution_notes||"";
+  $("chResolveMsg").textContent="";
+  openSheet("chResolveSheet");
+}
+$("chResolveCancel").onclick=()=>closeSheet("chResolveSheet");
+$("chResolveScrim").onclick=()=>closeSheet("chResolveSheet");
+document.querySelectorAll("#chStatusChips .chip").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#chStatusChips .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+});
+document.querySelectorAll("#chResolvePriorityChips .chip").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#chResolvePriorityChips .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+});
+async function submitChallengeResolve(){
+  if(!chResolveId) return;
+  const status = document.querySelector("#chStatusChips .chip.on")?.dataset.s || null;
+  const priority = document.querySelector("#chResolvePriorityChips .chip.on")?.dataset.p || null;
+  $("chResolveSave").disabled=true; $("chResolveMsg").textContent="جارٍ الحفظ…";
+  let r;
+  try{
+    r = await adminCall("dev_challenge_update", {
+      p_id: chResolveId, p_status: status, p_priority: priority,
+      p_notes: $("chResolveNotesInp").value.trim()||null,
+      p_resolution_notes: $("chResolutionInp").value.trim()||null,
+    });
+  }catch(e){ r=null; }
+  $("chResolveSave").disabled=false;
+  if(!r||!r.ok){ $("chResolveMsg").textContent=(r&&r.msg)||"تعذّر الحفظ"; return; }
+  toast("تم تحديث التحدي","ok");
+  closeSheet("chResolveSheet");
+  await loadChallenges(); renderChallenges();
+}
+$("chResolveSave").onclick=submitChallengeResolve;
 
 async function loadAdminUsers(){
   if(!window.__isAdmin) return;
@@ -6395,7 +6932,7 @@ function runNCalc(){
 $("nCalc").onclick=runNCalc;
 
 function applyPermissions(){
-  const tiles={hTileDest:"dest",hTileDeal:"deal",hTileSearch:"search",hTileCmp:"cmp",hTileSales:"sales",hTileAfford:"calc"};
+  const tiles={hTileDest:"dest",hTileDeal:"deal",hTileSearch:"search",hTileCmp:"cmp",hTileSales:"sales",hTileAfford:"calc",hTileDevMgmt:"devmgmt"};
   for(const [id,key] of Object.entries(tiles)){
     const el=$(id); if(el) el.style.display = PERMS[key] ? "" : "none";
   }
