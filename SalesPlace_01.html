@@ -4095,8 +4095,23 @@ async function lookupUnitByCode(){
   if(!codeRaw){ toast("أدخل رمز الوحدة أولاً","err"); return; }
   $("cUnitCodeGo").disabled=true;
   try{
-    const rows=await sbSelect("unit_allocation_mirror",{select:"*",unit_code:`eq.${codeRaw}`});
-    if(!rows||!rows.length){ toast("لم يُعثر على وحدة بهذا الرمز","err"); return; }
+    let rows=await sbSelect("unit_allocation_mirror",{select:"*",unit_code:`eq.${codeRaw}`});
+    if(!rows.length){
+      /* تطابق تام لكن غير حسّاس لحالة الأحرف — يلتقط فروقات أحرف كبيرة/صغيرة بالرمز
+         المكتوب يدوياً بدون تخفيف دقة المطابقة (بلا أي رموز بدل، ليست بحثاً جزئياً) */
+      rows=await sbSelect("unit_allocation_mirror",{select:"*",unit_code:`ilike.${codeRaw}`});
+    }
+    if(!rows.length){
+      /* بحث تشخيصي فقط (بلا اختيار تلقائي) — يساعد نميّز خطأ إملائي/رمز غير مكتمل عن رمز
+         غير موجود إطلاقاً بملف التخصيص الأخير */
+      let near=[];
+      try{ near=await sbSelect("unit_allocation_mirror",{select:"unit_code",unit_code:`ilike.%${codeRaw}%`}); }catch(e){}
+      near=(near||[]).filter(r=>r.unit_code).slice(0,5);
+      toast(near.length
+        ? `لم يُعثر على تطابق تام، لكن توجد رموز قريبة بالقاعدة — تحقق من الرمز (مثال: ${near[0].unit_code})`
+        : "لم يُعثر على وحدة بهذا الرمز — تأكد أنه مطابق تماماً لآخر ملف تخصيص مرفوع، فقد تكون الوحدة أُضيفت برفعة لاحقة لم تُرفع بعد","err");
+      return;
+    }
     const row=rows[0];
     if(!SYNC_BYFULL) buildSyncNameIndex();
     const pid=row.project_id!=null ? row.project_id : findProjectId(row.project_name);
