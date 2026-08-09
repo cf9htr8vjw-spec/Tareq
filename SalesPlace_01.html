@@ -1157,6 +1157,19 @@ main{flex:1;min-height:0;position:relative}
 .atab{flex:1;padding:9px;border-radius:10px;font-size:13px;font-weight:600;color:var(--muted)}
 .atab.on{background:var(--green);color:#fff}
 .ucard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:9px;box-shadow:var(--shadow)}
+.uPickGrid{display:grid;grid-template-columns:1fr;gap:9px}
+.uPickCard{margin-bottom:0;border-inline-start-width:4px}
+.uPickCard.tier-none{border-inline-start-color:var(--line)}
+.uPickCard.tier-low{border-inline-start-color:var(--gold)}
+.uPickCard.tier-high{border-inline-start-color:var(--green)}
+.uPickBadge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px}
+.uPickBadge.tier-none{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.uPickBadge.tier-low{background:var(--gold-soft);color:var(--gold)}
+.uPickBadge.tier-high{background:var(--green-soft);color:var(--green)}
+.uPickDot{display:inline-block;width:8px;height:8px;border-radius:99px;margin:0 2px}
+.uPickDot.tier-none{background:var(--muted)}
+.uPickDot.tier-low{background:var(--gold)}
+.uPickDot.tier-high{background:var(--green)}
 .uhead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .uhead .nm{font-weight:700;font-size:14px}
 .uhead .un{font-size:11px;color:var(--muted);font-family:monospace,monospace}
@@ -1746,7 +1759,11 @@ table.prods tr:last-child td{border:none}
           <button type="button" class="chip on" data-mode="advanced">متقدم (تقديري وفق النظام)</button>
         </div>
         <div class="cform">
-          <button type="button" class="btn ghost" id="cPickUnitBtn" style="width:100%;margin-bottom:11px">🔎 اختر وحدة متاحة من مشروع</button>
+          <button type="button" class="btn ghost" id="cPickUnitBtn" style="width:100%;margin-bottom:8px">🔎 اختر وحدة متاحة من مشروع</button>
+          <div style="display:flex;gap:6px;margin-bottom:11px">
+            <input type="text" id="cUnitCodeInp" placeholder="أو أدخل رمز الوحدة (unit_code) مباشرة" style="flex:1;text-align:start" class="dateInp" autocomplete="off">
+            <button type="button" class="btn ghost" id="cUnitCodeGo" style="flex:none;padding:0 16px">بحث</button>
+          </div>
           <div id="cPickedNote" class="src" style="display:none;margin:-4px 0 9px"></div>
           <div class="cfield"><label>سعر الوحدة (ريال)</label><input id="cPrice" type="number" inputmode="numeric" placeholder="مثال: 750000"></div>
 
@@ -2332,12 +2349,9 @@ table.prods tr:last-child td{border:none}
     <div id="unitPickProjList" class="projList" style="max-height:230px"></div>
 
     <div id="unitPickTypeWrap" style="display:none;margin-top:16px">
-      <div class="flabel">٢. نوع الوحدة — <b id="unitPickProjName"></b></div>
-      <div class="chips" id="unitPickTypeChips"></div>
-    </div>
-
-    <div id="unitPickUnitsWrap" style="display:none;margin-top:16px">
-      <div class="flabel">٣. الوحدات المتاحة الآن</div>
+      <div class="flabel">٢. اختر الوحدة — <b id="unitPickProjName"></b></div>
+      <div class="chips" id="unitPickTypeChips" style="margin-bottom:10px"></div>
+      <div class="uPickLegend" id="unitPickLegend"></div>
       <div id="unitPickUnitsList"></div>
     </div>
   </div>
@@ -3909,16 +3923,17 @@ $("dealShareWA").onclick=()=>{
   shareWA(waText);
 };
 
-/* ---------- shared unit picker for both calculators: project -> type -> live available units -> fill price field ---------- */
+/* ---------- shared unit picker for both calculators: project -> visual grid of every live
+   unit (color-coded by exact support level, priced, typed, modeled) -> fill price field ---------- */
 let unitPickMode=null, unitPickProject=null, unitPickType=null;
+let unitPickAllRows=[], unitPickFilterType="__all__";
 function openUnitPicker(mode){
-  unitPickMode=mode; unitPickProject=null; unitPickType=null;
+  unitPickMode=mode; unitPickProject=null; unitPickType=null; unitPickAllRows=[]; unitPickFilterType="__all__";
   $("unitPickTitle").textContent = mode==="b" ? "اختر وحدة متاحة — سعر الوزارة" : "اختر وحدة متاحة — السعر الكامل";
   $("unitPickSub").textContent = mode==="b"
     ? "الوحدات المتاحة الآن وسعر الوزارة الفعلي لها، مباشرة من قاعدة البيانات"
     : "الوحدات المتاحة الآن وسعرها الكامل الفعلي، مباشرة من قاعدة البيانات";
   $("unitPickTypeWrap").style.display="none";
-  $("unitPickUnitsWrap").style.display="none";
   $("unitPickProjSearch").value="";
   renderUnitPickProjList("");
   openSheet("unitPickSheet");
@@ -3936,45 +3951,78 @@ function renderUnitPickProjList(q){
 }
 $("unitPickProjSearch").addEventListener("input",e=>renderUnitPickProjList(e.target.value));
 function selectUnitPickProject(pid){
-  unitPickProject=DATA.find(p=>p.id===pid); unitPickType=null;
+  unitPickProject=DATA.find(p=>p.id===pid); unitPickType=null; unitPickFilterType="__all__";
   if(!unitPickProject) return;
   $("unitPickProjName").textContent=unitPickProject.short||unitPickProject.name;
-  const types=projectUnitTypes(unitPickProject);
-  $("unitPickTypeChips").innerHTML = types.length
-    ? types.map(t=>`<button type="button" class="chip" data-type="${t}">${t}</button>`).join("")
-    : `<div class="src">لا توجد أنواع وحدات مسجّلة لهذا المشروع بالكتالوج</div>`;
-  $("unitPickTypeChips").querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>selectUnitPickType(b.dataset.type,b));
   $("unitPickTypeWrap").style.display="block";
-  $("unitPickUnitsWrap").style.display="none";
+  $("unitPickLegend").innerHTML="";
+  loadUnitPickUnits();
 }
-async function selectUnitPickType(type,btnEl){
-  unitPickType=type;
-  $("unitPickTypeChips").querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
-  if(btnEl) btnEl.classList.add("on");
-  $("unitPickUnitsWrap").style.display="block";
+/* إجمالي الدعم لكل وحدة بعينها (من unit_support_detail) يُصنَّف لثلاث فئات تلوينية — عتبات
+   تقريبية وليست دقيقة رسمياً، الهدف تمييز بصري سريع بين الوحدات لا أكثر */
+function supportTier(support){
+  if(support==null || support<=0) return "none";
+  if(support<25000) return "low";
+  return "high";
+}
+async function loadUnitPickUnits(){
+  $("unitPickTypeChips").innerHTML="";
   $("unitPickUnitsList").innerHTML=`<div class="src" style="padding:14px 2px">جارٍ التحميل من القاعدة…</div>`;
   let rows;
-  try{ rows=await fetchAvailableUnits(unitPickProject,type); }
+  try{ rows=await fetchAvailableUnits(unitPickProject,null); }
   catch(e){
     $("unitPickUnitsList").innerHTML=`<div class="cerr">تعذّر تحميل الوحدات المتاحة: ${e.message||e}</div>`;
     return;
   }
   if(!rows.length){
-    $("unitPickUnitsList").innerHTML=`<div class="src" style="padding:14px 2px">لا توجد وحدات متاحة مطابقة الآن — قد يكون اسم المشروع بملف التخصيص مختلفاً عن اسمه بالكتالوج، أو لا مخزون متاح حالياً لهذا النوع.</div>`;
+    $("unitPickUnitsList").innerHTML=`<div class="src" style="padding:14px 2px">لا توجد وحدات متاحة مطابقة الآن — قد يكون اسم المشروع بملف التخصيص مختلفاً عن اسمه بالكتالوج، أو لا مخزون متاح حالياً لهذا المشروع.</div>`;
     return;
   }
-  $("unitPickUnitsList").innerHTML = rows.map((r,i)=>{
+  /* دعم دقيق مجمَّع لكل وحدات المشروع دفعة واحدة (وليس نداءً منفصلاً لكل بطاقة) — أفضل-جهد،
+     يبقى المنتقي يعمل بدون تلوين لو لم يُشغَّل unit_support_detail.sql بعد */
+  const suppMap=new Map();
+  try{
+    const suppRows=await sbSelect("unit_support_detail",{select:"unit_code,total_support",project_id:`eq.${unitPickProject.id}`});
+    (suppRows||[]).forEach(s=>{ if(s.unit_code!=null) suppMap.set(String(s.unit_code).trim(), s.total_support||0); });
+  }catch(e){}
+  unitPickAllRows = rows.map(r=>{
+    const code = r.unit_code!=null ? String(r.unit_code).trim() : null;
+    return Object.assign({}, r, {_support: code && suppMap.has(code) ? suppMap.get(code) : null});
+  });
+  const types=[...new Set(unitPickAllRows.map(r=>r.unit_type).filter(Boolean))];
+  unitPickFilterType="__all__";
+  $("unitPickTypeChips").innerHTML = `<button type="button" class="chip on" data-type="__all__">الكل (${unitPickAllRows.length})</button>` +
+    types.map(t=>`<button type="button" class="chip" data-type="${t}">${t} (${unitPickAllRows.filter(r=>r.unit_type===t).length})</button>`).join("");
+  $("unitPickTypeChips").querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{
+    unitPickFilterType=b.dataset.type;
+    $("unitPickTypeChips").querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
+    b.classList.add("on");
+    renderUnitPickGrid();
+  });
+  $("unitPickLegend").innerHTML = unitPickAllRows.some(r=>r._support!=null)
+    ? `<div class="src" style="margin-bottom:8px">تلوين البطاقات حسب إجمالي الدعم المسجَّل لهذه الوحدة تحديداً:
+        <span class="uPickDot tier-high"></span> مرتفع ·
+        <span class="uPickDot tier-low"></span> منخفض/متوسط ·
+        <span class="uPickDot tier-none"></span> بلا دعم مسجَّل</div>`
+    : "";
+  renderUnitPickGrid();
+}
+function renderUnitPickGrid(){
+  const rows = unitPickFilterType==="__all__" ? unitPickAllRows : unitPickAllRows.filter(r=>r.unit_type===unitPickFilterType);
+  if(!rows.length){ $("unitPickUnitsList").innerHTML=`<div class="src" style="padding:14px 2px">لا توجد وحدات مطابقة لهذا التصفية</div>`; return; }
+  $("unitPickUnitsList").innerHTML = `<div class="uPickGrid">` + rows.map((r,i)=>{
     const priceVal = unitPickMode==="b" ? r.moh_price : r.price;
-    return `<div class="ucard" style="padding:11px 13px;margin-bottom:8px;cursor:pointer" data-idx="${i}">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <div>
-          <div style="font-weight:700;font-size:13px">${type}${r.beds?` · ${r.beds} غرف`:""}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${priceVal!=null?fmt(priceVal)+" ريال":"سعر غير مسجّل لهذه الشريحة"}</div>
-        </div>
-        <span class="btn" style="padding:8px 14px;font-size:12px;flex:none">اختر</span>
+    const tier = supportTier(r._support);
+    const tierLabel = tier==="high" ? "دعم مرتفع" : tier==="low" ? "دعم منخفض/متوسط" : "بلا دعم مسجَّل";
+    return `<div class="ucard uPickCard tier-${tier}" style="cursor:pointer" data-idx="${i}">
+      <div style="font-weight:700;font-size:13px">${r.unit_type||"—"}${r.beds?` · ${r.beds} غرف`:""}${r.model?` · ${r.model}`:""}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">${priceVal!=null?fmt(priceVal)+" ريال":"سعر غير مسجّل لهذه الشريحة"}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <span class="uPickBadge tier-${tier}">${tierLabel}${r._support!=null&&r._support>0?" · "+fmt(r._support)+" ريال":""}</span>
+        <span class="btn" style="padding:7px 13px;font-size:12px;flex:none">اختر</span>
       </div>
     </div>`;
-  }).join("");
+  }).join("") + `</div>`;
   $("unitPickUnitsList").querySelectorAll("[data-idx]").forEach(el=>el.onclick=()=>applyUnitPick(rows[+el.dataset.idx]));
 }
 let pickedMoh=null, pickedFull=null, pickedProject=null, pickedType=null, pickedUnitCode=null, pickedUnitSupport=null;
@@ -3995,19 +4043,22 @@ function mapUnitSupportRow(row){
 function applyUnitPick(row){
   const priceVal = unitPickMode==="b" ? row.moh_price : row.price;
   if(priceVal==null){ toast("لا يوجد سعر مسجّل لهذه الوحدة بهذه الشريحة","err"); return; }
+  /* نوع الوحدة يأتي من الصف نفسه أولاً (الشبكة الجديدة تعرض كل الأنواع معاً دفعة واحدة)،
+     مع الرجوع لـ unitPickType كخيار احتياطي (مسار البحث المباشر برمز الوحدة) */
+  const rowType = row.unit_type || unitPickType || "";
   const noteEl = unitPickMode==="b" ? $("cPickedNote") : $("nPickedNote");
   const priceInp = unitPickMode==="b" ? $("cPrice") : $("nPrice");
   priceInp.value = Math.round(priceVal);
   noteEl.style.display="block";
-  noteEl.innerHTML = `✓ وحدة ${unitPickType}${row.beds?` (${row.beds} غرف)`:""} من <b>${unitPickProject.short||unitPickProject.name}</b> — ${fmt(priceVal)} ريال`;
+  noteEl.innerHTML = `✓ وحدة ${rowType}${row.beds?` (${row.beds} غرف)`:""} من <b>${unitPickProject.short||unitPickProject.name}</b> — ${fmt(priceVal)} ريال`;
   closeSheet("unitPickSheet");
   if(unitPickMode==="b"){
     pickedMoh = row.moh_price!=null ? Math.round(row.moh_price) : null;
     pickedFull = row.price!=null ? Math.round(row.price) : null;
-    pickedProject = unitPickProject; pickedType = unitPickType;
+    pickedProject = unitPickProject; pickedType = rowType;
     pickedUnitCode = row.unit_code!=null ? String(row.unit_code).trim() : null;
     pickedUnitSupport = null;
-    const sup = SUPP && SUPP[String(unitPickProject.id)] && SUPP[String(unitPickProject.id)][unitPickType];
+    const sup = SUPP && SUPP[String(unitPickProject.id)] && SUPP[String(unitPickProject.id)][rowType];
     calcMarketPrice = sup ? Math.round(priceVal+sup.avg) : null;
     runCalcDispatch();
     if(pickedUnitCode){
@@ -4036,6 +4087,29 @@ function applyUnitPick(row){
 $("unitPickScrim").onclick=()=>closeSheet("unitPickSheet");
 $("cPickUnitBtn").onclick=()=>openUnitPicker("b");
 $("nPickUnitBtn").onclick=()=>openUnitPicker("n");
+/* بحث مباشر برمز الوحدة (unit_code) — أحياناً يكون الرمز بيد الموظف مسبقاً (مثلاً من العميل)،
+   فلا حاجة للمرور بمسار مشروع ← نوع ← قائمة وحدات */
+async function lookupUnitByCode(){
+  const codeRaw=$("cUnitCodeInp").value.trim();
+  if(!codeRaw){ toast("أدخل رمز الوحدة أولاً","err"); return; }
+  $("cUnitCodeGo").disabled=true;
+  try{
+    const rows=await sbSelect("unit_allocation_mirror",{select:"*",unit_code:`eq.${codeRaw}`});
+    if(!rows||!rows.length){ toast("لم يُعثر على وحدة بهذا الرمز","err"); return; }
+    const row=rows[0];
+    if(!SYNC_BYFULL) buildSyncNameIndex();
+    const pid=row.project_id!=null ? row.project_id : findProjectId(row.project_name);
+    const project=pid!=null ? DATA.find(x=>x.id===pid) : null;
+    if(!project){ toast("الوحدة موجودة لكن مشروعها غير مطابق لكتالوج الداشبورد","err"); return; }
+    unitPickMode="b"; unitPickProject=project; unitPickType=row.unit_type||null;
+    applyUnitPick(row);
+    $("cUnitCodeInp").value="";
+    toast("تم تحميل بيانات الوحدة","ok");
+  }catch(e){ toast("تعذّر البحث: "+(e.message||e),"err"); }
+  finally{ $("cUnitCodeGo").disabled=false; }
+}
+$("cUnitCodeGo").onclick=lookupUnitByCode;
+$("cUnitCodeInp").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); lookupUnitByCode(); } });
 $("cPrice").addEventListener("input",()=>{ $("cPickedNote").style.display="none"; pickedMoh=null; pickedFull=null; pickedUnitCode=null; pickedUnitSupport=null; });
 $("nPrice").addEventListener("input",()=>{ $("nPickedNote").style.display="none"; });
 /* الراتب والمدة يؤثران على مبالغ الدعومات (150/100 ألف، ذرى بلس، قسط الدعم الشهري) —
@@ -4915,6 +4989,10 @@ async function processSyncFile(){
     const utype=SYNC_TYPEAR[row.unit_type]||row.unit_type||"—";
     const beds=row.Number_of_Bedrooms!=null ? Math.round(row.Number_of_Bedrooms) : null;
     const rawName=String(row.project_name||"—").trim();
+    /* عدد النموذج الحيّ — يطابق مفاتيح كتالوج النماذج الثابت بالتطبيق (model_1، model_2، ...) حرفياً؛
+       يُحسَب هنا (خارج فرع المطابقة) لأنه يُنقَل أيضاً لمرآة التخصيص عبر mirrorRows بصرف النظر
+       عن مطابقة المشروع، ليُستخدم بمنتقي الوحدة البصري (عرض النموذج لكل وحدة) */
+    const modelVal=row.model!=null?String(row.model).trim():"";
 
     let city,dest,sector,devKind,pname;
     if(pid!=null){
@@ -4928,8 +5006,6 @@ async function processSyncFile(){
         a[bucket+"_count"]++;
         statusAgg.set(key,a);
       }
-      /* عدد النموذج الحيّ — يطابق مفاتيح كتالوج النماذج الثابت بالتطبيق (model_1، model_2، ...) حرفياً */
-      const modelVal=row.model!=null?String(row.model).trim():"";
       if(modelVal){
         const mkey=`${pid}|${modelVal}`;
         const m=modelAgg.get(mkey) || {project_id:pid,model:modelVal,avail_count:0,reserved_count:0,contracted_count:0};
@@ -4970,6 +5046,7 @@ async function processSyncFile(){
       /* المعرّف الفريد للوحدة — نفس unit_code بملف بيانات الدعومات، يمكّن ربط الوحدة الحيّة
          المختارة من المنتقي بدعمها الفعلي الدقيق بدل متوسط النوع فقط */
       unit_code: row.unit_code!=null ? String(row.unit_code).trim() : null,
+      model: modelVal||null,
     });
   }
 
@@ -5066,6 +5143,21 @@ async function uploadSyncData(statusRows,mirrorRows,modelRows,segRows,istisnaRow
       else failedChunks++;
     }catch(e){ failedChunks++; }
   }
+  /* تحديث عمود النموذج (model) بمرآة التخصيص — دالة UPDATE إضافية منفصلة كلياً عن
+     admin_upsert_allocation_mirror الأصلية، أفضل-جهد بعد إدراج الوحدات؛ لا تُوقف الرفع
+     الرئيسي إن فشلت (مثلاً قبل تشغيل unit_model_backfill.sql) */
+  const modelBackfillRows = mirrorRows.filter(r=>r.unit_code && r.model).map(r=>({unit_code:r.unit_code, model:r.model}));
+  if(modelBackfillRows.length){
+    let modelFailed=false;
+    for(let i=0;i<modelBackfillRows.length;i+=CHUNK){
+      try{
+        const rmm=await adminCall("admin_update_mirror_model",{p_rows:modelBackfillRows.slice(i,i+CHUNK)});
+        if(!rmm||!rmm.ok) modelFailed=true;
+      }catch(e){ modelFailed=true; }
+    }
+    if(modelFailed) console.error("[تشخيص] فشل تحديث عمود النموذج بمرآة التخصيص (جزئياً أو كلياً)");
+  }
+
   syncSetStatus(failedChunks
     ? `اكتمل تحديث المخزون، لكن ${failedChunks} دفعة من مرآة التخصيص فشلت — التقارير قد تكون ناقصة`
     : `اكتمل التحديث بنجاح — أُدرجت ${fmt(inserted)} وحدة بمرآة التخصيص الكاملة`,
