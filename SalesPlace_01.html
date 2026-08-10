@@ -2081,6 +2081,7 @@ table.prods tr:last-child td{border:none}
         <b>توزيع المعروض لغير المستفيدين والمستثمرين</b>
         <span>عدد الوحدات المتاحة للبيع والمحجوبة (غير المتاحة) لكل مشروع بسعر غير المستفيدين — افتح مشروعاً لعرض تفصيل المبانٍ وبناء صفقة</span>
       </div>
+      <button type="button" class="btn ghost" id="supBatchesBtn" style="width:100%;margin-bottom:12px">📦 عرض الـBatches المحفوظة</button>
       <div class="cform">
         <div class="flabel">المدينة</div>
         <select id="supCitySel" class="dateInp" style="width:100%;text-align:start"><option value="">كل المدن</option></select>
@@ -2145,12 +2146,40 @@ table.prods tr:last-child td{border:none}
     </div>
     <div id="supBldgSelBar" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-        <div><b id="supBldgSelCount">0</b> مبنى مُختار — متاح <b id="supBldgSelUnits">0</b> وحدة</div>
+        <div><b id="supBldgSelCount">0</b> مبنى مُختار — <b id="supBldgSelUnits">0</b> وحدة (متاح+محجوب)</div>
         <div class="tot" id="supBldgSelValue">0 ريال</div>
       </div>
-      <div id="supBldgSelBlockedRow" style="display:none;width:100%;color:var(--rust);margin-top:4px">
-        + محجوب <b id="supBldgSelBlockedUnits">0</b> وحدة (تقديري <span id="supBldgSelBlockedValue">0 ريال</span>) — يحتاج إفراجاً قبل البيع
+      <div id="supBldgSelBreakdown" class="src" style="width:100%;margin-top:2px"></div>
+      <button type="button" class="btn" id="supBldgSaveBatchBtn" style="width:100%;margin-top:8px">💾 حفظ التحديد في Batch</button>
+    </div>
+  </div>
+  <!-- Batch picker (save selected buildings into a new/existing batch) -->
+  <div class="scrim" id="batchPickScrim"></div>
+  <div class="sheet" id="batchPickSheet">
+    <div class="handle" data-drag="batchPickSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 4px">حفظ التحديد في Batch</h2>
+      <div class="src" id="batchPickSummary" style="margin-bottom:10px"></div>
+      <div class="flabel">اختر Batch موجوداً</div>
+      <div id="batchPickList" style="margin-bottom:10px"></div>
+      <button type="button" class="btn ghost" id="batchNewToggle" style="width:100%">+ إنشاء Batch جديد</button>
+      <div id="batchNewForm" style="display:none;margin-top:10px">
+        <div class="flabel">اسم الـBatch</div>
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="batchNewName" placeholder="مثال: t95 للمستثمرين">
+        <div class="flabel" style="margin-top:9px">ملاحظات (اختياري)</div>
+        <textarea class="dateInp" style="width:100%;text-align:start;min-height:60px" id="batchNewNotes" placeholder="مثال: مبانٍ مشاريع ٥-٩٥ مخصَّصة لمستثمرين محدَّدين"></textarea>
+        <button type="button" class="btn" id="batchNewSave" style="width:100%;margin-top:10px">إنشاء وإضافة التحديد</button>
       </div>
+      <div id="batchPickMsg" class="src" style="margin-top:8px"></div>
+    </div>
+  </div>
+  <!-- Batches list/detail -->
+  <div class="scrim" id="batchListScrim"></div>
+  <div class="sheet" id="batchListSheet">
+    <div class="handle" data-drag="batchListSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 10px">الـBatches المحفوظة</h2>
+      <div id="batchListBody"></div>
     </div>
   </div>
   <!-- Challenge add/edit sheet -->
@@ -3092,7 +3121,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim",supplyBuildingsSheet:"supplyBuildingsScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim",supplyBuildingsSheet:"supplyBuildingsScrim",batchPickSheet:"batchPickScrim",batchListSheet:"batchListScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -3101,7 +3130,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet","supplyBuildingsSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet","supplyBuildingsSheet","batchPickSheet","batchListSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -6647,6 +6676,7 @@ $("chResolveSave").onclick=submitChallengeResolve;
    بالعميل بلا إعادة جلب. عند فتح مشروع: get_supply_buildings يُعيد تفصيل كل مبنى (من عمود
    building_number بالملفين معاً) — هنا فقط، لأنه المستوى الذي يحتاج بيانات خام مفصَّلة. */
 let SUPPLY_CACHE={}, supCity="", supDest="", supType="", supDevKind="", supProg="";
+let DEST_SQM_CACHE={}, curDestAvgSqm=null;
 let supBldgProjectId=null, supBldgType="", supBldgSort="asc", supBldgRows=[], supBldgSelected=new Set();
 function populateSupplyFilters(){
   const cs=$("supCitySel");
@@ -6757,8 +6787,9 @@ async function loadSupplyBuildings(){
       building: r.building_number || "بلا رقم مبنى",
       avail: r.avail_count||0, value: r.avail_value||0, sqm: r.avail_sqm_value||null,
       blocked: r.blocked_count||0, blockedValue: r.blocked_value||0, blockedSqm: r.blocked_sqm_value||null,
-      sold: r.sold_count||0,
+      sold: r.sold_count||0, beds: r.avg_beds!=null?Math.round(r.avg_beds):null,
     }));
+    await loadDestAvgSqm();
   }catch(e){
     $("supBldgStatus").innerHTML=`<div class="cerr">تعذّر تحميل تفصيل المبانٍ: ${e.message||e}</div>`;
     return;
@@ -6780,11 +6811,12 @@ function renderSupBldgProjStats(){
 /* نسبة البيع (محجوز+متعاقَد ÷ الإجمالي) لنفس نوع الوحدة المختار — بالمشروع نفسه وبكل مشاريع
    نفس الوجهة، من PRODSTAT المحمَّل أصلاً لكل المشاريع (بلا نداء إضافي) — مؤشر مباشر لتقييم
    هل سرعة بيع النوع بهذا المشروع أعلى أو أقل من محيطه، قبل قرار بيع مبنى كامل لمستثمر */
-function typeAbsorbFrom(entries, unitType){
+function typeAbsorbFrom(entries, unitType, beds){
   let avail=0, reserved=0, contracted=0;
   for(const [k,v] of entries){
-    const t=k.split("|")[0];
+    const [t,b]=k.split("|");
     if(unitType && t!==unitType) continue;
+    if(beds!=null && String(beds)!==b) continue;
     avail+=v.avail||0; reserved+=v.reserved||0; contracted+=v.contracted||0;
   }
   const tot=avail+reserved+contracted;
@@ -6802,6 +6834,46 @@ function destAbsorbForType(dest, unitType){
     if(ps) entries.push(...Object.entries(ps));
   }
   return typeAbsorbFrom(entries, unitType);
+}
+/* عامل "التصميم" (35%) بمؤشر جاذبية المبنى — نسبة بيع نفس التركيبة (نوع + عدد غرف) بكل
+   مشاريع نفس الوجهة، وليس النوع عموماً — أدق لتقييم إقبال السوق على مواصفات هذا المبنى تحديداً */
+function destAbsorbForTypeBeds(dest, unitType, beds){
+  const entries=[];
+  for(const p of DATA){
+    if(p.dest!==dest) continue;
+    const ps=PRODSTAT ? PRODSTAT[p.id] : null;
+    if(ps) entries.push(...Object.entries(ps));
+  }
+  return typeAbsorbFrom(entries, unitType, beds);
+}
+/* عامل "السعر" (35%) — متوسط سعر متر الوجهة كاملة (كل مشاريعها)، لمقارنة كل مبنى به.
+   يُجلَب مرة واحدة لكل (وجهة+نوع) ويُخزَّن مؤقتاً — لا يحتاج تجديداً إلا بتغيّر النوع */
+async function loadDestAvgSqm(){
+  const p=DATA.find(x=>x.id===supBldgProjectId);
+  curDestAvgSqm=null;
+  if(!p || !p.dest || !supBldgType) return; // بلا نوع محدَّد لا يُحسب مؤشر السعر (مقارنة أنواع مختلفة غير منطقية)
+  const key=`${p.dest}|${supBldgType}`;
+  if(DEST_SQM_CACHE[key]!==undefined){ curDestAvgSqm=DEST_SQM_CACHE[key]; return; }
+  const destProjectIds=DATA.filter(x=>x.dest===p.dest).map(x=>x.id);
+  try{
+    const v=await sbCall("get_avg_sqm_price",{p_project_ids:destProjectIds, p_unit_type:supBldgType});
+    curDestAvgSqm = (v==null || v===0) ? null : v;
+  }catch(e){ curDestAvgSqm=null; }
+  DEST_SQM_CACHE[key]=curDestAvgSqm;
+}
+/* مؤشر جاذبية البيع الكامل — 35% تصميم (إقبال على نفس النوع+الغرف بالوجهة) + 35% سعر
+   (تنافسية سعر المتر مقابل متوسط الوجهة) + 30% مبيعات المشروع ككل. يُحسب فقط لو النوع
+   محدَّد (لا معنى لمتوسط غرف "لكل الأنواع" معاً) وكل عناصره متوفرة — نُظهر جزئياً بصدق
+   بدل تلفيق رقم مركّب من بيانات ناقصة */
+function buildingAttractiveness(r){
+  const p=DATA.find(x=>x.id===supBldgProjectId);
+  if(!p || !supBldgType || r.beds==null) return null;
+  const f1 = p.dest!=null ? destAbsorbForTypeBeds(p.dest, supBldgType, r.beds) : null;
+  const f2 = (r.sqm && curDestAvgSqm) ? Math.max(0, Math.min(100, Math.round(curDestAvgSqm/r.sqm*100))) : null;
+  const f3 = liveAbsorb(supBldgProjectId);
+  if(f1==null || f2==null || f3==null) return {f1,f2,f3,total:null};
+  const total = Math.round(f1*0.35 + f2*0.35 + f3*0.30);
+  return {f1,f2,f3,total};
 }
 function renderSupBldgAbsorb(){
   const p=DATA.find(x=>x.id===supBldgProjectId); if(!p) return;
@@ -6846,16 +6918,34 @@ function renderSupplyBuildingsList(){
       : (r.avail>0
         ? `<span class="pill" style="background:var(--green-soft);color:var(--green)">✅ لم تُبع أي وحدة — صالحة للبيع الكامل</span>`
         : `<span class="pill" style="background:var(--rust-soft);color:var(--rust)">🔒 كل الوحدات محجوبة حالياً — تحتاج إفراجاً قبل البيع</span>`);
-    const rightVal = r.avail ? compact(r.value) : (r.blocked ? compact(r.blockedValue) : "—");
+    /* القيمة الإجمالية = متاح + محجوب معاً — "المحجوب لازم يُحسب" — بشارة "ريال" دائماً
+       بجانب الرقم المختصر (compact() يستخدم حرف "م" لاختصار مليون، يلتبس بصرياً مع "متر"
+       بلا الكلمة صراحة بجانبه) */
+    const totalVal = (r.value||0)+(r.blockedValue||0);
+    const rightVal = totalVal ? compact(totalVal)+" ريال" : "—";
+    const attr = buildingAttractiveness(r);
+    let attrBadge = "";
+    if(!supBldgType){
+      attrBadge = `<div class="src" style="margin-top:5px">حدِّد نوع الوحدة أعلى القائمة لحساب مؤشر جاذبية البيع</div>`;
+    } else if(attr && attr.total!=null){
+      const cls = attr.total>=70?"green":attr.total>=45?"gold":"rust";
+      attrBadge = `<div class="pill" style="margin-top:5px;background:var(--${cls}-soft);color:var(--${cls==='gold'?'gold-text3':cls})">🎯 جاذبية البيع ${attr.total}% <span style="opacity:.75">(تصميم ${attr.f1}% · سعر ${attr.f2}% · مبيعات ${attr.f3}%)</span></div>`;
+    } else if(attr){
+      attrBadge = `<div class="src" style="margin-top:5px">جاذبية البيع: بيانات غير كافية${attr.f1!=null?` (تصميم ${attr.f1}%)`:""}${attr.f2!=null?` (سعر ${attr.f2}%)`:""}${attr.f3!=null?` (مبيعات ${attr.f3}%)`:""}</div>`;
+    }
     return `<div class="supBldgRow${on?" on":""}" data-b="${encodeURIComponent(r.building)}">
       <div class="sbTick">${on?"✓":""}</div>
       <div class="sbInfo">
-        <div class="sbName">🏢 ${r.building}</div>
+        <div class="sbName">🏢 ${r.building}${r.beds!=null?` <span class="src" style="font-weight:400">· ~${r.beds} غرف</span>`:""}</div>
         <div class="sbMeta">متاح ${fmt(r.avail)}${avg?` · متوسط السعر ${fmt(avg)} ريال`:""}${r.sqm?` · ${fmt(Math.round(r.sqm))} ريال/م²`:""}</div>
         ${r.blocked?`<div class="sbMeta" style="color:var(--rust)">محجوب ${fmt(r.blocked)}${blockedAvg?` · متوسط السعر التقديري ${fmt(blockedAvg)} ريال`:""}${r.blockedSqm?` · ${fmt(Math.round(r.blockedSqm))} ريال/م² تقديري`:""}</div>`:""}
         <div style="margin-top:5px">${soldBadge}</div>
+        ${attrBadge}
       </div>
-      <div style="text-align:end;flex-shrink:0"><b style="font-family:'Noto Kufi Arabic'">${rightVal}</b></div>
+      <div style="text-align:end;flex-shrink:0">
+        <b style="font-family:'Noto Kufi Arabic'">${rightVal}</b>
+        ${(r.value>0 && r.blockedValue>0)?`<div class="src" style="font-size:10px;margin-top:2px">متاح+محجوب</div>`:""}
+      </div>
     </div>`;
   }).join("");
   $("supBldgList").querySelectorAll("[data-b]").forEach(el=>el.onclick=()=>{
@@ -6866,25 +6956,152 @@ function renderSupplyBuildingsList(){
   });
   updateSupBldgSelBar();
 }
+/* المجموع الرئيسي = متاح + محجوب معاً دائماً — "المحجوب لازم يُحسب"؛ التفصيل نصّ توضيحي
+   ثابت الظهور تحته (لا صف مخفي بشرط)، حتى لا يختفي أي رقم بصمت */
 function updateSupBldgSelBar(){
   const sel=supBldgRows.filter(r=>supBldgSelected.has(r.building));
   const bar=$("supBldgSelBar");
   if(!sel.length){ bar.style.display="none"; return; }
   bar.style.display="flex";
-  const units=sel.reduce((s,r)=>s+r.avail,0);
-  const value=sel.reduce((s,r)=>s+r.value,0);
+  const availUnits=sel.reduce((s,r)=>s+r.avail,0);
+  const availValue=sel.reduce((s,r)=>s+r.value,0);
   const blockedUnits=sel.reduce((s,r)=>s+r.blocked,0);
   const blockedValue=sel.reduce((s,r)=>s+r.blockedValue,0);
+  const totalUnits=availUnits+blockedUnits, totalValue=availValue+blockedValue;
   $("supBldgSelCount").textContent=fmt(sel.length);
-  $("supBldgSelUnits").textContent=fmt(units);
-  $("supBldgSelValue").textContent=`${fmt(Math.round(value))} ريال`;
-  $("supBldgSelBlockedRow").style.display = blockedUnits>0 ? "block" : "none";
-  if(blockedUnits>0){
-    $("supBldgSelBlockedUnits").textContent=fmt(blockedUnits);
-    $("supBldgSelBlockedValue").textContent=`${fmt(Math.round(blockedValue))} ريال`;
-  }
+  $("supBldgSelUnits").textContent=fmt(totalUnits);
+  $("supBldgSelValue").textContent=`${fmt(Math.round(totalValue))} ريال`;
+  $("supBldgSelBreakdown").textContent = blockedUnits>0
+    ? `متاح ${fmt(availUnits)} وحدة (${fmt(Math.round(availValue))} ريال) + محجوب ${fmt(blockedUnits)} وحدة تقديرية (${fmt(Math.round(blockedValue))} ريال) — يحتاج إفراجاً قبل البيع`
+    : `كل الوحدات المختارة متاحة الآن`;
 }
 $("supplyBuildingsScrim").onclick=()=>closeSheet("supplyBuildingsSheet");
+
+/* ---------- Batches: تجميع مبانٍ مختارة (من مشروع أو أكثر) تحت اسم وملاحظات لتنظيم
+   صفقات البيع للمستثمرين — يُخزَّن على القاعدة (supply_batches/supply_batch_buildings)،
+   لقطة أرقام وقت الإضافة (لا تتغيّر بصمت لاحقاً مع تحديثات المخزون) ---------- */
+let BATCHES=[], BATCH_BUILDINGS_CACHE={}, batchListExpanded=null;
+async function loadBatches(){
+  try{ BATCHES = await sbSelect("supply_batches",{select:"*",order:"updated_at.desc"}); }
+  catch(e){ BATCHES=[]; }
+}
+$("supBldgSaveBatchBtn").onclick=async ()=>{
+  const sel=supBldgRows.filter(r=>supBldgSelected.has(r.building));
+  if(!sel.length) return;
+  const p=DATA.find(x=>x.id===supBldgProjectId);
+  const availU=sel.reduce((s,r)=>s+r.avail,0), blockedU=sel.reduce((s,r)=>s+r.blocked,0);
+  $("batchPickSummary").textContent = `${fmt(sel.length)} مبنى من "${p?p.short||p.name:""}" — ${fmt(availU)} وحدة متاحة + ${fmt(blockedU)} محجوبة`;
+  $("batchNewForm").style.display="none"; $("batchNewName").value=""; $("batchNewNotes").value="";
+  $("batchPickMsg").textContent="";
+  await loadBatches();
+  renderBatchPickList();
+  openSheet("batchPickSheet");
+};
+function renderBatchPickList(){
+  $("batchPickList").innerHTML = BATCHES.length ? BATCHES.map(b=>`
+    <div class="supProjRow" data-batch="${b.id}">
+      <div><div class="spName">${b.name}</div>${b.notes?`<div class="spMeta">${b.notes}</div>`:""}</div>
+    </div>`).join("") : `<div class="src" style="padding:8px 2px">لا توجد batches محفوظة بعد</div>`;
+  $("batchPickList").querySelectorAll("[data-batch]").forEach(el=>el.onclick=()=>addSelectionToBatch(+el.dataset.batch));
+}
+$("batchNewToggle").onclick=()=>{ $("batchNewForm").style.display = $("batchNewForm").style.display==="none"?"block":"none"; };
+$("batchNewSave").onclick=async ()=>{
+  const name=$("batchNewName").value.trim();
+  if(!name){ $("batchPickMsg").textContent="اكتب اسم الـBatch"; return; }
+  $("batchNewSave").disabled=true; $("batchPickMsg").textContent="جارٍ الإنشاء…";
+  let r;
+  try{ r=await adminCall("supply_batch_upsert",{p_id:null, p_name:name, p_notes:$("batchNewNotes").value.trim()||null}); }
+  catch(e){ r=null; }
+  $("batchNewSave").disabled=false;
+  if(!r||!r.ok){ $("batchPickMsg").textContent=(r&&r.msg)||"تعذّر الإنشاء"; return; }
+  await addSelectionToBatch(r.id);
+};
+async function addSelectionToBatch(batchId){
+  const sel=supBldgRows.filter(r=>supBldgSelected.has(r.building));
+  const p=DATA.find(x=>x.id===supBldgProjectId);
+  $("batchPickMsg").textContent="جارٍ الحفظ…";
+  let failed=0;
+  for(const r of sel){
+    try{
+      const res=await adminCall("supply_batch_add_building",{
+        p_batch_id:batchId, p_project_id:supBldgProjectId, p_project_name:(p?p.short||p.name:null),
+        p_building_number:r.building, p_avail_count:r.avail, p_avail_value:r.value,
+        p_blocked_count:r.blocked, p_blocked_value:r.blockedValue,
+      });
+      if(!res||!res.ok) failed++;
+    }catch(e){ failed++; }
+  }
+  if(failed){ $("batchPickMsg").textContent=`فشل حفظ ${failed} من ${sel.length} مبنى`; return; }
+  toast("تم حفظ التحديد بالـBatch","ok");
+  closeSheet("batchPickSheet");
+  supBldgSelected=new Set(); renderSupplyBuildingsList();
+}
+$("batchPickScrim").onclick=()=>closeSheet("batchPickSheet");
+
+$("supBatchesBtn").onclick=async ()=>{
+  batchListExpanded=null;
+  $("batchListBody").innerHTML=`<div class="src">جارٍ التحميل…</div>`;
+  openSheet("batchListSheet");
+  await loadBatches();
+  renderBatchListBody();
+};
+async function renderBatchListBody(){
+  if(!BATCHES.length){ $("batchListBody").innerHTML=`<div class="src" style="padding:20px 2px;text-align:center">لا توجد batches محفوظة بعد — اختر مبانٍ من أي مشروع وابدأ batch جديدة</div>`; return; }
+  const rowsHtml=await Promise.all(BATCHES.map(async b=>{
+    const expanded = batchListExpanded===b.id;
+    let bldgsHtml="";
+    if(expanded){
+      if(!BATCH_BUILDINGS_CACHE[b.id]){
+        try{ BATCH_BUILDINGS_CACHE[b.id]=await sbSelect("supply_batch_buildings",{select:"*",batch_id:`eq.${b.id}`,order:"added_at.desc"}); }
+        catch(e){ BATCH_BUILDINGS_CACHE[b.id]=[]; }
+      }
+      const bl=BATCH_BUILDINGS_CACHE[b.id];
+      const totAvail=bl.reduce((s,x)=>s+(x.avail_count||0),0), totAvailV=bl.reduce((s,x)=>s+Number(x.avail_value||0),0);
+      const totBlocked=bl.reduce((s,x)=>s+(x.blocked_count||0),0), totBlockedV=bl.reduce((s,x)=>s+Number(x.blocked_value||0),0);
+      bldgsHtml = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">
+        <div class="cresrow hi"><span class="cl">إجمالي متاح</span><span class="cv">${fmt(totAvail)} وحدة — ${fmt(Math.round(totAvailV))} ريال</span></div>
+        ${totBlocked?`<div class="cresrow"><span class="cl">إجمالي محجوب (لقطة وقت الإضافة)</span><span class="cv">${fmt(totBlocked)} وحدة — ${fmt(Math.round(totBlockedV))} ريال تقديري</span></div>`:""}
+        ${bl.map(x=>`<div class="supBldgRow" style="cursor:default">
+          <div class="sbInfo">
+            <div class="sbName">🏢 ${x.building_number} — ${x.project_name||""}</div>
+            <div class="sbMeta">متاح ${fmt(x.avail_count||0)} (${fmt(Math.round(x.avail_value||0))} ريال)${x.blocked_count?` · محجوب ${fmt(x.blocked_count)} (${fmt(Math.round(x.blocked_value||0))} ريال تقديري)`:""}</div>
+          </div>
+          <button type="button" class="tbtn" data-rmbldg="${x.id}" data-batch="${b.id}">🗑️</button>
+        </div>`).join("")}
+        <button type="button" class="btn ghost" style="width:100%;margin-top:8px;color:var(--rust)" data-delbatch="${b.id}">حذف الـBatch كاملاً</button>
+      </div>`;
+    }
+    return `<div class="supProjRow" style="display:block;cursor:default">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" data-expand="${b.id}">
+        <div><div class="spName">${b.name}</div>${b.notes?`<div class="spMeta">${b.notes}</div>`:""}<div class="spMeta">آخر تحديث: ${new Date(b.updated_at).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long",year:"numeric"})}</div></div>
+        <div class="src">${expanded?"▲":"▼"}</div>
+      </div>
+      ${bldgsHtml}
+    </div>`;
+  }));
+  $("batchListBody").innerHTML = rowsHtml.join("");
+  $("batchListBody").querySelectorAll("[data-expand]").forEach(el=>el.onclick=async ()=>{
+    const id=+el.dataset.expand;
+    batchListExpanded = batchListExpanded===id ? null : id;
+    await renderBatchListBody();
+  });
+  $("batchListBody").querySelectorAll("[data-rmbldg]").forEach(el=>el.onclick=async (e)=>{
+    e.stopPropagation();
+    if(!confirm("إزالة هذا المبنى من الـBatch؟")) return;
+    try{ await adminCall("supply_batch_remove_building",{p_row_id:+el.dataset.rmbldg}); }catch(e2){}
+    delete BATCH_BUILDINGS_CACHE[+el.dataset.batch];
+    await renderBatchListBody();
+  });
+  $("batchListBody").querySelectorAll("[data-delbatch]").forEach(el=>el.onclick=async (e)=>{
+    e.stopPropagation();
+    if(!confirm("حذف الـBatch كاملاً مع كل مبانيه؟ لا يمكن التراجع.")) return;
+    try{ await adminCall("supply_batch_delete",{p_batch_id:+el.dataset.delbatch}); }catch(e2){}
+    batchListExpanded=null;
+    await loadBatches();
+    await renderBatchListBody();
+  });
+}
+$("batchListScrim").onclick=()=>closeSheet("batchListSheet");
 
 async function loadAdminUsers(){
   if(!window.__isAdmin) return;
