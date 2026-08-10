@@ -880,6 +880,23 @@ main{flex:1;min-height:0;position:relative}
 .pill.doc{background:var(--gold-soft);color:var(--gold-text3);font-weight:500}
 .pill.sale{background:var(--bg);color:var(--muted);font-weight:500;border:1px solid var(--line)}
 .pill.blk{background:var(--rust-soft);color:var(--rust);font-weight:500}
+#supBldgSelBar{display:none;flex-shrink:0;padding:11px 18px calc(11px + var(--sab));border-top:1px solid var(--line);background:var(--surface);align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+#supBldgSelBar .tot{font-family:"Noto Kufi Arabic";font-size:16px;font-weight:600;color:var(--green)}
+.supBldgRow{display:flex;align-items:center;gap:10px;padding:10px 8px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer}
+.supBldgRow.on{background:var(--green-soft);border-color:var(--green-soft-border)}
+.supBldgRow .sbTick{width:20px;height:20px;border-radius:6px;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px}
+.supBldgRow.on .sbTick{background:var(--green);border-color:var(--green);color:#fff}
+.supBldgRow .sbInfo{flex:1;min-width:0}
+.supBldgRow .sbName{font-weight:600;font-size:13.5px}
+.supBldgRow .sbMeta{font-size:11.5px;color:var(--muted);margin-top:2px}
+.supProjRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer}
+.supProjRow:hover{border-color:var(--green)}
+.supProjRow .spName{font-weight:600;font-size:13.5px}
+.supProjRow .spMeta{font-size:11.5px;color:var(--muted);margin-top:2px}
+.supProjRow .spNums{display:flex;gap:8px;flex-shrink:0}
+.supProjRow .spNum{text-align:center;min-width:44px}
+.supProjRow .spNum b{display:block;font-family:"Noto Kufi Arabic";font-size:14px}
+.supProjRow .spNum span{font-size:10px;color:var(--muted)}
 .pill.loc{background:var(--loc-bg);color:var(--loc-text);font-weight:500}
 .crow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);gap:8px}
 .crow .units b{font-size:17px;font-family:"Noto Kufi Arabic"}
@@ -1659,6 +1676,10 @@ table.prods tr:last-child td{border:none}
           <div class="hticon">🏗️</div>
           <div class="httxt"><b>إدارة المطورين</b><span>تقييم المطورين وسجل التحديات</span></div>
         </button>
+        <button type="button" class="htile" id="hTileSupply">
+          <div class="hticon">📦</div>
+          <div class="httxt"><b>توزيع المعروض لغير المستفيدين والمستثمرين</b><span>متاح ومحجوب لكل مشروع، وتفصيل حسب المبنى لبناء الصفقات</span></div>
+        </button>
       </div>
     </div>
   </div>
@@ -2054,12 +2075,69 @@ table.prods tr:last-child td{border:none}
       </div>
     </div>
   </div>
+  <div class="view" id="supplyView">
+    <div id="supplyScroll">
+      <div class="cintro" style="margin-bottom:10px">
+        <b>توزيع المعروض لغير المستفيدين والمستثمرين</b>
+        <span>عدد الوحدات المتاحة للبيع والمحجوبة (غير المتاحة) لكل مشروع بسعر غير المستفيدين — افتح مشروعاً لعرض تفصيل المبانٍ وبناء صفقة</span>
+      </div>
+      <div class="cform">
+        <div class="flabel">المدينة</div>
+        <select id="supCitySel" class="dateInp" style="width:100%;text-align:start"><option value="">كل المدن</option></select>
+        <div class="flabel" style="margin-top:9px">الوجهة</div>
+        <select id="supDestSel" class="dateInp" style="width:100%;text-align:start"><option value="">كل الوجهات</option></select>
+        <div class="flabel" style="margin-top:9px">المنتج</div>
+        <div class="chips" id="supTypeChips">
+          <button type="button" class="chip on" data-type="">الكل</button>
+          <button type="button" class="chip" data-type="فيلا">فيلا</button>
+          <button type="button" class="chip" data-type="شقة">شقة</button>
+          <button type="button" class="chip" data-type="تاون هاوس">تاون هاوس</button>
+        </div>
+        <div class="flabel" style="margin-top:9px">جهة التطوير</div>
+        <div class="chips" id="supDevKindChips">
+          <button type="button" class="chip on" data-dk="">كلاهما</button>
+          <button type="button" class="chip" data-dk="nhc">مشاريع NHC</button>
+          <button type="button" class="chip" data-dk="other">مشاريع المطورين</button>
+        </div>
+      </div>
+      <div class="stats4" id="supTopStats" style="margin-top:14px">
+        <div class="stat"><b id="supTotal">—</b><span>إجمالي الوحدات (متاح + محجوب)</span></div>
+        <div class="stat"><b id="supAvail">—</b><span>متاح للبيع</span></div>
+        <div class="stat"><b id="supBlocked">—</b><span>محجوب</span></div>
+      </div>
+      <div id="supplyStatus" class="src" style="margin-top:10px"></div>
+      <div id="supplyProjList" style="margin-top:10px"></div>
+    </div>
+  </div>
   <!-- Developer detail sheet -->
   <div class="scrim" id="devDetailScrim"></div>
   <div class="sheet" id="devDetailSheet">
     <div class="handle" data-drag="devDetailSheet"></div>
     <div class="sheetbody">
       <div id="devDetailBody"></div>
+    </div>
+  </div>
+  <!-- Supply-per-building drill-down + deal builder -->
+  <div class="scrim" id="supplyBuildingsScrim"></div>
+  <div class="sheet" id="supplyBuildingsSheet">
+    <div class="handle" data-drag="supplyBuildingsSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 4px" id="supBldgProjName"></h2>
+      <div class="src" id="supBldgProjMeta" style="margin-bottom:10px"></div>
+      <div class="chips" id="supBldgTypeChips" style="margin-bottom:9px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+        <div class="flabel" style="margin:0">ترتيب حسب متوسط سعر الوحدة</div>
+        <div class="chips" id="supBldgSortChips">
+          <button type="button" class="chip on" data-sort="asc">من الأقل ↑</button>
+          <button type="button" class="chip" data-sort="desc">من الأعلى ↓</button>
+        </div>
+      </div>
+      <div id="supBldgStatus" class="src"></div>
+      <div id="supBldgList"></div>
+    </div>
+    <div id="supBldgSelBar" style="display:none">
+      <div><b id="supBldgSelCount">0</b> مبنى مُختار — <b id="supBldgSelUnits">0</b> وحدة</div>
+      <div class="tot" id="supBldgSelValue">0 ريال</div>
     </div>
   </div>
   <!-- Challenge add/edit sheet -->
@@ -2687,8 +2765,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 "use strict";
 let DATA = [], PREFS = null, PERF = null, SUPP = null, FN = null, GAL = null, BLDG = null, ALLOC = null, MODELS = null, BOOK = null, PRODSTAT = null, SALESDAILY = null, FUNNEL = null, BANKS = [];
 let MODELSTAT = {}, SEGSTAT = {}, ISTISNASTAT = {}, BLOCKEDSTAT = {}; // إحصاءات حيّة من project_model_stats/project_segment_stats/project_istisna_stats/project_blocked_stats — تُحدَّث حصراً بالتحديث اليومي، لا جزء من الحزمة المشفَّرة
-const PERM_ALL = {dest:true,search:true,deal:true,cmp:true,calc:true,sales:true,devmgmt:true};
-const PERM_LABELS = {dest:"الوجهات",search:"البحث والتصفية",deal:"الصفقات",cmp:"المقارنة",calc:"الحاسبات",sales:"مبيعاتنا",devmgmt:"إدارة المطورين"};
+const PERM_ALL = {dest:true,search:true,deal:true,cmp:true,calc:true,sales:true,devmgmt:true,supply:true};
+const PERM_LABELS = {dest:"الوجهات",search:"البحث والتصفية",deal:"الصفقات",cmp:"المقارنة",calc:"الحاسبات",sales:"مبيعاتنا",devmgmt:"إدارة المطورين",supply:"توزيع المعروض"};
 let PERMS = Object.assign({}, PERM_ALL);
 let SERVER_ONBOARDED = null; /* null = unknown (older DB without the migration, or fetch failed) */
 
@@ -3001,7 +3079,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim",supplyBuildingsSheet:"supplyBuildingsScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -3010,7 +3088,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet","supplyBuildingsSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -3694,31 +3772,32 @@ function setView(v){
   if(!window.__isAdmin){
     const denied = (v==="dest"&&!PERMS.dest) || (v==="sales"&&!PERMS.sales) ||
                    (v==="calc"&&!PERMS.calc) || (v==="admin") ||
-                   (v==="devmgmt"&&!PERMS.devmgmt) ||
+                   (v==="devmgmt"&&!PERMS.devmgmt) || (v==="supply"&&!PERMS.supply) ||
                    ((v==="list"||v==="map"||v==="pref")&&!(PERMS.search||PERMS.cmp));
     if(denied){ toast("لا تملك صلاحية الوصول لهذا القسم","err"); v="home"; }
   }
   const prevView=S.view;
   S.view=v;
-  for(const [id,name] of [["homeView","home"],["destView","dest"],["listView","list"],["mapView","map"],["prefView","pref"],["adminView","admin"],["calcView","calc"],["salesView","sales"],["devMgmtView","devmgmt"]])
+  for(const [id,name] of [["homeView","home"],["destView","dest"],["listView","list"],["mapView","map"],["prefView","pref"],["adminView","admin"],["calcView","calc"],["salesView","sales"],["devMgmtView","devmgmt"],["supplyView","supply"]])
     $(id).classList.toggle("on",v===name);
   for(const [id,name] of [["nvList","list"],["nvMap","map"],["nvPref","pref"],["nvCalc","calc"],
                           ["dvList","list"],["dvMap","map"],["dvPref","pref"],["dvCalc","calc"]])
     $(id).classList.toggle("on",v===name);
   $("adminBtn").classList.toggle("on",v==="admin");
   /* search+filter apply to inventory, not contracts/users/calculator/home/destinations/sales */
-  const away = v==="pref" || v==="admin" || v==="calc" || v==="home" || v==="dest" || v==="sales" || v==="devmgmt";
+  const away = v==="pref" || v==="admin" || v==="calc" || v==="home" || v==="dest" || v==="sales" || v==="devmgmt" || v==="supply";
   $("invControls").style.display = away ? "none" : "contents";
   $("toolbar").style.display = (away && window.innerWidth<900) ? "none" : "flex";
   $("resline").style.display = away ? "none" : "flex";
   $("kpisWrap").style.display = away ? "none" : "flex";
-  const hideSeg = v==="home" || v==="dest" || v==="sales" || v==="admin" || v==="devmgmt";
+  const hideSeg = v==="home" || v==="dest" || v==="sales" || v==="admin" || v==="devmgmt" || v==="supply";
   $("segWrap").style.display = hideSeg ? "none" : "flex";
   if(v==="map"){ if(!map){ initMap(); } setTimeout(()=>map.invalidateSize(),80); }
   if(v==="admin") loadAdminUsers();
   if(v==="dest") renderDestinations();
   if(v==="sales") renderSales();
   if(v==="devmgmt" && typeof renderDevMgmt==="function") renderDevMgmt();
+  if(v==="supply" && typeof renderSupplyOverview==="function") renderSupplyOverview();
   if(v==="calc" && typeof renderSupportsPanel==="function") renderSupportsPanel();
   if(!__suppressNavPush && !__bootingNav && v!==prevView){
     try{ history.pushState({navView:v}, "", "#"+v); }catch(e){}
@@ -3760,6 +3839,7 @@ $("hTileCmp").onclick=()=>{
 };
 $("hTileSales").onclick=()=>setView("sales");
 $("hTileDevMgmt").onclick=()=>setView("devmgmt");
+$("hTileSupply").onclick=()=>setView("supply");
 $("hTileAfford").onclick=()=>openAffordSheet();
 
 const _now=new Date();
@@ -5407,6 +5487,7 @@ async function processSyncFile(){
          المختارة من المنتقي بدعمها الفعلي الدقيق بدل متوسط النوع فقط */
       unit_code: (unitCodeKey && row[unitCodeKey]!=null) ? String(row[unitCodeKey]).trim() : null,
       model: modelVal||null,
+      building_number: row.building_number!=null ? String(row.building_number).trim() : null,
     });
   }
 
@@ -5742,6 +5823,7 @@ async function processBlockedFile(){
       unit_type:utype, beds, price:priceNum, moh_price:mohNum,
       unit_code:(unitCodeKeyB && row[unitCodeKeyB]!=null) ? String(row[unitCodeKeyB]).trim() : null,
       model:modelVal||null, snapshot_date:todayISO,
+      building_number: row.building_number!=null ? String(row.building_number).trim() : null,
     });
   }
 
@@ -6526,6 +6608,160 @@ async function submitChallengeResolve(){
   await loadChallenges(); renderChallenges();
 }
 $("chResolveSave").onclick=submitChallengeResolve;
+
+/* ---------- توزيع المعروض لغير المستفيدين والمستثمرين ----------
+   عدد الوحدات المتاح للبيع (unit_allocation_mirror، status='avail') والمحجوب
+   (unit_blocked_mirror) لكل مشروع، عبر RPC تجميعي يُحتسَب حياً بالقاعدة (get_supply_overview) —
+   بلا جداول تجميع إضافية، دقيق دائماً بلا مخاطرة تقادم. تصفية النوع (منتج) تُطبَّق بالـSQL
+   نفسه (تُعاد جلبها فقط عند تغييره)؛ المدينة/الوجهة/جهة التطوير صفات مشروع من DATA، تُطبَّق
+   بالعميل بلا إعادة جلب. عند فتح مشروع: get_supply_buildings يُعيد تفصيل كل مبنى (من عمود
+   building_number بالملفين معاً) — هنا فقط، لأنه المستوى الذي يحتاج بيانات خام مفصَّلة. */
+let SUPPLY_CACHE={}, supCity="", supDest="", supType="", supDevKind="";
+let supBldgProjectId=null, supBldgType="", supBldgSort="asc", supBldgRows=[], supBldgSelected=new Set();
+function populateSupplyFilters(){
+  const cs=$("supCitySel");
+  if(cs.options.length<=1){
+    const cities=[...new Set(DATA.map(p=>p.city))].sort((a,b)=>a.localeCompare(b,"ar"));
+    cs.innerHTML=`<option value="">كل المدن</option>`+cities.map(c=>`<option>${c}</option>`).join("");
+    cs.onchange=()=>{ supCity=cs.value; supDest=""; populateSupplyDestOptions(); renderSupplyOverview(); };
+  }
+  populateSupplyDestOptions();
+}
+function populateSupplyDestOptions(){
+  const ds=$("supDestSel");
+  const pool=DATA.filter(p=>(!supCity||p.city===supCity)&&p.dest);
+  const dests=[...new Set(pool.map(p=>p.dest))].sort((a,b)=>a.localeCompare(b,"ar"));
+  if(supDest && !dests.includes(supDest)) supDest="";
+  ds.innerHTML=`<option value="">كل الوجهات</option>`+dests.map(d=>`<option${d===supDest?" selected":""}>${d}</option>`).join("");
+  ds.onchange=()=>{ supDest=ds.value; renderSupplyOverview(); };
+}
+document.querySelectorAll("#supTypeChips .chip").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#supTypeChips .chip").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); supType=b.dataset.type||""; renderSupplyOverview();
+});
+document.querySelectorAll("#supDevKindChips .chip").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#supDevKindChips .chip").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); supDevKind=b.dataset.dk||""; renderSupplyOverview();
+});
+async function renderSupplyOverview(){
+  populateSupplyFilters();
+  const cacheKey=supType||"__all__";
+  if(!SUPPLY_CACHE[cacheKey]){
+    $("supplyStatus").textContent="جارٍ التحميل من القاعدة…";
+    try{
+      const rows=await sbCall("get_supply_overview",{p_unit_type:supType||null});
+      const map={};
+      (rows||[]).forEach(r=>{ map[r.project_id]={avail:r.avail_count||0, blocked:r.blocked_count||0}; });
+      SUPPLY_CACHE[cacheKey]=map;
+    }catch(e){
+      $("supplyStatus").innerHTML=`<div class="cerr">تعذّر تحميل بيانات المعروض: ${e.message||e} — تأكّد من تشغيل supply_overview.sql على القاعدة</div>`;
+      return;
+    }
+  }
+  $("supplyStatus").textContent="";
+  const data=SUPPLY_CACHE[cacheKey];
+  const rows=DATA.filter(p=>{
+    if(supCity && p.city!==supCity) return false;
+    if(supDest && p.dest!==supDest) return false;
+    if(supDevKind==="nhc" && p.dev.trim()!=="NHC") return false;
+    if(supDevKind==="other" && p.dev.trim()==="NHC") return false;
+    const d=data[p.id];
+    return d && (d.avail>0 || d.blocked>0);
+  }).map(p=>({p, avail:data[p.id].avail, blocked:data[p.id].blocked}))
+    .sort((a,b)=>(b.avail+b.blocked)-(a.avail+a.blocked));
+
+  const totAvail=rows.reduce((s,r)=>s+r.avail,0), totBlocked=rows.reduce((s,r)=>s+r.blocked,0);
+  $("supTotal").textContent=fmt(totAvail+totBlocked);
+  $("supAvail").textContent=fmt(totAvail);
+  $("supBlocked").textContent=fmt(totBlocked);
+
+  $("supplyProjList").innerHTML = rows.length ? rows.map(r=>`
+    <div class="supProjRow" data-pid="${r.p.id}">
+      <div><div class="spName">${r.p.short||r.p.name}</div><div class="spMeta">${r.p.city}${r.p.dest?" · "+r.p.dest:""} · ${r.p.dev}</div></div>
+      <div class="spNums">
+        <div class="spNum"><b>${fmt(r.avail)}</b><span>متاح</span></div>
+        <div class="spNum"><b style="color:var(--rust)">${fmt(r.blocked)}</b><span>محجوب</span></div>
+        <div class="spNum"><b>${fmt(r.avail+r.blocked)}</b><span>الكلي</span></div>
+      </div>
+    </div>`).join("") : `<div class="src" style="padding:20px 2px;text-align:center">لا توجد مشاريع مطابقة للفلاتر الحالية</div>`;
+  $("supplyProjList").querySelectorAll("[data-pid]").forEach(el=>el.onclick=()=>openSupplyBuildings(+el.dataset.pid));
+}
+async function openSupplyBuildings(projectId){
+  const p=DATA.find(x=>x.id===projectId); if(!p) return;
+  supBldgProjectId=projectId; supBldgType=""; supBldgSort="asc"; supBldgSelected=new Set(); supBldgRows=[];
+  $("supBldgProjName").textContent=p.short||p.name;
+  $("supBldgProjMeta").textContent=`${p.city}${p.dest?" · "+p.dest:""} · ${p.dev}`;
+  $("supBldgTypeChips").innerHTML=`<button type="button" class="chip on" data-type="">كل الأنواع</button>`+
+    TYPES.map(t=>`<button type="button" class="chip" data-type="${t}">${t}</button>`).join("");
+  $("supBldgTypeChips").querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{
+    $("supBldgTypeChips").querySelectorAll(".chip").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); supBldgType=b.dataset.type||""; loadSupplyBuildings();
+  });
+  document.querySelectorAll("#supBldgSortChips .chip").forEach(b=>{
+    b.classList.toggle("on", b.dataset.sort===supBldgSort);
+    b.onclick=()=>{
+      document.querySelectorAll("#supBldgSortChips .chip").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on"); supBldgSort=b.dataset.sort; renderSupplyBuildingsList();
+    };
+  });
+  openSheet("supplyBuildingsSheet");
+  await loadSupplyBuildings();
+}
+async function loadSupplyBuildings(){
+  $("supBldgStatus").textContent="جارٍ التحميل…";
+  $("supBldgList").innerHTML="";
+  try{
+    const rows=await sbCall("get_supply_buildings",{p_project_id:supBldgProjectId, p_unit_type:supBldgType||null});
+    supBldgRows=(rows||[]).map(r=>({
+      building: r.building_number || "بلا رقم مبنى",
+      avail: r.avail_count||0, value: r.avail_value||0, blocked: r.blocked_count||0,
+    }));
+  }catch(e){
+    $("supBldgStatus").innerHTML=`<div class="cerr">تعذّر تحميل تفصيل المبانٍ: ${e.message||e}</div>`;
+    return;
+  }
+  supBldgSelected=new Set();
+  $("supBldgStatus").textContent = supBldgRows.length ? "" : "لا توجد بيانات مبانٍ لهذا المشروع/النوع — تأكد من تعبئة عمود building_number بالملف المصدر";
+  renderSupplyBuildingsList();
+}
+function renderSupplyBuildingsList(){
+  const rows=[...supBldgRows].sort((a,b)=>{
+    const avgA = a.avail ? a.value/a.avail : (supBldgSort==="asc"?Infinity:-Infinity);
+    const avgB = b.avail ? b.value/b.avail : (supBldgSort==="asc"?Infinity:-Infinity);
+    return supBldgSort==="asc" ? avgA-avgB : avgB-avgA;
+  });
+  $("supBldgList").innerHTML = rows.map(r=>{
+    const avg = r.avail ? Math.round(r.value/r.avail) : null;
+    const on = supBldgSelected.has(r.building);
+    return `<div class="supBldgRow${on?" on":""}" data-b="${encodeURIComponent(r.building)}">
+      <div class="sbTick">${on?"✓":""}</div>
+      <div class="sbInfo">
+        <div class="sbName">🏢 ${r.building}</div>
+        <div class="sbMeta">متاح ${fmt(r.avail)}${avg?` · متوسط السعر ${fmt(avg)} ريال`:""}${r.blocked?` · محجوب ${fmt(r.blocked)}`:""}</div>
+      </div>
+      <div style="text-align:end;flex-shrink:0"><b style="font-family:'Noto Kufi Arabic'">${r.avail?compact(r.value):"—"}</b></div>
+    </div>`;
+  }).join("");
+  $("supBldgList").querySelectorAll("[data-b]").forEach(el=>el.onclick=()=>{
+    const b=decodeURIComponent(el.dataset.b);
+    if(supBldgSelected.has(b)) supBldgSelected.delete(b); else supBldgSelected.add(b);
+    renderSupplyBuildingsList();
+    updateSupBldgSelBar();
+  });
+  updateSupBldgSelBar();
+}
+function updateSupBldgSelBar(){
+  const sel=supBldgRows.filter(r=>supBldgSelected.has(r.building));
+  const bar=$("supBldgSelBar");
+  if(!sel.length){ bar.style.display="none"; return; }
+  bar.style.display="flex";
+  const units=sel.reduce((s,r)=>s+r.avail,0);
+  const value=sel.reduce((s,r)=>s+r.value,0);
+  $("supBldgSelCount").textContent=fmt(sel.length);
+  $("supBldgSelUnits").textContent=fmt(units);
+  $("supBldgSelValue").textContent=`${fmt(Math.round(value))} ريال`;
+}
+$("supplyBuildingsScrim").onclick=()=>closeSheet("supplyBuildingsSheet");
 
 async function loadAdminUsers(){
   if(!window.__isAdmin) return;
@@ -7575,7 +7811,7 @@ function runNCalc(){
 $("nCalc").onclick=runNCalc;
 
 function applyPermissions(){
-  const tiles={hTileDest:"dest",hTileDeal:"deal",hTileSearch:"search",hTileCmp:"cmp",hTileSales:"sales",hTileAfford:"calc",hTileDevMgmt:"devmgmt"};
+  const tiles={hTileDest:"dest",hTileDeal:"deal",hTileSearch:"search",hTileCmp:"cmp",hTileSales:"sales",hTileAfford:"calc",hTileDevMgmt:"devmgmt",hTileSupply:"supply"};
   for(const [id,key] of Object.entries(tiles)){
     const el=$(id); if(el) el.style.display = PERMS[key] ? "" : "none";
   }
