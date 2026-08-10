@@ -46,9 +46,12 @@ create table if not exists dev_eval_scores (
   score_pct numeric not null default 0,
   notes text,
   entered_by text,
-  entered_at timestamptz not null default now(),
-  unique (scope, coalesce(project_id,-1), developer_name, period_type, period_value, criterion_id)
+  entered_at timestamptz not null default now()
 );
+-- UNIQUE (...) عادية لا تقبل تعبيراً كـ coalesce() كأحد أعمدتها — استخدام فهرس فريد
+-- على التعبير بدل قيد UNIQUE هو الصيغة الصحيحة، وON CONFLICT بالدالة أدناه يطابقه تماماً
+create unique index if not exists dev_eval_scores_uk on dev_eval_scores
+  (scope, coalesce(project_id,-1), developer_name, period_type, period_value, criterion_id);
 create index if not exists dev_eval_scores_lookup_idx on dev_eval_scores(scope, developer_name, period_type, period_value);
 create index if not exists dev_eval_scores_project_idx on dev_eval_scores(project_id);
 
