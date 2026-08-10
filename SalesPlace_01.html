@@ -5409,6 +5409,11 @@ async function processSyncFile(){
     return null;
   }
   const unitCodeKey = resolveHeaderKey(rows, ["unit_code","unitcode","unit id","unitid","uid"]);
+  /* عمود رقم المبنى (building_number) — بمطابقة مُطبَّعة أيضاً، نفس سبب unit_code أعلاه؛
+     ملاحظة: هذا العمود فارغ فعلياً لنسبة كبيرة من الصفوف بالملف المرجعي (خاص بمنتجات
+     الأبراج/الشقق أساساً، بخلاف الفلل/التاون هاوس التي غالباً تُعرَّف بـblock_number
+     بدلاً منه) — فراغه لبعض الصفوف طبيعي وليس عطلاً بالمطابقة */
+  const buildingNumKey = resolveHeaderKey(rows, ["building_number","buildingnumber","building no","building_no","buildingno"]);
 
   const statusAgg=new Map(); // key -> {project_id,unit_type,beds,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY
   const modelAgg=new Map(); // key `${pid}|${model}` -> {project_id,model,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY، من عمود model
@@ -5493,7 +5498,7 @@ async function processSyncFile(){
          المختارة من المنتقي بدعمها الفعلي الدقيق بدل متوسط النوع فقط */
       unit_code: (unitCodeKey && row[unitCodeKey]!=null) ? String(row[unitCodeKey]).trim() : null,
       model: modelVal||null,
-      building_number: row.building_number!=null ? String(row.building_number).trim() : null,
+      building_number: (buildingNumKey && row[buildingNumKey]!=null && row[buildingNumKey]!=="") ? String(row[buildingNumKey]).trim() : null,
     });
   }
 
@@ -5535,9 +5540,12 @@ async function processSyncFile(){
     <div class="cresrow"><span class="cl">وحدات ستُرسَل لمرآة التخصيص الكاملة</span><span class="cv">${fmt(mirrorRows.length)}</span></div>
     <div class="cresrow"><span class="cl">عمود رمز الوحدة (unit_code) بالملف</span><span class="cv">${unitCodeKey?`تم التعرّف عليه ("${unitCodeKey}")`:"لم يُعثر عليه بالملف"}</span></div>
     ${unitCodeKey?`<div class="cresrow"><span class="cl">وحدات معها رمز فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.unit_code).length)}</span></div>`:""}
+    <div class="cresrow"><span class="cl">عمود رقم المبنى (building_number) بالملف</span><span class="cv">${buildingNumKey?`تم التعرّف عليه ("${buildingNumKey}")`:"لم يُعثر عليه بالملف"}</span></div>
+    ${buildingNumKey?`<div class="cresrow"><span class="cl">وحدات معها رقم مبنى فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.building_number).length)}</span></div>`:""}
   </div>
   ${unitCodeKey && mirrorRows.length && mirrorRows.filter(r=>r.unit_code).length===0 ? `<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ عمود رمز الوحدة موجود بالملف لكن كل قيمه فارغة بهذه الرفعة — تحقق من الملف المصدر</div>` : ""}
   ${!unitCodeKey ? `<div class="cwarn">لا يحتوي هذا الملف على عمود يمكن التعرّف عليه كرمز وحدة (unit_code) — ستُرفع كل الوحدات بدون رمز، ولن تعمل ميزات البحث المباشر والدعم الدقيق لكل وحدة حتى يُضاف هذا العمود للملف المصدر</div>` : ""}
+  ${!buildingNumKey ? `<div class="cwarn">لا يحتوي هذا الملف على عمود رقم المبنى (building_number) — لن تعمل شاشة توزيع المعروض بتفصيل المبانٍ لهذا المشروع حتى يُضاف هذا العمود للملف المصدر</div>` : ""}
   ${unmatchedHtml}
   <button class="btn" id="syncUpload" style="width:100%;margin-top:12px">رفع التحديث إلى القاعدة</button>`;
   $("syncStart").disabled=false;
@@ -5791,6 +5799,7 @@ async function processBlockedFile(){
     return null;
   }
   const unitCodeKeyB = resolveHeaderKeyB(rows, ["unit_code","unitcode","unit id","unitid","uid"]);
+  const buildingNumKeyB = resolveHeaderKeyB(rows, ["building_number","buildingnumber","building no","building_no","buildingno"]);
 
   const mirrorRows=[]; // صف واحد لكل وحدة محجوبة صالحة — يُرفع كاملاً كمرآة خام
   const blockedAgg=new Map(); // project_id -> عدد — تجميع خفيف لعرض البطاقات/التفاصيل دون قراءة المرآة الكاملة
@@ -5829,7 +5838,7 @@ async function processBlockedFile(){
       unit_type:utype, beds, price:priceNum, moh_price:mohNum,
       unit_code:(unitCodeKeyB && row[unitCodeKeyB]!=null) ? String(row[unitCodeKeyB]).trim() : null,
       model:modelVal||null, snapshot_date:todayISO,
-      building_number: row.building_number!=null ? String(row.building_number).trim() : null,
+      building_number: (buildingNumKeyB && row[buildingNumKeyB]!=null && row[buildingNumKeyB]!=="") ? String(row[buildingNumKeyB]).trim() : null,
     });
   }
 
@@ -5853,6 +5862,8 @@ async function processBlockedFile(){
     <div class="cresrow"><span class="cl">صفوف مستبعدة (بلا اسم مشروع)</span><span class="cv">${fmt(skippedNoName)}</span></div>
     <div class="cresrow"><span class="cl">مشاريع ستُحدَّث بعدّاد الوحدات المحجوبة</span><span class="cv">${fmt(blockedStatsRows.length)}</span></div>
     <div class="cresrow"><span class="cl">عمود رمز الوحدة (unit_code)</span><span class="cv">${unitCodeKeyB?`تم التعرّف عليه ("${unitCodeKeyB}")`:"لم يُعثر عليه بالملف"}</span></div>
+    <div class="cresrow"><span class="cl">عمود رقم المبنى (building_number)</span><span class="cv">${buildingNumKeyB?`تم التعرّف عليه ("${buildingNumKeyB}")`:"لم يُعثر عليه بالملف"}</span></div>
+    ${buildingNumKeyB?`<div class="cresrow"><span class="cl">وحدات معها رقم مبنى فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.building_number).length)}</span></div>`:""}
   </div>
   ${!mirrorRows.length?`<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ لم يُعثر على أي صف بحالة "محجوب" بهذا الملف — تحقق أنك اخترت الملف الصحيح</div>`:""}
   ${unmatchedHtml}
