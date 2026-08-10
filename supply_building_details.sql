@@ -83,7 +83,10 @@ $function$;
 -- السابقة: full outer join على building_number مباشرة لا يطابق صفين NULL ببعضهما
 -- (NULL = NULL يُقيَّم NULL/غير صحيح بـSQL قياسياً) — فكانت وحدات بلا رقم مبنى من
 -- المتاح والمحجوب قد تظهر كصفَّين منفصلين بدل صف واحد مُجمَّع. الحل: تجميع كل مصدر على
--- حدة بجدول CTE، ثم دمج بمطابقة IS NOT DISTINCT FROM (تعامل NULL كقيمة مطابقة لذاتها) ----------
+-- حدة بجدول CTE، ثم دمج بمطابقة IS NOT DISTINCT FROM (تعامل NULL كقيمة مطابقة لذاتها).
+-- ملاحظة: PostgreSQL يرفض CREATE OR REPLACE إذا تغيّرت أعمدة RETURNS TABLE (هنا أُضيف
+-- avail_sqm_value وsold_count) — لازم DROP صريح أولاً قبل إعادة الإنشاء. ----------
+drop function if exists get_supply_buildings(integer, text);
 create or replace function get_supply_buildings(p_project_id integer, p_unit_type text default null)
 returns table(building_number text, avail_count bigint, avail_value numeric, avail_sqm_value numeric, blocked_count bigint, sold_count bigint)
 language sql
