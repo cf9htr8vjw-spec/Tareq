@@ -2000,6 +2000,10 @@ table.prods tr:last-child td{border:none}
         <button class="atab" data-dm="challenges">التحديات</button>
       </div>
       <div id="dmDevs">
+        <div class="cintro" style="margin-bottom:10px">
+          <b>معايير التقييم (النسبة النهائية لكل مشروع)</b>
+          <span>50% تحقيق المستهدف السنوي + 30% مكافأة بيع المشروع بالكامل ضمن الوقت المتوقَّع + حتى 10% حسب تنوّع جداول الدفعات المتاحة + حتى 10% حسب نشاط قنوات البيع (وسطاء، عدد موظفين مبيعات، مبيعات هاتفية، بيع مباشر) — نفس منهجية ملف تقرير إدارة المطورين الشهري. تفصيل كل بند يظهر أسفل كل مشروع بصفحة تفاصيل المطوّر</span>
+        </div>
         <input type="search" id="dmDevSearch" class="dateInp" style="width:100%;text-align:start;margin-bottom:10px" placeholder="ابحث باسم المطوّر…" autocomplete="off">
         <div id="dmDevList"></div>
       </div>
@@ -5708,12 +5712,18 @@ function openDevDetail(name){
   const brokerRow = rows.find(r=>r.broker_present==="نعم");
   const projectsHtml = rows.map(r=>{
     const pt=scoreTier(r.score_final_pct);
+    const parts=[];
+    if(r.score_target_pct!=null) parts.push(`تحقيق المستهدف ${Math.round(r.score_target_pct*100)}%`);
+    if(r.score_time_bonus_pct!=null) parts.push(`مكافأة الوقت ${Math.round(r.score_time_bonus_pct*100)}%`);
+    if(r.score_payment_plans_pct!=null) parts.push(`جداول الدفعات ${Math.round(r.score_payment_plans_pct*100)}%`);
+    if(r.score_channels_pct!=null) parts.push(`نشاط القنوات ${Math.round(r.score_channels_pct*100)}%`);
     return `<div class="ucard" style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div><div style="font-weight:700;font-size:12.5px">${r.project_name||"—"}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${r.reason_category&&r.reason_category!=="-"?r.reason_category:"لا يوجد سبب مسجَّل"}${r.monthly_rate!=null?` · تحقيق الشهر ${Math.round(r.monthly_rate*100)}%`:""}</div></div>
         <span class="dmScore tier-${pt}" style="font-size:11px">${r.score_final_pct!=null?Math.round(r.score_final_pct*100)+"%":"—"}</span>
       </div>
+      ${parts.length?`<div style="font-size:10.5px;color:var(--muted);margin-top:7px;padding-top:7px;border-top:1px dashed var(--line)">${parts.join(" · ")}</div>`:""}
     </div>`;
   }).join("");
   const devChallenges = DEVCHALLENGES.filter(c=>c.developer_name===name);
