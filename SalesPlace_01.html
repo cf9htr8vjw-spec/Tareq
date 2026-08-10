@@ -880,7 +880,7 @@ main{flex:1;min-height:0;position:relative}
 .pill.doc{background:var(--gold-soft);color:var(--gold-text3);font-weight:500}
 .pill.sale{background:var(--bg);color:var(--muted);font-weight:500;border:1px solid var(--line)}
 .pill.blk{background:var(--rust-soft);color:var(--rust);font-weight:500}
-#supBldgSelBar{display:none;flex-shrink:0;padding:11px 18px calc(11px + var(--sab));border-top:1px solid var(--line);background:var(--surface);align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+#supBldgSelBar{display:none;flex-shrink:0;padding:11px 18px calc(11px + var(--sab));border-top:1px solid var(--line);background:var(--surface);flex-direction:column;gap:2px;font-size:13px}
 #supBldgSelBar .tot{font-family:"Noto Kufi Arabic";font-size:16px;font-weight:600;color:var(--green)}
 .supBldgRow{display:flex;align-items:center;gap:10px;padding:10px 8px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer}
 .supBldgRow.on{background:var(--green-soft);border-color:var(--green-soft-border)}
@@ -2144,8 +2144,13 @@ table.prods tr:last-child td{border:none}
       <div id="supBldgList"></div>
     </div>
     <div id="supBldgSelBar" style="display:none">
-      <div><b id="supBldgSelCount">0</b> مبنى مُختار — <b id="supBldgSelUnits">0</b> وحدة</div>
-      <div class="tot" id="supBldgSelValue">0 ريال</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+        <div><b id="supBldgSelCount">0</b> مبنى مُختار — متاح <b id="supBldgSelUnits">0</b> وحدة</div>
+        <div class="tot" id="supBldgSelValue">0 ريال</div>
+      </div>
+      <div id="supBldgSelBlockedRow" style="display:none;width:100%;color:var(--rust);margin-top:4px">
+        + محجوب <b id="supBldgSelBlockedUnits">0</b> وحدة (تقديري <span id="supBldgSelBlockedValue">0 ريال</span>) — يحتاج إفراجاً قبل البيع
+      </div>
     </div>
   </div>
   <!-- Challenge add/edit sheet -->
@@ -6751,7 +6756,8 @@ async function loadSupplyBuildings(){
     supBldgRows=(rows||[]).map(r=>({
       building: r.building_number || "بلا رقم مبنى",
       avail: r.avail_count||0, value: r.avail_value||0, sqm: r.avail_sqm_value||null,
-      blocked: r.blocked_count||0, sold: r.sold_count||0,
+      blocked: r.blocked_count||0, blockedValue: r.blocked_value||0, blockedSqm: r.blocked_sqm_value||null,
+      sold: r.sold_count||0,
     }));
   }catch(e){
     $("supBldgStatus").innerHTML=`<div class="cerr">تعذّر تحميل تفصيل المبانٍ: ${e.message||e}</div>`;
@@ -6821,25 +6827,35 @@ function renderSupBldgAbsorb(){
   </div>`;
 }
 function renderSupplyBuildingsList(){
+  /* الترتيب حسب متوسط السعر الفعلي المتاح لهذا المبنى — المتاح إن وُجد، وإلا محجوب
+     (مبنى محجوب بالكامل ما له متوسط متاح أصلاً، لكن له سعر محجوب تقديري مفيد بالترتيب) */
   const rows=[...supBldgRows].sort((a,b)=>{
-    const avgA = a.avail ? a.value/a.avail : (supBldgSort==="asc"?Infinity:-Infinity);
-    const avgB = b.avail ? b.value/b.avail : (supBldgSort==="asc"?Infinity:-Infinity);
+    const avgOf=r=> r.avail ? r.value/r.avail : (r.blocked ? r.blockedValue/r.blocked : (supBldgSort==="asc"?Infinity:-Infinity));
+    const avgA=avgOf(a), avgB=avgOf(b);
     return supBldgSort==="asc" ? avgA-avgB : avgB-avgA;
   });
   $("supBldgList").innerHTML = rows.map(r=>{
     const avg = r.avail ? Math.round(r.value/r.avail) : null;
+    const blockedAvg = r.blocked ? Math.round(r.blockedValue/r.blocked) : null;
     const on = supBldgSelected.has(r.building);
+    /* شارة الحالة — لازم تميّز بين "لم يُبع شيء لأنه كله متاح" و"لم يُبع شيء لأنه كله محجوب
+       أصلاً" — الحالتان مختلفتان تماماً لقرار صفقة البيع (الأولى جاهزة الآن، الثانية تحتاج
+       إفراج أولاً) */
     const soldBadge = r.sold>0
       ? `<span class="pill" style="background:var(--gold-soft);color:var(--gold-text3)">🔶 بِيع منها ${fmt(r.sold)}</span>`
-      : `<span class="pill" style="background:var(--green-soft);color:var(--green)">✅ لم تُبع أي وحدة — صالحة للبيع الكامل</span>`;
+      : (r.avail>0
+        ? `<span class="pill" style="background:var(--green-soft);color:var(--green)">✅ لم تُبع أي وحدة — صالحة للبيع الكامل</span>`
+        : `<span class="pill" style="background:var(--rust-soft);color:var(--rust)">🔒 كل الوحدات محجوبة حالياً — تحتاج إفراجاً قبل البيع</span>`);
+    const rightVal = r.avail ? compact(r.value) : (r.blocked ? compact(r.blockedValue) : "—");
     return `<div class="supBldgRow${on?" on":""}" data-b="${encodeURIComponent(r.building)}">
       <div class="sbTick">${on?"✓":""}</div>
       <div class="sbInfo">
         <div class="sbName">🏢 ${r.building}</div>
-        <div class="sbMeta">متاح ${fmt(r.avail)}${avg?` · متوسط السعر ${fmt(avg)} ريال`:""}${r.sqm?` · ${fmt(Math.round(r.sqm))} ريال/م²`:""}${r.blocked?` · محجوب ${fmt(r.blocked)}`:""}</div>
+        <div class="sbMeta">متاح ${fmt(r.avail)}${avg?` · متوسط السعر ${fmt(avg)} ريال`:""}${r.sqm?` · ${fmt(Math.round(r.sqm))} ريال/م²`:""}</div>
+        ${r.blocked?`<div class="sbMeta" style="color:var(--rust)">محجوب ${fmt(r.blocked)}${blockedAvg?` · متوسط السعر التقديري ${fmt(blockedAvg)} ريال`:""}${r.blockedSqm?` · ${fmt(Math.round(r.blockedSqm))} ريال/م² تقديري`:""}</div>`:""}
         <div style="margin-top:5px">${soldBadge}</div>
       </div>
-      <div style="text-align:end;flex-shrink:0"><b style="font-family:'Noto Kufi Arabic'">${r.avail?compact(r.value):"—"}</b></div>
+      <div style="text-align:end;flex-shrink:0"><b style="font-family:'Noto Kufi Arabic'">${rightVal}</b></div>
     </div>`;
   }).join("");
   $("supBldgList").querySelectorAll("[data-b]").forEach(el=>el.onclick=()=>{
@@ -6857,9 +6873,16 @@ function updateSupBldgSelBar(){
   bar.style.display="flex";
   const units=sel.reduce((s,r)=>s+r.avail,0);
   const value=sel.reduce((s,r)=>s+r.value,0);
+  const blockedUnits=sel.reduce((s,r)=>s+r.blocked,0);
+  const blockedValue=sel.reduce((s,r)=>s+r.blockedValue,0);
   $("supBldgSelCount").textContent=fmt(sel.length);
   $("supBldgSelUnits").textContent=fmt(units);
   $("supBldgSelValue").textContent=`${fmt(Math.round(value))} ريال`;
+  $("supBldgSelBlockedRow").style.display = blockedUnits>0 ? "block" : "none";
+  if(blockedUnits>0){
+    $("supBldgSelBlockedUnits").textContent=fmt(blockedUnits);
+    $("supBldgSelBlockedValue").textContent=`${fmt(Math.round(blockedValue))} ريال`;
+  }
 }
 $("supplyBuildingsScrim").onclick=()=>closeSheet("supplyBuildingsSheet");
 
