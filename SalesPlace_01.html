@@ -2322,7 +2322,7 @@ table.prods tr:last-child td{border:none}
     </div>
     <div class="flabel">التصنيف</div>
     <div class="chips">
-      <button class="chip" id="cat595">مشاريع ٥-٩٥ (رحاب / دانية)</button>
+      <button class="chip" id="cat595">مشاريع ٥-٩٥ (رحاب)</button>
       <button class="chip" id="hasPlanChip">بجداول دفعات مرنة 2026</button>
       <button class="chip" id="daraChip">مشاريع ذرى بلس</button>
       <button class="chip" id="favOnlyChip">⭐ المفضلة فقط</button>
@@ -2409,7 +2409,7 @@ table.prods tr:last-child td{border:none}
     <h2 class="kufi" style="font-size:16px">شرح المصطلحات</h2>
     <div class="proglist" style="margin-top:12px">
       <div class="progitem"><span class="progtag">سحب</span><span>نسبة الوحدات المباعة من إجمالي وحدات المشروع منذ فتح البيع — كلما ارتفعت، قلّ المخزون المتبقي.</span></div>
-      <div class="progitem"><span class="progtag">٥-٩٥</span><span>تصنيف داخلي يجمع مشاريع "رحاب" و"دانية" تحديداً، بصرف النظر عن مدينتها.</span></div>
+      <div class="progitem"><span class="progtag">٥-٩٥</span><span>تصنيف داخلي يخص مشاريع "رحاب" تحديداً، بصرف النظر عن مدينتها.</span></div>
       <div class="progitem"><span class="progtag">دعم مؤكد</span><span>وحدات لها قيمة دعم فعلية موثّقة في ملف التخصيص، لا مجرد شارة برنامج عامة.</span></div>
       <div class="progitem"><span class="progtag">نسخة المستثمرين</span><span>مميزات مشروع مكتوبة خصيصاً لغير المستفيدين والمستثمرين، تظهر بدل النسخة العامة عند توفرها.</span></div>
       <div class="progitem"><span class="progtag">جداول الدفعات المرنة</span><span>خطط سداد معتمدة لغير المستفيدين بديلة عن الدفع النقدي أو تمويل المستفيدين، بحصة محدودة لكل مشروع.</span></div>
@@ -2697,7 +2697,7 @@ const S = { seg:"b", view:"list", q:"", city:"", dest:"", dev:"", devKind:"", ca
   smin:null, smax:null, pmin:null, pmax:null, constr:new Set(), progs:new Set(), sort:"u", sel:null,
   /* selections coming from the contract-preferences view */
   pbands:new Set(), sbands:new Set() };
-const CAT595_PREFIXES=["رحاب","دانية","دانيات"];
+const CAT595_PREFIXES=["رحاب"];
 function inCat595(p){ return CAT595_PREFIXES.some(pre=>p.name.startsWith(pre)||p.short.startsWith(pre)); }
 const BEDS=["1","2","3","4","5","6"];
 /* contract preference bands -> inventory ranges */
