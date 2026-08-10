@@ -1880,7 +1880,7 @@ table.prods tr:last-child td{border:none}
       <div id="calcN" style="display:none">
         <div class="cintro">
           <b>حاسبة جداول الدفعات — غير المستفيدين والمستثمرين</b>
-          <span>خطط دفع مرنة على السعر الكامل، أو سداد نقدي</span>
+          <span>خطط دفع مرنة على السعر الكامل، أو سداد نقدي — الجداول المرنة مقتصرة على مشاريع البرنامج المعتمد للنصف الأول 2026 فقط (٥,٠٠٠ وحدة)، استخدم "اختر وحدة متاحة من مشروع" أدناه للتأكد من أهلية المشروع</span>
         </div>
         <div id="cartNote" class="cwarn" style="display:none;background:var(--green-soft);border-color:var(--green-soft-border);color:var(--green)"></div>
         <div class="cform">
@@ -2699,6 +2699,40 @@ const S = { seg:"b", view:"list", q:"", city:"", dest:"", dev:"", devKind:"", ca
   pbands:new Set(), sbands:new Set() };
 const CAT595_PREFIXES=["رحاب"];
 function inCat595(p){ return CAT595_PREFIXES.some(pre=>p.name.startsWith(pre)||p.short.startsWith(pre)); }
+/* برنامج جداول الدفعات المرنة 2026 — قائمة معتمدة صريحة (اسم المشروع بالضبط، لا بادئة)
+   من عرض "خطة المبيعات لتطبيق جداول الدفعات" (يناير 2026)، حقل "التوزيع النهائي" بجدول
+   توزيع المستهدف على المشاريع (٥,٠٠٠ وحدة إجمالاً على 27 مشروعاً). تحل محل الاعتماد السابق
+   على وجود بيانات ALLOC المضمّنة فقط (كانت أوسع من القائمة المعتمدة فعلياً بالعرض) —
+   ALLOC نفسها بقيت بلا تغيير، فقط لم تعد تُستخدَم لهذا التصنيف تحديداً.
+   3 مشاريع بالعرض (آراك المكيمن، الجنى، ميلاء — 363 وحدة) غير موجودة أصلاً بكتالوج الـ187
+   مشروعاً الحالي بالتطبيق، فلا تُدرَج هنا حتى تُضاف — المجموع أدناه = 4,637 من أصل 5,000. */
+const PAYPLAN_PROJECTS = {
+  "ترف 1":{total:87, plans:{"20/80":21,"ربعي 8 سنوات":22,"ربعي 10 سنوات":22,"ربعي 4 سنوات":22}},
+  "ترف 2":{total:73, plans:{"20/80":18,"ربعي 8 سنوات":18,"ربعي 10 سنوات":19,"ربعي 4 سنوات":18}},
+  "خزام بارك ريزدينس الشرقي":{total:112, plans:{"20/80":28,"ربعي 8 سنوات":28,"ربعي 10 سنوات":28,"ربعي 4 سنوات":28}},
+  "رحاب الربى":{total:326, plans:{"20/80":80,"ربعي 8 سنوات":82,"ربعي 10 سنوات":82,"ربعي 4 سنوات":82}},
+  "سنايا":{total:188, plans:{"20/80":47,"ربعي 8 سنوات":47,"ربعي 10 سنوات":47,"ربعي 4 سنوات":47}},
+  "عبية":{total:37, plans:{"20/80":9,"ربعي 8 سنوات":9,"ربعي 10 سنوات":10,"ربعي 4 سنوات":9}},
+  "عبيه 2":{total:53, plans:{"20/80":13,"ربعي 8 سنوات":13,"ربعي 10 سنوات":14,"ربعي 4 سنوات":13}},
+  "وهج الأصالة":{total:108, plans:{"20/80":27,"ربعي 8 سنوات":27,"ربعي 10 سنوات":27,"ربعي 4 سنوات":27}},
+  "رحاب الأصالة":{total:209, plans:{"20/80":52,"ربعي 8 سنوات":52,"ربعي 10 سنوات":53,"ربعي 4 سنوات":52}},
+  "أراسي":{total:159, plans:{"20/80":39,"ربعي 8 سنوات":40,"ربعي 10 سنوات":40,"ربعي 4 سنوات":40}},
+  "أراسي هايتس":{total:275, plans:{"20/80":68,"ربعي 8 سنوات":69,"ربعي 10 سنوات":69,"ربعي 4 سنوات":69}},
+  "ذا روز هاوس":{total:125, plans:{"20/80":31,"ربعي 8 سنوات":31,"ربعي 10 سنوات":32,"ربعي 4 سنوات":31}},
+  "رحاب الواجهة":{total:124, plans:{"20/80":31,"ربعي 8 سنوات":31,"ربعي 10 سنوات":31,"ربعي 4 سنوات":31}},
+  "رحاب الورود":{total:154, plans:{"20/80":37,"ربعي 8 سنوات":39,"ربعي 10 سنوات":39,"ربعي 4 سنوات":39}},
+  "رشا":{total:308, plans:{"20/80":77,"ربعي 8 سنوات":77,"ربعي 10 سنوات":77,"ربعي 4 سنوات":77}},
+  "الثريا":{total:52, plans:{"20/80":13,"ربعي 8 سنوات":13,"ربعي 10 سنوات":13,"ربعي 4 سنوات":13}},
+  "الندى":{total:91, plans:{"20/80":22,"ربعي 8 سنوات":23,"ربعي 10 سنوات":23,"ربعي 4 سنوات":23}},
+  "تبوك فالي 2":{total:102, plans:{"20/80":24,"ربعي 8 سنوات":26,"ربعي 10 سنوات":26,"ربعي 4 سنوات":26}},
+  "ذا ريزدنس ات سدايم":{total:694, plans:{"20/80":172,"ربعي 8 سنوات":174,"ربعي 10 سنوات":174,"ربعي 4 سنوات":174}},
+  "رحاب جدة هايتس":{total:327, plans:{"20/80":81,"ربعي 8 سنوات":82,"ربعي 10 سنوات":82,"ربعي 4 سنوات":82}},
+  "رواسي":{total:224, plans:{"20/80":56,"ربعي 8 سنوات":56,"ربعي 10 سنوات":56,"ربعي 4 سنوات":56}},
+  "سدال":{total:442, plans:{"20/80":109,"ربعي 8 سنوات":111,"ربعي 10 سنوات":111,"ربعي 4 سنوات":111}},
+  "شمس":{total:259, plans:{"20/80":64,"ربعي 8 سنوات":65,"ربعي 10 سنوات":65,"ربعي 4 سنوات":65}},
+  "مجتمع السدن":{total:108, plans:{"20/80":27,"ربعي 8 سنوات":27,"ربعي 10 سنوات":27,"ربعي 4 سنوات":27}},
+};
+function payPlanQuota(p){ return p ? PAYPLAN_PROJECTS[p.short] : null; }
 const BEDS=["1","2","3","4","5","6"];
 /* contract preference bands -> inventory ranges */
 const PBAND={"أقل من 400 ألف":[0,400000],"400-600 ألف":[400000,600000],"600-800 ألف":[600000,800000],
@@ -2752,7 +2786,7 @@ function vm(p){
   if(S.dev && p.dev!==S.dev) return null;
   if(S.devKind){ const isNHC=p.dev.trim()==="NHC"; if(S.devKind==="nhc"&&!isNHC) return null; if(S.devKind==="other"&&isNHC) return null; }
   if(S.cat595 && !inCat595(p)) return null;
-  if(S.hasPlan && !(ALLOC && ALLOC[p.id])) return null;
+  if(S.hasPlan && !payPlanQuota(p)) return null;
   if(S.dara && !isDanaProject(p)) return null;
   if(S.favOnly && !FAVS.has(p.id)) return null;
   if(S.constr.size && !S.constr.has(p.constr)) return null;
@@ -3059,8 +3093,8 @@ function openDetail(id){
   const investorF = (S.seg==="n" && FN) ? FN[p.id] : null;
   const F = investorF || p.f;
   const extraCards=[];
-  if(inCat595(p)) extraCards.push(`<div class="featcard"><div class="fico">🏷️</div><div><div class="flab">برنامج 5-95</div><div class="ftxt">ضمن مشاريع 5-95 (رحاب/دانية) — دفعة أولى 5% فقط والباقي عند التسليم.</div></div></div>`);
-  const allocQuick = (S.seg==="n" && ALLOC) ? ALLOC[p.id] : null;
+  if(inCat595(p)) extraCards.push(`<div class="featcard"><div class="fico">🏷️</div><div><div class="flab">برنامج 5-95</div><div class="ftxt">ضمن مشاريع 5-95 (رحاب) — دفعة أولى 5% فقط والباقي عند التسليم.</div></div></div>`);
+  const allocQuick = (S.seg==="n") ? payPlanQuota(p) : null;
   if(allocQuick) extraCards.push(`<div class="featcard"><div class="fico">🗓️</div><div><div class="flab">جدول دفعات مرن</div><div class="ftxt">ضمن حصة برنامج جداول الدفعات المرنة 2026 (${fmt(allocQuick.total)} وحدة).</div></div></div>`);
   const suppQuick = (SUPP && S.seg==="b") ? SUPP[String(p.id)] : null;
   if(suppQuick && Object.keys(suppQuick).length) extraCards.push(`<div class="featcard"><div class="fico">🎁</div><div><div class="flab">دعومات إضافية بالوحدة</div><div class="ftxt">يتوفر دعم فعلي إضافي لبعض أنواع الوحدات — التفاصيل بقسم "قيمة الدعم الفعلي بالوحدة" أدناه.</div></div></div>`);
@@ -3174,10 +3208,10 @@ function openDetail(id){
     }
   }
 
-  /* flexible payment plan quota — non-beneficiary program allocation */
-  const al = (S.seg==="n" && ALLOC) ? ALLOC[p.id] : null;
+  /* flexible payment plan quota — non-beneficiary program allocation، من القائمة المعتمدة PAYPLAN_PROJECTS */
+  const al = (S.seg==="n") ? payPlanQuota(p) : null;
   if(al){
-    const byT=Object.entries(al.byType||{}).map(([t,u])=>`${t} (${fmt(u)})`).join(" · ");
+    const byT=Object.entries(al.plans||{}).map(([t,u])=>`${t} (${fmt(u)})`).join(" · ");
     h+=`<div class="sect"><h3>برنامج جداول الدفعات المرنة 2026</h3>
       <div class="cwarn" style="background:var(--green-soft);border-color:var(--green-soft-border);color:var(--green)">
         <b style="font-size:15px;font-family:'Noto Kufi Arabic'">${fmt(al.total)} وحدة</b> من هذا المشروع ضمن حصة برنامج الدفعات المرنة للنصف الأول 2026${byT?` — ${byT}`:""}.
@@ -4189,7 +4223,7 @@ function openUnitPicker(mode){
   $("unitPickTitle").textContent = mode==="b" ? "اختر وحدة متاحة — سعر الوزارة" : "اختر وحدة متاحة — السعر الكامل";
   $("unitPickSub").textContent = mode==="b"
     ? "الوحدات المتاحة الآن وسعر الوزارة الفعلي لها، مباشرة من قاعدة البيانات"
-    : "الوحدات المتاحة الآن وسعرها الكامل الفعلي، مباشرة من قاعدة البيانات";
+    : "الوحدات المتاحة الآن وسعرها الكامل الفعلي، مباشرة من قاعدة البيانات — يقتصر البحث على مشاريع برنامج جداول الدفعات المرنة 2026 المعتمدة فقط";
   $("unitPickTypeWrap").style.display="none";
   $("unitPickProjSearch").value="";
   renderUnitPickProjList("");
@@ -4198,12 +4232,17 @@ function openUnitPicker(mode){
 }
 function renderUnitPickProjList(q){
   q=(q||"").trim();
-  const list = q ? DATA.filter(p=>p.name.includes(q)||p.city.includes(q)).slice(0,25) : [];
+  /* في وضع "n" (حاسبة جداول الدفعات) نقصر البحث على القائمة المعتمدة PAYPLAN_PROJECTS
+     فقط — يمنع اختيار مشروع خارج البرنامج المعتمد من الأساس، لا مجرد تحذير لاحق */
+  const pool = unitPickMode==="n" ? DATA.filter(p=>payPlanQuota(p)) : DATA;
+  const list = q ? pool.filter(p=>p.name.includes(q)||p.city.includes(q)).slice(0,25) : [];
+  const emptyMsg = unitPickMode==="n" ? "اكتب اسم مشروع أو مدينة — يظهر فقط ضمن مشاريع جداول الدفعات المرنة 2026 المعتمدة" : "اكتب اسم مشروع أو مدينة للبحث";
+  const noneMsg = unitPickMode==="n" ? "لا يوجد مشروع مطابق ضمن المشاريع المعتمدة لبرنامج جداول الدفعات المرنة 2026" : "لا يوجد مشروع مطابق";
   $("unitPickProjList").innerHTML = !q
-    ? `<div class="src" style="padding:8px 2px">اكتب اسم مشروع أو مدينة للبحث</div>`
+    ? `<div class="src" style="padding:8px 2px">${emptyMsg}</div>`
     : (list.length ? list.map(p=>`<div class="projRow" data-pid="${p.id}" style="cursor:pointer">
         <div class="projName">${p.name}</div><div class="projStats"><span>${p.city}</span></div>
-      </div>`).join("") : `<div class="src" style="padding:8px 2px">لا يوجد مشروع مطابق</div>`);
+      </div>`).join("") : `<div class="src" style="padding:8px 2px">${noneMsg}</div>`);
   $("unitPickProjList").querySelectorAll("[data-pid]").forEach(el=>el.onclick=()=>selectUnitPickProject(+el.dataset.pid));
 }
 $("unitPickProjSearch").addEventListener("input",e=>renderUnitPickProjList(e.target.value));
