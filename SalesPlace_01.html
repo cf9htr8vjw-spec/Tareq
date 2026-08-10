@@ -1998,14 +1998,34 @@ table.prods tr:last-child td{border:none}
       <div class="atabs" id="dmTabsBar">
         <button class="atab on" data-dm="devs">المطورون</button>
         <button class="atab" data-dm="challenges">التحديات</button>
+        <button class="atab" data-dm="criteria">المعايير</button>
+        <button class="atab" data-dm="perf">الأداء</button>
       </div>
       <div id="dmDevs">
         <div class="cintro" style="margin-bottom:10px">
-          <b>معايير التقييم (النسبة النهائية لكل مشروع)</b>
-          <span>50% تحقيق المستهدف السنوي + 30% مكافأة بيع المشروع بالكامل ضمن الوقت المتوقَّع + حتى 10% حسب تنوّع جداول الدفعات المتاحة + حتى 10% حسب نشاط قنوات البيع (وسطاء، عدد موظفين مبيعات، مبيعات هاتفية، بيع مباشر) — نفس منهجية ملف تقرير إدارة المطورين الشهري. تفصيل كل بند يظهر أسفل كل مشروع بصفحة تفاصيل المطوّر</span>
+          <b>التقييم الحالي</b>
+          <span>مجموع مساهمات كل معيار نشط لآخر فترة مُدخَلة (شهرية أو سنوية) — عدِّل المعايير وأوزانها من تبويب "المعايير"</span>
         </div>
         <input type="search" id="dmDevSearch" class="dateInp" style="width:100%;text-align:start;margin-bottom:10px" placeholder="ابحث باسم المطوّر…" autocomplete="off">
         <div id="dmDevList"></div>
+      </div>
+      <div id="dmCriteria" style="display:none">
+        <div class="cintro" style="margin-bottom:10px">
+          <b>معايير التقييم وأوزانها</b>
+          <span>معايير مستوى المشروع (تُدخَل لكل مشروع) ومعايير مستوى المطوّر (عامة، غير مرتبطة بمشروع). معيار "auto" يُحتسب حياً من بيانات المبيعات الفعلية (get_project_totals/sales_targets)، والباقي يُدخَل يدوياً. عدِّل/أضف بحرية — لا حد أقصى للمجموع لكن يُفضَّل أن يساوي 100% لكل نطاق</span>
+        </div>
+        <h4 style="margin:0 0 8px;font-size:13px">معايير المشروع</h4>
+        <div id="dmCritProject" style="margin-bottom:16px"></div>
+        <h4 style="margin:0 0 8px;font-size:13px">معايير المطوّر العامة</h4>
+        <div id="dmCritDev" style="margin-bottom:16px"></div>
+        <button class="btn ghost" id="dmCritAddBtn" style="width:100%">+ إضافة معيار جديد</button>
+      </div>
+      <div id="dmPerf" style="display:none">
+        <div class="cintro" style="margin-bottom:10px">
+          <b>أداء المطورين — لوحة حيّة</b>
+          <span>التقييم الحالي مقابل أرقام المخزون الفعلية الآن (حجوزات، استصناع معلَّق، عقود موقَّعة) لكل مطوّر — مجمَّعة من كل مشاريعه بالداشبورد</span>
+        </div>
+        <div id="dmPerfList"></div>
       </div>
       <div id="dmChallenges" style="display:none">
         <button class="btn" id="dmChAddBtn" style="width:100%;margin-bottom:10px">+ تسجيل تحدٍ جديد</button>
@@ -2104,6 +2124,67 @@ table.prods tr:last-child td{border:none}
       <div style="display:flex;gap:8px;margin-top:14px">
         <button type="button" class="btn" id="chResolveSave" style="flex:1">💾 حفظ</button>
         <button type="button" class="btn ghost" id="chResolveCancel">إلغاء</button>
+      </div>
+    </div>
+  </div>
+  <!-- Criterion add/edit sheet -->
+  <div class="scrim" id="critEditScrim"></div>
+  <div class="sheet" id="critEditSheet">
+    <div class="handle" data-drag="critEditSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 12px" id="critEditTitle">إضافة معيار</h2>
+      <div class="cform">
+        <div class="flabel">النطاق</div>
+        <div class="chips" id="critScopeChips">
+          <button type="button" class="chip on" data-sc="project">مشروع</button>
+          <button type="button" class="chip" data-sc="developer">مطوّر عام</button>
+        </div>
+        <div class="flabel" style="margin-top:9px">اسم المعيار</div>
+        <input type="text" class="dateInp" style="width:100%;text-align:start" id="critLabelInp">
+        <div class="flabel" style="margin-top:9px">الوزن الأقصى (%)</div>
+        <input type="number" min="0" max="100" step="0.5" class="dateInp" style="width:100%;text-align:start" id="critWeightInp">
+        <div class="flabel" style="margin-top:9px">مصدر القيمة</div>
+        <div class="chips" id="critSourceChips">
+          <button type="button" class="chip on" data-src="manual">إدخال يدوي</button>
+          <button type="button" class="chip" data-src="auto">حساب حي من المبيعات الفعلية</button>
+        </div>
+        <div class="flabel" style="margin-top:9px">نشط؟</div>
+        <div class="chips" id="critActiveChips">
+          <button type="button" class="chip on" data-act="1">نشط</button>
+          <button type="button" class="chip" data-act="0">موقوف</button>
+        </div>
+      </div>
+      <div id="critEditMsg" class="src" style="margin-top:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button type="button" class="btn" id="critEditSave" style="flex:1">💾 حفظ</button>
+        <button type="button" class="btn ghost" id="critEditCancel">إلغاء</button>
+      </div>
+    </div>
+  </div>
+  <!-- Score entry sheet -->
+  <div class="scrim" id="scoreEntryScrim"></div>
+  <div class="sheet" id="scoreEntrySheet">
+    <div class="handle" data-drag="scoreEntrySheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 4px" id="scoreEntryTitle">تسجيل تقييم</h2>
+      <div id="scoreEntrySubtitle" class="src" style="margin-bottom:12px"></div>
+      <div class="cform">
+        <div class="flabel">الفترة</div>
+        <div class="chips" id="scorePeriodTypeChips">
+          <button type="button" class="chip on" data-pt="month">شهري</button>
+          <button type="button" class="chip" data-pt="year">سنوي</button>
+        </div>
+        <div class="cfrow2" style="margin-top:9px">
+          <div class="cfield" style="margin-bottom:0"><label>السنة</label><input type="number" id="scoreYearInp" class="dateInp" style="width:100%;text-align:start"></div>
+          <div class="cfield" id="scoreMonthWrap" style="margin-bottom:0"><label>الشهر</label><select id="scoreMonthSel" class="dateInp" style="width:100%;text-align:start"></select></div>
+        </div>
+      </div>
+      <div id="scoreEntryCriteria" style="margin-top:14px"></div>
+      <div class="cresrow hi" style="margin-top:10px"><span class="cl">الإجمالي</span><span class="cv" id="scoreEntryTotal">0%</span></div>
+      <div id="scoreEntryMsg" class="src" style="margin-top:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button type="button" class="btn" id="scoreEntrySave" style="flex:1">💾 حفظ التقييم</button>
+        <button type="button" class="btn ghost" id="scoreEntryCancel">إلغاء</button>
       </div>
     </div>
   </div>
@@ -2865,7 +2946,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -2874,7 +2955,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -5641,11 +5722,13 @@ async function uploadDevEvalData(rows){
 /* ---------- إدارة المطورين: قائمة/تفاصيل المطورين (من project_dev_eval) + سجل
    تحديات (dev_challenges) — يملؤه فريق إدارة المطورين مباشرة من التطبيق ---------- */
 let DEVEVAL=[], DEVCHALLENGES=[], dmTab="devs", chStatusFilter="all", chPickedProject=null, chResolveId=null;
+let DEVCRITERIA=[], DEVSCORES=[], currentDevDetailName=null, critEditId=null, scoreEntryCtx=null, LIVE_SALES_CACHE={};
 async function renderDevMgmt(){
-  await loadDevEvalData();
-  await loadChallenges();
+  await Promise.all([loadDevEvalData(), loadChallenges(), loadDevCriteria(), loadDevScoresData()]);
   renderDevList();
   renderChallenges();
+  renderCriteriaTab();
+  renderPerfTab();
 }
 async function loadDevEvalData(){
   try{ DEVEVAL = await sbSelect("project_dev_eval",{select:"*"}); }
@@ -5655,9 +5738,13 @@ async function loadChallenges(){
   try{ DEVCHALLENGES = await sbSelect("dev_challenges",{select:"*",order:"created_at.desc"}); }
   catch(e){ DEVCHALLENGES=[]; }
 }
-function avgScore(rows){
-  const vals=rows.map(r=>r.score_final_pct).filter(v=>typeof v==="number");
-  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+async function loadDevCriteria(){
+  try{ DEVCRITERIA = await sbSelect("dev_eval_criteria",{select:"*",order:"scope.asc,sort_order.asc"}); }
+  catch(e){ DEVCRITERIA=[]; }
+}
+async function loadDevScoresData(){
+  try{ DEVSCORES = await sbSelect("dev_eval_scores",{select:"*"}); }
+  catch(e){ DEVSCORES=[]; }
 }
 function scoreTier(pct){
   if(pct==null) return "none";
@@ -5667,34 +5754,121 @@ function scoreTier(pct){
 }
 function priorityLabel(p){ return p==="high"?"عالية":p==="low"?"منخفضة":"متوسطة"; }
 function statusLabel(s){ return {open:"مفتوح",in_progress:"قيد المعالجة",resolved:"محلول",deferred:"مؤجَّل"}[s]||s||"—"; }
+/* آخر فترة مُدخَلة (شهرية أو سنوية، أيّهما أحدث إدخالاً) لمشروع أو مطوّر — التقييم النهائي
+   لتلك الفترة هو مجموع مساهمات كل معاييرها النشطة (كل قيمة مخزَّنة أصلاً موزونة 0..الوزن
+   الأقصى لمعيارها، بنفس منطق ملف التقييم الأصلي) */
+function latestPeriodDetail(scope, matchFn){
+  const rows = DEVSCORES.filter(s=>s.scope===scope && matchFn(s));
+  if(!rows.length) return null;
+  const byPeriod=new Map();
+  rows.forEach(r=>{
+    const g=byPeriod.get(r.period_value) || {sum:0,maxAt:0,byCrit:new Map()};
+    g.sum += Number(r.score_pct)||0;
+    g.byCrit.set(r.criterion_id, Number(r.score_pct)||0);
+    const t=new Date(r.entered_at).getTime();
+    if(t>g.maxAt) g.maxAt=t;
+    byPeriod.set(r.period_value,g);
+  });
+  let best=null, bestPeriod=null;
+  for(const [pv,g] of byPeriod){ if(!best || g.maxAt>best.maxAt){ best=g; bestPeriod=pv; } }
+  return {period_value:bestPeriod, sum:best.sum, byCrit:best.byCrit};
+}
+function currentDevScore(name){ const d=latestPeriodDetail("developer", s=>s.developer_name===name); return d?d.sum:null; }
+function currentProjectScore(pid){ const d=latestPeriodDetail("project", s=>s.project_id===pid); return d?d.sum:null; }
+function scoreBreakdownHtml(detail){
+  if(!detail || !detail.byCrit.size) return "";
+  const parts=[...detail.byCrit.entries()].map(([cid,val])=>{
+    const c=DEVCRITERIA.find(x=>x.id===cid);
+    return `${c?c.label:"معيار محذوف"} ${Math.round(val*1000)/10}%`;
+  });
+  return `<div style="font-size:10.5px;color:var(--muted);margin-top:7px;padding-top:7px;border-top:1px dashed var(--line)">${parts.join(" · ")} <span style="opacity:.7">(فترة ${detail.period_value})</span></div>`;
+}
+/* حساب حي لمعيار "auto" من بيانات المبيعات الفعلية — نفس مصدر شاشة مبيعاتنا
+   (get_project_totals لعقود الفترة + get_target_summary للمستهدف)، بلا أي رفع يدوي */
+async function fetchLiveSalesForMonth(year,month){
+  const key=`M${year}-${String(month).padStart(2,"0")}`;
+  if(LIVE_SALES_CACHE[key]) return LIVE_SALES_CACHE[key];
+  const lastDay=new Date(year,month,0).getDate();
+  const pFrom=`${year}-${String(month).padStart(2,"0")}-01`, pTo=`${year}-${String(month).padStart(2,"0")}-${String(lastDay).padStart(2,"0")}`;
+  let totals=[], targetSummary=null;
+  try{ totals = await sbCall("get_project_totals",{p_metric:"contract",p_from:pFrom,p_to:pTo}); }catch(e){ totals=[]; }
+  try{ targetSummary = await sbCall("get_target_summary",{p_year:year,p_from_month:month,p_to_month:month}); }catch(e){ targetSummary=null; }
+  const result={
+    totalsByProject:new Map((totals||[]).map(r=>[r.project_name,Number(r.cnt)])),
+    targetsByProject:new Map((targetSummary&&targetSummary.by_project||[]).map(t=>[t.project_name,Number(t.target)])),
+  };
+  LIVE_SALES_CACHE[key]=result;
+  return result;
+}
+async function fetchLiveSalesForYear(year){
+  const key=`Y${year}`;
+  if(LIVE_SALES_CACHE[key]) return LIVE_SALES_CACHE[key];
+  const pFrom=`${year}-01-01`, pTo=`${year}-12-31`;
+  let totals=[], targetSummary=null;
+  try{ totals = await sbCall("get_project_totals",{p_metric:"contract",p_from:pFrom,p_to:pTo}); }catch(e){ totals=[]; }
+  try{ targetSummary = await sbCall("get_target_summary",{p_year:year,p_from_month:1,p_to_month:12}); }catch(e){ targetSummary=null; }
+  const result={
+    totalsByProject:new Map((totals||[]).map(r=>[r.project_name,Number(r.cnt)])),
+    targetsByProject:new Map((targetSummary&&targetSummary.by_project||[]).map(t=>[t.project_name,Number(t.target)])),
+  };
+  LIVE_SALES_CACHE[key]=result;
+  return result;
+}
+function computeWeightedRatio(achieved,target,maxWeight){
+  if(!target || target<=0) return null;
+  return Math.min((achieved/target)*maxWeight, maxWeight);
+}
+function parsePeriod(periodType,periodValue){
+  if(periodType==="year") return {year:+periodValue, month:null};
+  const [y,m]=String(periodValue).split("-");
+  return {year:+y, month:+m};
+}
+async function liveProjectScore(projectName,periodType,periodValue,maxWeight){
+  const {year,month}=parsePeriod(periodType,periodValue);
+  if(!year || (periodType==="month" && !month)) return null;
+  const data = periodType==="month" ? await fetchLiveSalesForMonth(year,month) : await fetchLiveSalesForYear(year);
+  return computeWeightedRatio(data.totalsByProject.get(projectName)||0, data.targetsByProject.get(projectName), maxWeight);
+}
+async function liveDeveloperScore(devName,periodType,periodValue,maxWeight){
+  const {year,month}=parsePeriod(periodType,periodValue);
+  if(!year || (periodType==="month" && !month)) return null;
+  const data = periodType==="month" ? await fetchLiveSalesForMonth(year,month) : await fetchLiveSalesForYear(year);
+  let achieved=0, target=0, anyTarget=false;
+  DATA.forEach(p=>{
+    if((p.dev||"").trim()!==devName) return;
+    achieved += data.totalsByProject.get(p.name)||0;
+    const t=data.targetsByProject.get(p.name);
+    if(t){ target+=t; anyTarget=true; }
+  });
+  return computeWeightedRatio(achieved, anyTarget?target:0, maxWeight);
+}
+/* قائمة المطورين مصدرها كتالوج المشاريع نفسه (p.dev) — وليس ملف التقييم اليدوي — حتى
+   تبقى متّسقة دائماً مع التجميع الحي (المبيعات، المخزون) بلا أي التباس بفروقات إملائية
+   بين اسم المطوّر بالملف المرفوع واسمه بالكتالوج */
 function renderDevList(){
   const q=($("dmDevSearch").value||"").trim();
-  const byDev=new Map();
-  DEVEVAL.forEach(r=>{
-    if(!r.developer_name) return;
-    const arr=byDev.get(r.developer_name)||[];
-    arr.push(r); byDev.set(r.developer_name,arr);
+  const devNames=new Set(DATA.map(p=>(p.dev||"").trim()).filter(Boolean));
+  DEVSCORES.forEach(s=>{ if(s.developer_name) devNames.add(s.developer_name); });
+  DEVCHALLENGES.forEach(c=>{ if(c.developer_name) devNames.add(c.developer_name); });
+  let devs=[...devNames];
+  if(q) devs = devs.filter(name=>name.includes(q));
+  const withScore = devs.map(name=>({name, score: currentDevScore(name), projCount: DATA.filter(p=>(p.dev||"").trim()===name).length}));
+  withScore.sort((a,b)=>{
+    const sa=a.score==null?1:a.score, sb=b.score==null?1:b.score;
+    return sa-sb;
   });
-  let devs=[...byDev.entries()];
-  if(q) devs = devs.filter(([name])=>name.includes(q));
-  devs.sort((a,b)=>{
-    const sa=avgScore(a[1]), sb=avgScore(b[1]);
-    return (sa==null?1:sa)-(sb==null?1:sb);
-  });
-  if(!devs.length){
-    $("dmDevList").innerHTML = DEVEVAL.length
-      ? `<div class="src" style="padding:20px 2px;text-align:center">لا يوجد مطوّر مطابق</div>`
-      : `<div class="src" style="padding:20px 2px;text-align:center">لا توجد بيانات تقييم بعد — ارفع ملف تقييم المطورين الشهري من لوحة التحكم (تبويب "تقييم المطورين")</div>`;
+  if(!withScore.length){
+    $("dmDevList").innerHTML = `<div class="src" style="padding:20px 2px;text-align:center">لا يوجد مطوّر مطابق</div>`;
     return;
   }
-  $("dmDevList").innerHTML = devs.map(([name,rows])=>{
-    const avg=avgScore(rows), tier=scoreTier(avg);
+  $("dmDevList").innerHTML = withScore.map(({name,score,projCount})=>{
+    const tier=scoreTier(score);
     const openCh = DEVCHALLENGES.filter(c=>c.developer_name===name && c.status!=="resolved").length;
     return `<div class="ucard" style="cursor:pointer;margin-bottom:8px" data-dev="${encodeURIComponent(name)}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div><div style="font-weight:700;font-size:13.5px">${name}</div>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:3px">${fmt(rows.length)} مشروع${openCh?` · ${fmt(openCh)} تحدٍّ مفتوح`:""}</div></div>
-        <span class="dmScore tier-${tier}">${avg!=null?Math.round(avg*100)+"%":"—"}</span>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:3px">${fmt(projCount)} مشروع${openCh?` · ${fmt(openCh)} تحدٍّ مفتوح`:""}</div></div>
+        <span class="dmScore tier-${tier}">${score!=null?Math.round(score*100)+"%":"—"}</span>
       </div>
     </div>`;
   }).join("");
@@ -5702,42 +5876,49 @@ function renderDevList(){
 }
 $("dmDevSearch").addEventListener("input",renderDevList);
 function openDevDetail(name){
-  const rows = DEVEVAL.filter(r=>r.developer_name===name);
-  const avg=avgScore(rows), tier=scoreTier(avg);
+  currentDevDetailName=name;
+  const devDetail = latestPeriodDetail("developer", s=>s.developer_name===name);
+  const tier=scoreTier(devDetail?devDetail.sum:null);
+  const projects = DATA.filter(p=>(p.dev||"").trim()===name);
   const reasonCounts=new Map();
-  rows.forEach(r=>{ if(r.reason_category && r.reason_category!=="-"){ reasonCounts.set(r.reason_category,(reasonCounts.get(r.reason_category)||0)+1); } });
+  const brokerRows=[];
+  projects.forEach(p=>{
+    const er=DEVEVAL.find(r=>r.project_id===p.id);
+    if(!er) return;
+    if(er.reason_category && er.reason_category!=="-") reasonCounts.set(er.reason_category,(reasonCounts.get(er.reason_category)||0)+1);
+    if(er.broker_present==="نعم") brokerRows.push(er);
+  });
   const reasonsHtml=[...reasonCounts.entries()].sort((a,b)=>b[1]-a[1])
     .map(([rc,c])=>`<div class="citem"><div class="cname"><b>${rc}</b></div><div class="camt">${fmt(c)}</div></div>`).join("")
-    || `<div class="cempty">لا توجد أسباب مسجَّلة</div>`;
-  const brokerRow = rows.find(r=>r.broker_present==="نعم");
-  const projectsHtml = rows.map(r=>{
-    const pt=scoreTier(r.score_final_pct);
-    const parts=[];
-    if(r.score_target_pct!=null) parts.push(`تحقيق المستهدف ${Math.round(r.score_target_pct*100)}%`);
-    if(r.score_time_bonus_pct!=null) parts.push(`مكافأة الوقت ${Math.round(r.score_time_bonus_pct*100)}%`);
-    if(r.score_payment_plans_pct!=null) parts.push(`جداول الدفعات ${Math.round(r.score_payment_plans_pct*100)}%`);
-    if(r.score_channels_pct!=null) parts.push(`نشاط القنوات ${Math.round(r.score_channels_pct*100)}%`);
-    return `<div class="ucard" style="margin-bottom:8px">
+    || `<div class="cempty">لا توجد أسباب مسجَّلة (من ملف التقييم الشهري المرفوع)</div>`;
+  const brokerRow=brokerRows[0];
+  const projectsHtml = projects.length ? projects.map(p=>{
+    const pDetail = latestPeriodDetail("project", s=>s.project_id===p.id);
+    const pt=scoreTier(pDetail?pDetail.sum:null);
+    const er=DEVEVAL.find(r=>r.project_id===p.id);
+    return `<div class="ucard" style="margin-bottom:8px;cursor:pointer" data-proj="${p.id}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-        <div><div style="font-weight:700;font-size:12.5px">${r.project_name||"—"}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${r.reason_category&&r.reason_category!=="-"?r.reason_category:"لا يوجد سبب مسجَّل"}${r.monthly_rate!=null?` · تحقيق الشهر ${Math.round(r.monthly_rate*100)}%`:""}</div></div>
-        <span class="dmScore tier-${pt}" style="font-size:11px">${r.score_final_pct!=null?Math.round(r.score_final_pct*100)+"%":"—"}</span>
+        <div><div style="font-weight:700;font-size:12.5px">${p.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${er&&er.reason_category&&er.reason_category!=="-"?er.reason_category:"لا يوجد سبب مسجَّل"}${er&&er.monthly_rate!=null?` · تحقيق الشهر ${Math.round(er.monthly_rate*100)}%`:""}</div></div>
+        <span class="dmScore tier-${pt}" style="font-size:11px">${pDetail?Math.round(pDetail.sum*100)+"%":"—"}</span>
       </div>
-      ${parts.length?`<div style="font-size:10.5px;color:var(--muted);margin-top:7px;padding-top:7px;border-top:1px dashed var(--line)">${parts.join(" · ")}</div>`:""}
+      ${scoreBreakdownHtml(pDetail)}
     </div>`;
-  }).join("");
+  }).join("") : `<div class="cempty">لا مشاريع لهذا المطوّر بالكتالوج</div>`;
   const devChallenges = DEVCHALLENGES.filter(c=>c.developer_name===name);
   const challengesHtml = devChallenges.length ? devChallenges.map(challengeCardHtml).join("") : `<div class="cempty">لا توجد تحديات مسجَّلة لهذا المطوّر</div>`;
   $("devDetailBody").innerHTML = `
     <h2 class="kufi" style="font-size:16px">${name}</h2>
-    <div style="display:flex;align-items:center;gap:10px;margin:10px 0 16px">
-      <span class="dmScore tier-${tier}" style="font-size:20px;padding:6px 14px">${avg!=null?Math.round(avg*100)+"%":"—"}</span>
-      <div class="src">متوسط التقييم النهائي عبر ${fmt(rows.length)} مشروع (متوسط بسيط)</div>
+    <div style="display:flex;align-items:center;gap:10px;margin:10px 0 6px">
+      <span class="dmScore tier-${tier}" style="font-size:20px;padding:6px 14px">${devDetail?Math.round(devDetail.sum*100)+"%":"—"}</span>
+      <div class="src">التقييم العام${devDetail?` — فترة ${devDetail.period_value}`:" — لا يوجد تقييم عام مسجَّل بعد"}</div>
     </div>
-    ${brokerRow?`<div class="cwarn" style="margin-bottom:14px"><b>الوسطاء:</b> ${brokerRow.broker_type||""}${brokerRow.broker_company_names?" — "+brokerRow.broker_company_names:""} — حالة الاتفاقية: ${brokerRow.broker_agreement_status||"—"}</div>`:""}
-    <h4 style="margin:0 0 8px;font-size:13px">أسباب عدم تحقيق المستهدف عبر المشاريع</h4>
+    ${scoreBreakdownHtml(devDetail)}
+    <button class="btn ghost sm" id="devDetailAddScore" style="width:100%;margin-top:10px">📊 تسجيل تقييم عام للمطوّر</button>
+    ${brokerRow?`<div class="cwarn" style="margin:14px 0"><b>الوسطاء:</b> ${brokerRow.broker_type||""}${brokerRow.broker_company_names?" — "+brokerRow.broker_company_names:""} — حالة الاتفاقية: ${brokerRow.broker_agreement_status||"—"}</div>`:""}
+    <h4 style="margin:16px 0 8px;font-size:13px">أسباب عدم تحقيق المستهدف عبر المشاريع (من آخر ملف شهري مرفوع)</h4>
     <div class="csupports" style="margin-bottom:16px">${reasonsHtml}</div>
-    <h4 style="margin:0 0 8px;font-size:13px">المشاريع (${fmt(rows.length)})</h4>
+    <h4 style="margin:0 0 8px;font-size:13px">المشاريع (${fmt(projects.length)}) — اضغط لتسجيل تقييم المشروع</h4>
     ${projectsHtml}
     <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px">
       <h4 style="margin:0;font-size:13px">التحديات المسجَّلة</h4>
@@ -5746,9 +5927,219 @@ function openDevDetail(name){
     ${challengesHtml}
   `;
   $("devDetailAddCh").onclick=()=>{ closeSheet("devDetailSheet"); openChallengeForm(null,name); };
+  $("devDetailAddScore").onclick=()=>openScoreEntry("developer", {developer_name:name});
+  $("devDetailBody").querySelectorAll("[data-proj]").forEach(el=>el.onclick=()=>{
+    const p=DATA.find(x=>x.id===+el.dataset.proj);
+    if(p) openScoreEntry("project", {project_id:p.id, project_name:p.name, developer_name:name});
+  });
   openSheet("devDetailSheet");
 }
 $("devDetailScrim").onclick=()=>closeSheet("devDetailSheet");
+/* ---------- تبويب المعايير: إدارة معايير التقييم وأوزانها ---------- */
+function criteriaRowHtml(c){
+  const srcLbl = c.source==="auto" ? "🔄 حساب حي من المبيعات" : "✍️ إدخال يدوي";
+  return `<div class="ucard" style="margin-bottom:8px;cursor:pointer" data-critid="${c.id}">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div><div style="font-weight:700;font-size:12.5px">${c.label}</div>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:2px">${srcLbl}${!c.active?" · موقوف":""}</div></div>
+      <span class="dmScore tier-mid" style="font-size:12px">${Math.round(c.max_weight_pct*100)}%</span>
+    </div>
+  </div>`;
+}
+function renderCriteriaTab(){
+  const proj = DEVCRITERIA.filter(c=>c.scope==="project");
+  const dev = DEVCRITERIA.filter(c=>c.scope==="developer");
+  $("dmCritProject").innerHTML = proj.length ? proj.map(criteriaRowHtml).join("") : `<div class="cempty">لا توجد معايير مشروع بعد — شغّل dev_eval_v2.sql لتحميل القائمة المبدئية</div>`;
+  $("dmCritDev").innerHTML = dev.length ? dev.map(criteriaRowHtml).join("") : `<div class="cempty">لا توجد معايير مطوّر بعد</div>`;
+  document.querySelectorAll("#dmCritProject [data-critid], #dmCritDev [data-critid]").forEach(el=>el.onclick=()=>openCritEdit(+el.dataset.critid));
+}
+function openCritEdit(id){
+  const c = id!=null ? DEVCRITERIA.find(x=>x.id===id) : null;
+  critEditId = id!=null ? id : null;
+  $("critEditTitle").textContent = c ? "تعديل معيار" : "إضافة معيار";
+  document.querySelectorAll("#critScopeChips .chip").forEach(b=>b.classList.toggle("on", b.dataset.sc===(c?c.scope:"project")));
+  $("critLabelInp").value = c ? c.label : "";
+  $("critWeightInp").value = c ? Math.round(c.max_weight_pct*1000)/10 : "";
+  document.querySelectorAll("#critSourceChips .chip").forEach(b=>b.classList.toggle("on", b.dataset.src===(c?c.source:"manual")));
+  document.querySelectorAll("#critActiveChips .chip").forEach(b=>b.classList.toggle("on", b.dataset.act===(c?(c.active?"1":"0"):"1")));
+  $("critEditMsg").textContent="";
+  openSheet("critEditSheet");
+}
+$("dmCritAddBtn").onclick=()=>openCritEdit(null);
+$("critEditCancel").onclick=()=>closeSheet("critEditSheet");
+$("critEditScrim").onclick=()=>closeSheet("critEditSheet");
+document.querySelectorAll("#critScopeChips .chip, #critSourceChips .chip, #critActiveChips .chip").forEach(b=>{
+  b.onclick=()=>{ b.parentElement.querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); };
+});
+async function submitCritEdit(){
+  const scope = document.querySelector("#critScopeChips .chip.on")?.dataset.sc || "project";
+  const label = $("critLabelInp").value.trim();
+  const weightPct = +$("critWeightInp").value;
+  const source = document.querySelector("#critSourceChips .chip.on")?.dataset.src || "manual";
+  const active = document.querySelector("#critActiveChips .chip.on")?.dataset.act === "1";
+  if(!label){ $("critEditMsg").textContent="أدخل اسم المعيار"; return; }
+  if(!weightPct || weightPct<=0){ $("critEditMsg").textContent="أدخل وزناً أكبر من صفر"; return; }
+  const existing = critEditId!=null ? DEVCRITERIA.find(x=>x.id===critEditId) : null;
+  const code = existing ? existing.code : `${scope}_${Date.now()}`;
+  $("critEditSave").disabled=true; $("critEditMsg").textContent="جارٍ الحفظ…";
+  let r;
+  try{
+    r = await adminCall("admin_upsert_dev_eval_criterion",{
+      p_id: critEditId, p_scope: scope, p_code: code, p_label: label,
+      p_max_weight_pct: weightPct/100, p_source: source, p_active: active,
+      p_sort_order: existing ? existing.sort_order : (DEVCRITERIA.filter(c=>c.scope===scope).length+1)
+    });
+  }catch(e){ r=null; }
+  $("critEditSave").disabled=false;
+  if(!r||!r.ok){ $("critEditMsg").textContent=(r&&r.msg)||"تعذّر الحفظ — تحقّق من تشغيل dev_eval_v2.sql"; return; }
+  toast("تم حفظ المعيار","ok");
+  closeSheet("critEditSheet");
+  await loadDevCriteria(); renderCriteriaTab(); renderDevList();
+  if($("devDetailSheet").classList.contains("on") && currentDevDetailName) openDevDetail(currentDevDetailName);
+}
+$("critEditSave").onclick=submitCritEdit;
+/* ---------- شاشة تسجيل تقييم (مشروع أو مطوّر) لفترة معيّنة ---------- */
+function scorePeriodValue(){
+  const pt = document.querySelector("#scorePeriodTypeChips .chip.on")?.dataset.pt || "month";
+  const year = $("scoreYearInp").value.trim();
+  if(pt==="year") return {periodType:"year", periodValue:year};
+  const month = $("scoreMonthSel").value;
+  return {periodType:"month", periodValue: year&&month ? `${year}-${month}` : ""};
+}
+function populateScoreMonthSelect(){
+  if($("scoreMonthSel").options.length) return;
+  $("scoreMonthSel").innerHTML = Object.entries(MNAMES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+}
+async function openScoreEntry(scope, subject){
+  scoreEntryCtx = Object.assign({scope}, subject);
+  $("scoreEntryTitle").textContent = scope==="project" ? "تسجيل تقييم مشروع" : "تسجيل تقييم عام للمطوّر";
+  $("scoreEntrySubtitle").textContent = scope==="project" ? `${subject.project_name} — ${subject.developer_name}` : subject.developer_name;
+  const now=new Date();
+  $("scoreYearInp").value = now.getFullYear();
+  populateScoreMonthSelect();
+  $("scoreMonthSel").value = String(now.getMonth()+1).padStart(2,"0");
+  document.querySelectorAll("#scorePeriodTypeChips .chip").forEach(c=>c.classList.toggle("on", c.dataset.pt==="month"));
+  $("scoreMonthWrap").style.display="block";
+  $("scoreEntryMsg").textContent="";
+  await renderScoreEntryCriteria();
+  openSheet("scoreEntrySheet");
+}
+function updateScoreEntryTotal(){
+  let total=0;
+  $("scoreEntryCriteria").querySelectorAll(".scoreManualInp, .scoreAutoInp").forEach(inp=>{ total += (+inp.value||0); });
+  $("scoreEntryTotal").textContent = (Math.round(total*10)/10) + "%";
+}
+async function renderScoreEntryCriteria(){
+  const {periodType, periodValue} = scorePeriodValue();
+  const scope = scoreEntryCtx.scope;
+  const criteria = DEVCRITERIA.filter(c=>c.scope===scope && c.active);
+  if(!criteria.length){ $("scoreEntryCriteria").innerHTML=`<div class="cempty">لا توجد معايير نشطة لهذا النطاق — أضفها من تبويب "المعايير"</div>`; updateScoreEntryTotal(); return; }
+  $("scoreEntryCriteria").innerHTML = criteria.map(c=>{
+    const existing = periodValue ? DEVSCORES.find(s=>s.scope===scope && s.criterion_id===c.id && s.period_type===periodType && s.period_value===periodValue &&
+      (scope==="project" ? s.project_id===scoreEntryCtx.project_id : s.developer_name===scoreEntryCtx.developer_name)) : null;
+    const val = existing ? Math.round(existing.score_pct*1000)/10 : "";
+    if(c.source==="auto"){
+      return `<div class="cfield" data-critid="${c.id}" data-source="auto">
+        <label>${c.label} <span class="src">(${Math.round(c.max_weight_pct*100)}% حد أقصى — يُحسب حياً)</span></label>
+        <input type="number" class="dateInp scoreAutoInp" style="width:100%;text-align:start" readonly value="0">
+      </div>`;
+    }
+    return `<div class="cfield" data-critid="${c.id}" data-source="manual">
+      <label>${c.label} <span class="src">(حتى ${Math.round(c.max_weight_pct*100)}%)</span></label>
+      <input type="number" min="0" max="${Math.round(c.max_weight_pct*100)}" step="0.5" class="dateInp scoreManualInp" style="width:100%;text-align:start" value="${val}">
+    </div>`;
+  }).join("");
+  $("scoreEntryCriteria").querySelectorAll(".scoreManualInp").forEach(inp=>inp.addEventListener("input",updateScoreEntryTotal));
+  updateScoreEntryTotal();
+  if(!periodValue) return;
+  const autoNodes = [...$("scoreEntryCriteria").querySelectorAll('[data-source="auto"]')];
+  for(const node of autoNodes){
+    const cid=+node.dataset.critid;
+    const c=DEVCRITERIA.find(x=>x.id===cid);
+    let val=null;
+    try{
+      val = scope==="project"
+        ? await liveProjectScore(scoreEntryCtx.project_name, periodType, periodValue, c.max_weight_pct)
+        : await liveDeveloperScore(scoreEntryCtx.developer_name, periodType, periodValue, c.max_weight_pct);
+    }catch(e){ val=null; }
+    const inp=node.querySelector(".scoreAutoInp");
+    inp.value = val!=null ? (Math.round(val*1000)/10) : 0;
+    updateScoreEntryTotal();
+  }
+}
+document.querySelectorAll("#scorePeriodTypeChips .chip").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#scorePeriodTypeChips .chip").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  $("scoreMonthWrap").style.display = b.dataset.pt==="month" ? "block" : "none";
+  renderScoreEntryCriteria();
+});
+$("scoreYearInp").addEventListener("change",renderScoreEntryCriteria);
+$("scoreMonthSel").addEventListener("change",renderScoreEntryCriteria);
+$("scoreEntryCancel").onclick=()=>closeSheet("scoreEntrySheet");
+$("scoreEntryScrim").onclick=()=>closeSheet("scoreEntrySheet");
+async function submitScoreEntry(){
+  const {periodType, periodValue} = scorePeriodValue();
+  if(!periodValue){ $("scoreEntryMsg").textContent="أدخل فترة صحيحة"; return; }
+  const scope=scoreEntryCtx.scope;
+  const nodes = [...$("scoreEntryCriteria").querySelectorAll("[data-critid]")];
+  if(!nodes.length){ $("scoreEntryMsg").textContent="لا توجد معايير نشطة لهذا النطاق"; return; }
+  $("scoreEntrySave").disabled=true; $("scoreEntryMsg").textContent="جارٍ الحفظ…";
+  let failed=0;
+  for(const node of nodes){
+    const cid=+node.dataset.critid;
+    const inp = node.querySelector(".scoreManualInp, .scoreAutoInp");
+    const pct = (+inp.value||0)/100;
+    try{
+      const r = await adminCall("dev_eval_score_upsert",{
+        p_scope: scope,
+        p_project_id: scope==="project" ? scoreEntryCtx.project_id : null,
+        p_developer_name: scoreEntryCtx.developer_name,
+        p_period_type: periodType, p_period_value: periodValue,
+        p_criterion_id: cid, p_score_pct: pct, p_notes: null
+      });
+      if(!r||!r.ok) failed++;
+    }catch(e){ failed++; }
+  }
+  $("scoreEntrySave").disabled=false;
+  if(failed){ $("scoreEntryMsg").textContent=`فشل حفظ ${failed} معيار — تحقّق من تشغيل dev_eval_v2.sql`; return; }
+  toast("تم حفظ التقييم","ok");
+  closeSheet("scoreEntrySheet");
+  await loadDevScoresData();
+  renderDevList();
+  renderPerfTab();
+  if(currentDevDetailName) openDevDetail(currentDevDetailName);
+}
+$("scoreEntrySave").onclick=submitScoreEntry;
+/* ---------- تبويب الأداء: التقييم + أرقام المخزون الحيّة لكل مطوّر ---------- */
+function renderPerfTab(){
+  const devNames=new Set(DATA.map(p=>(p.dev||"").trim()).filter(Boolean));
+  const rows=[...devNames].map(name=>{
+    const projects=DATA.filter(p=>(p.dev||"").trim()===name);
+    let reserved=0, contracted=0, istisna=0;
+    projects.forEach(p=>{
+      const bt=BOOK && BOOK[String(p.id)];
+      if(bt){ reserved+=bt.reserved||0; contracted+=bt.contracted||0; istisna+=bt.istisna_active||0; }
+    });
+    return {name, projects:projects.length, reserved, contracted, istisna, score:currentDevScore(name)};
+  }).filter(r=>r.reserved||r.contracted||r.istisna||r.score!=null);
+  rows.sort((a,b)=>(b.contracted+b.reserved)-(a.contracted+a.reserved));
+  if(!rows.length){ $("dmPerfList").innerHTML=`<div class="src" style="padding:20px 2px;text-align:center">لا توجد بيانات مخزون حيّة بعد — تحقّق من رفع ملف التخصيص اليومي</div>`; return; }
+  $("dmPerfList").innerHTML = rows.map(r=>{
+    const tier=scoreTier(r.score);
+    return `<div class="ucard" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div style="font-weight:700;font-size:13px">${r.name}</div>
+        <span class="dmScore tier-${tier}" style="font-size:11px">${r.score!=null?Math.round(r.score*100)+"%":"—"}</span>
+      </div>
+      <div style="display:flex;gap:14px;margin-top:8px;font-size:11.5px;color:var(--muted);flex-wrap:wrap">
+        <span>📁 ${fmt(r.projects)} مشروع</span>
+        <span>📗 ${fmt(r.reserved)} حجز</span>
+        <span>🏗️ ${fmt(r.istisna)} استصناع معلَّق</span>
+        <span>✅ ${fmt(r.contracted)} عقد موقَّع</span>
+      </div>
+    </div>`;
+  }).join("");
+}
 function challengeCardHtml(c){
   const pCls = c.priority==="high"?"pri-high":c.priority==="low"?"pri-low":"pri-med";
   const sCls = c.status==="resolved"?"st-resolved":c.status==="open"?"st-open":c.status==="deferred"?"st-deferred":"st-progress";
@@ -5782,6 +6173,8 @@ document.querySelectorAll("#dmTabsBar .atab").forEach(b=>{
     dmTab=b.dataset.dm;
     $("dmDevs").style.display = dmTab==="devs" ? "block" : "none";
     $("dmChallenges").style.display = dmTab==="challenges" ? "block" : "none";
+    $("dmCriteria").style.display = dmTab==="criteria" ? "block" : "none";
+    $("dmPerf").style.display = dmTab==="perf" ? "block" : "none";
   };
 });
 document.querySelectorAll("#dmChStatusChips .chip").forEach(b=>{
