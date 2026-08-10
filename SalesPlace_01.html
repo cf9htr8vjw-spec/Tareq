@@ -2099,6 +2099,12 @@ table.prods tr:last-child td{border:none}
           <button type="button" class="chip" data-dk="nhc">مشاريع NHC</button>
           <button type="button" class="chip" data-dk="other">مشاريع المطورين</button>
         </div>
+        <div class="flabel" style="margin-top:9px">البرنامج</div>
+        <div class="chips" id="supProgChips">
+          <button type="button" class="chip on" data-prog="">كل المشاريع</button>
+          <button type="button" class="chip" data-prog="595">مشاريع ٥-٩٥</button>
+          <button type="button" class="chip" data-prog="plan">جداول دفعات مرنة 2026</button>
+        </div>
       </div>
       <div class="stats4" id="supTopStats" style="margin-top:14px">
         <div class="stat"><b id="supTotal">—</b><span>إجمالي الوحدات (متاح + محجوب)</span></div>
@@ -6616,7 +6622,7 @@ $("chResolveSave").onclick=submitChallengeResolve;
    نفسه (تُعاد جلبها فقط عند تغييره)؛ المدينة/الوجهة/جهة التطوير صفات مشروع من DATA، تُطبَّق
    بالعميل بلا إعادة جلب. عند فتح مشروع: get_supply_buildings يُعيد تفصيل كل مبنى (من عمود
    building_number بالملفين معاً) — هنا فقط، لأنه المستوى الذي يحتاج بيانات خام مفصَّلة. */
-let SUPPLY_CACHE={}, supCity="", supDest="", supType="", supDevKind="";
+let SUPPLY_CACHE={}, supCity="", supDest="", supType="", supDevKind="", supProg="";
 let supBldgProjectId=null, supBldgType="", supBldgSort="asc", supBldgRows=[], supBldgSelected=new Set();
 function populateSupplyFilters(){
   const cs=$("supCitySel");
@@ -6643,6 +6649,10 @@ document.querySelectorAll("#supDevKindChips .chip").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("#supDevKindChips .chip").forEach(x=>x.classList.remove("on"));
   b.classList.add("on"); supDevKind=b.dataset.dk||""; renderSupplyOverview();
 });
+document.querySelectorAll("#supProgChips .chip").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#supProgChips .chip").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); supProg=b.dataset.prog||""; renderSupplyOverview();
+});
 async function renderSupplyOverview(){
   populateSupplyFilters();
   const cacheKey=supType||"__all__";
@@ -6665,6 +6675,8 @@ async function renderSupplyOverview(){
     if(supDest && p.dest!==supDest) return false;
     if(supDevKind==="nhc" && p.dev.trim()!=="NHC") return false;
     if(supDevKind==="other" && p.dev.trim()==="NHC") return false;
+    if(supProg==="595" && !inCat595(p)) return false;
+    if(supProg==="plan" && !payPlanQuota(p)) return false;
     const d=data[p.id];
     return d && (d.avail>0 || d.blocked>0);
   }).map(p=>({p, avail:data[p.id].avail, blocked:data[p.id].blocked}))
@@ -6675,22 +6687,27 @@ async function renderSupplyOverview(){
   $("supAvail").textContent=fmt(totAvail);
   $("supBlocked").textContent=fmt(totBlocked);
 
-  $("supplyProjList").innerHTML = rows.length ? rows.map(r=>`
+  $("supplyProjList").innerHTML = rows.length ? rows.map(r=>{
+    const progTags=[inCat595(r.p)?`<span class="pill" style="background:var(--gold-soft);color:var(--gold-text3)">٥-٩٥</span>`:"",
+      payPlanQuota(r.p)?`<span class="pill" style="background:var(--green-soft);color:var(--green)">دفعات مرنة</span>`:""].join("");
+    return `
     <div class="supProjRow" data-pid="${r.p.id}">
-      <div><div class="spName">${r.p.short||r.p.name}</div><div class="spMeta">${r.p.city}${r.p.dest?" · "+r.p.dest:""} · ${r.p.dev}</div></div>
+      <div><div class="spName">${r.p.short||r.p.name}</div><div class="spMeta">${r.p.city}${r.p.dest?" · "+r.p.dest:""} · ${r.p.dev}</div>${progTags?`<div style="margin-top:5px;display:flex;gap:5px">${progTags}</div>`:""}</div>
       <div class="spNums">
         <div class="spNum"><b>${fmt(r.avail)}</b><span>متاح</span></div>
         <div class="spNum"><b style="color:var(--rust)">${fmt(r.blocked)}</b><span>محجوب</span></div>
         <div class="spNum"><b>${fmt(r.avail+r.blocked)}</b><span>الكلي</span></div>
       </div>
-    </div>`).join("") : `<div class="src" style="padding:20px 2px;text-align:center">لا توجد مشاريع مطابقة للفلاتر الحالية</div>`;
+    </div>`;
+  }).join("") : `<div class="src" style="padding:20px 2px;text-align:center">لا توجد مشاريع مطابقة للفلاتر الحالية</div>`;
   $("supplyProjList").querySelectorAll("[data-pid]").forEach(el=>el.onclick=()=>openSupplyBuildings(+el.dataset.pid));
 }
 async function openSupplyBuildings(projectId){
   const p=DATA.find(x=>x.id===projectId); if(!p) return;
   supBldgProjectId=projectId; supBldgType=""; supBldgSort="asc"; supBldgSelected=new Set(); supBldgRows=[];
   $("supBldgProjName").textContent=p.short||p.name;
-  $("supBldgProjMeta").textContent=`${p.city}${p.dest?" · "+p.dest:""} · ${p.dev}`;
+  const progBits=[inCat595(p)?"٥-٩٥":"", payPlanQuota(p)?"دفعات مرنة 2026":""].filter(Boolean);
+  $("supBldgProjMeta").textContent=`${p.city}${p.dest?" · "+p.dest:""} · ${p.dev}`+(progBits.length?` · ${progBits.join(" · ")}`:"");
   $("supBldgTypeChips").innerHTML=`<button type="button" class="chip on" data-type="">كل الأنواع</button>`+
     TYPES.map(t=>`<button type="button" class="chip" data-type="${t}">${t}</button>`).join("");
   $("supBldgTypeChips").querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{
