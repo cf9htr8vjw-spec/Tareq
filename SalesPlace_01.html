@@ -2130,6 +2130,8 @@ table.prods tr:last-child td{border:none}
     <div class="sheetbody">
       <h2 style="margin:0 0 4px" id="supBldgProjName"></h2>
       <div class="src" id="supBldgProjMeta" style="margin-bottom:10px"></div>
+      <div class="stats4" id="supBldgProjStats" style="margin-bottom:12px"></div>
+      <div id="supBldgAbsorb" style="margin-bottom:12px"></div>
       <div class="chips" id="supBldgTypeChips" style="margin-bottom:9px"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
         <div class="flabel" style="margin:0">ترتيب حسب متوسط سعر الوحدة</div>
@@ -5414,6 +5416,7 @@ async function processSyncFile(){
      الأبراج/الشقق أساساً، بخلاف الفلل/التاون هاوس التي غالباً تُعرَّف بـblock_number
      بدلاً منه) — فراغه لبعض الصفوف طبيعي وليس عطلاً بالمطابقة */
   const buildingNumKey = resolveHeaderKey(rows, ["building_number","buildingnumber","building no","building_no","buildingno"]);
+  const unitSizeKey = resolveHeaderKey(rows, ["unit_size","unitsize","unit size"]);
 
   const statusAgg=new Map(); // key -> {project_id,unit_type,beds,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY
   const modelAgg=new Map(); // key `${pid}|${model}` -> {project_id,model,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY، من عمود model
@@ -5499,6 +5502,7 @@ async function processSyncFile(){
       unit_code: (unitCodeKey && row[unitCodeKey]!=null) ? String(row[unitCodeKey]).trim() : null,
       model: modelVal||null,
       building_number: (buildingNumKey && row[buildingNumKey]!=null && row[buildingNumKey]!=="") ? String(row[buildingNumKey]).trim() : null,
+      unit_size: (unitSizeKey && row[unitSizeKey]!=null && row[unitSizeKey]!=="") ? Number(row[unitSizeKey])||null : null,
     });
   }
 
@@ -5542,6 +5546,7 @@ async function processSyncFile(){
     ${unitCodeKey?`<div class="cresrow"><span class="cl">وحدات معها رمز فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.unit_code).length)}</span></div>`:""}
     <div class="cresrow"><span class="cl">عمود رقم المبنى (building_number) بالملف</span><span class="cv">${buildingNumKey?`تم التعرّف عليه ("${buildingNumKey}")`:"لم يُعثر عليه بالملف"}</span></div>
     ${buildingNumKey?`<div class="cresrow"><span class="cl">وحدات معها رقم مبنى فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.building_number).length)}</span></div>`:""}
+    <div class="cresrow"><span class="cl">عمود مساحة الوحدة (unit_size) بالملف</span><span class="cv">${unitSizeKey?`تم التعرّف عليه ("${unitSizeKey}")`:"لم يُعثر عليه بالملف"}</span></div>
   </div>
   ${unitCodeKey && mirrorRows.length && mirrorRows.filter(r=>r.unit_code).length===0 ? `<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ عمود رمز الوحدة موجود بالملف لكن كل قيمه فارغة بهذه الرفعة — تحقق من الملف المصدر</div>` : ""}
   ${!unitCodeKey ? `<div class="cwarn">لا يحتوي هذا الملف على عمود يمكن التعرّف عليه كرمز وحدة (unit_code) — ستُرفع كل الوحدات بدون رمز، ولن تعمل ميزات البحث المباشر والدعم الدقيق لكل وحدة حتى يُضاف هذا العمود للملف المصدر</div>` : ""}
@@ -5800,6 +5805,7 @@ async function processBlockedFile(){
   }
   const unitCodeKeyB = resolveHeaderKeyB(rows, ["unit_code","unitcode","unit id","unitid","uid"]);
   const buildingNumKeyB = resolveHeaderKeyB(rows, ["building_number","buildingnumber","building no","building_no","buildingno"]);
+  const unitSizeKeyB = resolveHeaderKeyB(rows, ["unit_size","unitsize","unit size"]);
 
   const mirrorRows=[]; // صف واحد لكل وحدة محجوبة صالحة — يُرفع كاملاً كمرآة خام
   const blockedAgg=new Map(); // project_id -> عدد — تجميع خفيف لعرض البطاقات/التفاصيل دون قراءة المرآة الكاملة
@@ -5839,6 +5845,7 @@ async function processBlockedFile(){
       unit_code:(unitCodeKeyB && row[unitCodeKeyB]!=null) ? String(row[unitCodeKeyB]).trim() : null,
       model:modelVal||null, snapshot_date:todayISO,
       building_number: (buildingNumKeyB && row[buildingNumKeyB]!=null && row[buildingNumKeyB]!=="") ? String(row[buildingNumKeyB]).trim() : null,
+      unit_size: (unitSizeKeyB && row[unitSizeKeyB]!=null && row[unitSizeKeyB]!=="") ? Number(row[unitSizeKeyB])||null : null,
     });
   }
 
@@ -5864,6 +5871,7 @@ async function processBlockedFile(){
     <div class="cresrow"><span class="cl">عمود رمز الوحدة (unit_code)</span><span class="cv">${unitCodeKeyB?`تم التعرّف عليه ("${unitCodeKeyB}")`:"لم يُعثر عليه بالملف"}</span></div>
     <div class="cresrow"><span class="cl">عمود رقم المبنى (building_number)</span><span class="cv">${buildingNumKeyB?`تم التعرّف عليه ("${buildingNumKeyB}")`:"لم يُعثر عليه بالملف"}</span></div>
     ${buildingNumKeyB?`<div class="cresrow"><span class="cl">وحدات معها رقم مبنى فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.building_number).length)}</span></div>`:""}
+    <div class="cresrow"><span class="cl">عمود مساحة الوحدة (unit_size)</span><span class="cv">${unitSizeKeyB?`تم التعرّف عليه ("${unitSizeKeyB}")`:"لم يُعثر عليه بالملف"}</span></div>
   </div>
   ${!mirrorRows.length?`<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ لم يُعثر على أي صف بحالة "محجوب" بهذا الملف — تحقق أنك اخترت الملف الصحيح</div>`:""}
   ${unmatchedHtml}
@@ -6742,7 +6750,8 @@ async function loadSupplyBuildings(){
     const rows=await sbCall("get_supply_buildings",{p_project_id:supBldgProjectId, p_unit_type:supBldgType||null});
     supBldgRows=(rows||[]).map(r=>({
       building: r.building_number || "بلا رقم مبنى",
-      avail: r.avail_count||0, value: r.avail_value||0, blocked: r.blocked_count||0,
+      avail: r.avail_count||0, value: r.avail_value||0, sqm: r.avail_sqm_value||null,
+      blocked: r.blocked_count||0, sold: r.sold_count||0,
     }));
   }catch(e){
     $("supBldgStatus").innerHTML=`<div class="cerr">تعذّر تحميل تفصيل المبانٍ: ${e.message||e}</div>`;
@@ -6750,7 +6759,66 @@ async function loadSupplyBuildings(){
   }
   supBldgSelected=new Set();
   $("supBldgStatus").textContent = supBldgRows.length ? "" : "لا توجد بيانات مبانٍ لهذا المشروع/النوع — تأكد من تعبئة عمود building_number بالملف المصدر";
+  renderSupBldgProjStats();
+  renderSupBldgAbsorb();
   renderSupplyBuildingsList();
+}
+/* إجماليات المشروع (بنفس فلتر النوع الحالي) — من مجموع صفوف المبانٍ نفسها، بلا نداء إضافي للقاعدة */
+function renderSupBldgProjStats(){
+  const avail=supBldgRows.reduce((s,r)=>s+r.avail,0), blocked=supBldgRows.reduce((s,r)=>s+r.blocked,0), sold=supBldgRows.reduce((s,r)=>s+r.sold,0);
+  $("supBldgProjStats").innerHTML = `
+    <div class="stat"><b>${fmt(avail)}</b><span>متاح${supBldgType?" ("+supBldgType+")":""}</span></div>
+    <div class="stat"><b style="color:var(--rust)">${fmt(blocked)}</b><span>محجوب</span></div>
+    <div class="stat"><b>${fmt(sold)}</b><span>مباع (محجوز/متعاقَد)</span></div>`;
+}
+/* نسبة البيع (محجوز+متعاقَد ÷ الإجمالي) لنفس نوع الوحدة المختار — بالمشروع نفسه وبكل مشاريع
+   نفس الوجهة، من PRODSTAT المحمَّل أصلاً لكل المشاريع (بلا نداء إضافي) — مؤشر مباشر لتقييم
+   هل سرعة بيع النوع بهذا المشروع أعلى أو أقل من محيطه، قبل قرار بيع مبنى كامل لمستثمر */
+function typeAbsorbFrom(entries, unitType){
+  let avail=0, reserved=0, contracted=0;
+  for(const [k,v] of entries){
+    const t=k.split("|")[0];
+    if(unitType && t!==unitType) continue;
+    avail+=v.avail||0; reserved+=v.reserved||0; contracted+=v.contracted||0;
+  }
+  const tot=avail+reserved+contracted;
+  return tot ? Math.round((reserved+contracted)/tot*100) : null;
+}
+function projectAbsorbForType(pid, unitType){
+  const ps=PRODSTAT ? PRODSTAT[pid] : null;
+  return ps ? typeAbsorbFrom(Object.entries(ps), unitType) : null;
+}
+function destAbsorbForType(dest, unitType){
+  const entries=[];
+  for(const p of DATA){
+    if(p.dest!==dest) continue;
+    const ps=PRODSTAT ? PRODSTAT[p.id] : null;
+    if(ps) entries.push(...Object.entries(ps));
+  }
+  return typeAbsorbFrom(entries, unitType);
+}
+function renderSupBldgAbsorb(){
+  const p=DATA.find(x=>x.id===supBldgProjectId); if(!p) return;
+  const projAbs=projectAbsorbForType(p.id, supBldgType);
+  const destAbs=p.dest ? destAbsorbForType(p.dest, supBldgType) : null;
+  if(projAbs==null && destAbs==null){
+    $("supBldgAbsorb").innerHTML=`<div class="src">لا تتوفر بيانات كافية لحساب نسبة البيع${supBldgType?` لنوع "${supBldgType}"`:""} حالياً</div>`;
+    return;
+  }
+  const diff = (projAbs!=null && destAbs!=null) ? projAbs-destAbs : null;
+  const verdict = diff==null ? "" :
+    diff>=5 ? `<span class="pill" style="background:var(--green-soft);color:var(--green)">أعلى من متوسط الوجهة ↑</span>` :
+    diff<=-5 ? `<span class="pill" style="background:var(--rust-soft);color:var(--rust)">أقل من متوسط الوجهة ↓</span>` :
+    `<span class="pill" style="background:var(--bg);color:var(--muted);border:1px solid var(--line)">قريب من متوسط الوجهة</span>`;
+  $("supBldgAbsorb").innerHTML = `<div class="cwarn" style="background:var(--bg);border-color:var(--line)">
+    <b>مؤشر سرعة البيع${supBldgType?` — ${supBldgType}`:" — كل الأنواع"}</b>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;align-items:center">
+      <div>بهذا المشروع: <b style="font-family:'Noto Kufi Arabic'">${projAbs!=null?projAbs+"%":"—"}</b></div>
+      <div>بنفس الوجهة (${p.dest||"—"}): <b style="font-family:'Noto Kufi Arabic'">${destAbs!=null?destAbs+"%":"—"}</b></div>
+      ${verdict}
+    </div>
+    <div class="src" style="margin-top:4px">نسبة البيع = (محجوز + متعاقَد) ÷ إجمالي الوحدات — مقارنة إرشادية لتقييم سرعة بيع وحدات مشابهة قبل قرار البيع الكامل لمستثمر</div>
+  </div>`;
 }
 function renderSupplyBuildingsList(){
   const rows=[...supBldgRows].sort((a,b)=>{
@@ -6761,11 +6829,15 @@ function renderSupplyBuildingsList(){
   $("supBldgList").innerHTML = rows.map(r=>{
     const avg = r.avail ? Math.round(r.value/r.avail) : null;
     const on = supBldgSelected.has(r.building);
+    const soldBadge = r.sold>0
+      ? `<span class="pill" style="background:var(--gold-soft);color:var(--gold-text3)">🔶 بِيع منها ${fmt(r.sold)}</span>`
+      : `<span class="pill" style="background:var(--green-soft);color:var(--green)">✅ لم تُبع أي وحدة — صالحة للبيع الكامل</span>`;
     return `<div class="supBldgRow${on?" on":""}" data-b="${encodeURIComponent(r.building)}">
       <div class="sbTick">${on?"✓":""}</div>
       <div class="sbInfo">
         <div class="sbName">🏢 ${r.building}</div>
-        <div class="sbMeta">متاح ${fmt(r.avail)}${avg?` · متوسط السعر ${fmt(avg)} ريال`:""}${r.blocked?` · محجوب ${fmt(r.blocked)}`:""}</div>
+        <div class="sbMeta">متاح ${fmt(r.avail)}${avg?` · متوسط السعر ${fmt(avg)} ريال`:""}${r.sqm?` · ${fmt(Math.round(r.sqm))} ريال/م²`:""}${r.blocked?` · محجوب ${fmt(r.blocked)}`:""}</div>
+        <div style="margin-top:5px">${soldBadge}</div>
       </div>
       <div style="text-align:end;flex-shrink:0"><b style="font-family:'Noto Kufi Arabic'">${r.avail?compact(r.value):"—"}</b></div>
     </div>`;
