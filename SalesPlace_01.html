@@ -2131,6 +2131,7 @@ table.prods tr:last-child td{border:none}
     <div class="sheetbody">
       <h2 style="margin:0 0 4px" id="supBldgProjName"></h2>
       <div class="src" id="supBldgProjMeta" style="margin-bottom:10px"></div>
+      <div id="supBldgQuota" style="margin-bottom:12px"></div>
       <div class="stats4" id="supBldgProjStats" style="margin-bottom:12px"></div>
       <div id="supBldgAbsorb" style="margin-bottom:12px"></div>
       <div class="chips" id="supBldgTypeChips" style="margin-bottom:9px"></div>
@@ -2150,6 +2151,7 @@ table.prods tr:last-child td{border:none}
         <div class="tot" id="supBldgSelValue">0 ريال</div>
       </div>
       <div id="supBldgSelBreakdown" class="src" style="width:100%;margin-top:2px"></div>
+      <div id="supBldgSelQuotaWarn" style="width:100%;margin-top:4px;font-weight:600"></div>
       <button type="button" class="btn" id="supBldgSaveBatchBtn" style="width:100%;margin-top:8px">💾 حفظ التحديد في Batch</button>
     </div>
   </div>
@@ -6788,7 +6790,33 @@ async function openSupplyBuildings(projectId){
     };
   });
   openSheet("supplyBuildingsSheet");
-  await loadSupplyBuildings();
+  await Promise.all([loadSupplyBuildings(), loadPayplanQuotaInfo(p)]);
+}
+/* حصة برنامج جداول الدفعات المرنة 2026 (PAYPLAN_PROJECTS) — "التوزيع النهائي" بالعرض
+   المعتمد. المُستهلَك = مجموع avail_count لكل مبانٍ هذا المشروع المحفوظة بأي Batch سابقة
+   (أي تحديد سابق من هذا المشروع يُعتبر مقترحاً ضمن برنامج الدفعات المرنة، بما إنه أساس
+   بناء الصفقات هنا) — تحذير واضح لا حظر صارم عند تجاوز الحصة، لأن العرض نفسه يسمح
+   باستثناءات بموافقة خطية معتمدة؛ القرار يبقى بشرياً. */
+let curPayplanQuota=null, curPayplanCommitted=0;
+async function loadPayplanQuotaInfo(p){
+  curPayplanQuota = payPlanQuota(p);
+  curPayplanCommitted = 0;
+  if(!curPayplanQuota){ $("supBldgQuota").innerHTML=""; return; }
+  try{
+    const rows = await sbSelect("supply_batch_buildings",{select:"avail_count",project_id:`eq.${p.id}`});
+    curPayplanCommitted = (rows||[]).reduce((s,r)=>s+(r.avail_count||0),0);
+  }catch(e){ curPayplanCommitted=0; }
+  renderSupBldgQuota();
+}
+function renderSupBldgQuota(){
+  if(!curPayplanQuota) return;
+  const remaining = curPayplanQuota.total - curPayplanCommitted;
+  const over = remaining < 0;
+  $("supBldgQuota").innerHTML = `<div class="cwarn" style="background:${over?"var(--rust-soft)":"var(--gold-soft)"};border-color:${over?"var(--rust-soft-border)":"var(--gold-soft-border)"};color:${over?"var(--rust)":"var(--gold-text3)"}">
+    <b>حصة جداول الدفعات المرنة 2026 (التوزيع النهائي المعتمد)</b>
+    <div style="margin-top:4px">الحصة: <b style="font-family:'Noto Kufi Arabic'">${fmt(curPayplanQuota.total)}</b> وحدة — محجوز مسبقاً بصفقات محفوظة: <b style="font-family:'Noto Kufi Arabic'">${fmt(curPayplanCommitted)}</b> — المتبقي: <b style="font-family:'Noto Kufi Arabic'">${fmt(Math.max(0,remaining))}</b>${over?` (تم تجاوز الحصة بمقدار ${fmt(-remaining)} وحدة!)`:""}</div>
+    <div class="src" style="margin-top:2px">أي اختيار جديد هنا يُحسَب ضمن هذه الحصة — لا تتجاوزها إلا بموافقة خطية معتمدة (وفق ضوابط الخطة)</div>
+  </div>`;
 }
 async function loadSupplyBuildings(){
   $("supBldgStatus").textContent="جارٍ التحميل…";
@@ -6987,6 +7015,15 @@ function updateSupBldgSelBar(){
   $("supBldgSelBreakdown").textContent = blockedUnits>0
     ? `متاح ${fmt(availUnits)} وحدة (${fmt(Math.round(availValue))} ريال) + محجوب ${fmt(blockedUnits)} وحدة تقديرية (${fmt(Math.round(blockedValue))} ريال) — يحتاج إفراجاً قبل البيع`
     : `كل الوحدات المختارة متاحة الآن`;
+  const qw=$("supBldgSelQuotaWarn");
+  if(curPayplanQuota){
+    const remaining=curPayplanQuota.total - curPayplanCommitted;
+    const afterThis = remaining - availUnits;
+    qw.style.color = afterThis<0 ? "var(--rust)" : "var(--gold-text3)";
+    qw.textContent = afterThis<0
+      ? `⚠ هذا التحديد (${fmt(availUnits)} وحدة متاحة) يتجاوز المتبقي من حصة جداول الدفعات المرنة (${fmt(Math.max(0,remaining))} وحدة) بمقدار ${fmt(-afterThis)} وحدة`
+      : `ضمن الحصة — سيتبقى ${fmt(afterThis)} وحدة من حصة جداول الدفعات المرنة بعد هذا التحديد`;
+  } else { qw.textContent=""; }
 }
 $("supplyBuildingsScrim").onclick=()=>closeSheet("supplyBuildingsSheet");
 
@@ -7048,6 +7085,7 @@ async function addSelectionToBatch(batchId){
   toast("تم حفظ التحديد بالـBatch","ok");
   closeSheet("batchPickSheet");
   supBldgSelected=new Set(); renderSupplyBuildingsList();
+  if(p && curPayplanQuota) await loadPayplanQuotaInfo(p); // الحصة المستهلَكة تغيّرت بعد الحفظ
 }
 $("batchPickScrim").onclick=()=>closeSheet("batchPickSheet");
 
