@@ -7082,6 +7082,10 @@ async function addSelectionToBatch(batchId){
     }catch(e){ failed++; }
   }
   if(failed){ $("batchPickMsg").textContent=`فشل حفظ ${failed} من ${sel.length} مبنى`; return; }
+  /* بلا هذا، لو المستخدم فتح تفصيل هذه الـbatch قبل الإضافة (فتُخزَّن نتيجة فارغة/قديمة
+     مؤقتاً بـBATCH_BUILDINGS_CACHE)، تبقى الإضافة الجديدة غير ظاهرة له عند فتح القائمة
+     مرة أخرى حتى لو نجحت فعلياً بالقاعدة — لوحظ هذا فعلياً مع مبنى محجوب بالكامل */
+  delete BATCH_BUILDINGS_CACHE[batchId];
   toast("تم حفظ التحديد بالـBatch","ok");
   closeSheet("batchPickSheet");
   supBldgSelected=new Set(); renderSupplyBuildingsList();
