@@ -6800,6 +6800,7 @@ async function loadSupplyBuildings(){
       avail: r.avail_count||0, value: r.avail_value||0, sqm: r.avail_sqm_value||null,
       blocked: r.blocked_count||0, blockedValue: r.blocked_value||0, blockedSqm: r.blocked_sqm_value||null,
       sold: r.sold_count||0, beds: r.avg_beds!=null?Math.round(r.avg_beds):null,
+      size: r.avg_size!=null?Math.round(r.avg_size):null,
     }));
     await loadDestAvgSqm();
   }catch(e){
@@ -6948,7 +6949,7 @@ function renderSupplyBuildingsList(){
     return `<div class="supBldgRow${on?" on":""}" data-b="${encodeURIComponent(r.building)}">
       <div class="sbTick">${on?"✓":""}</div>
       <div class="sbInfo">
-        <div class="sbName">🏢 ${r.building}${r.beds!=null?` <span class="src" style="font-weight:400">· ~${r.beds} غرف</span>`:""}</div>
+        <div class="sbName">🏢 ${r.building}${r.beds!=null?` <span class="src" style="font-weight:400">· ~${r.beds} غرف</span>`:""}${r.size!=null?` <span class="src" style="font-weight:400">· ~${fmt(r.size)} م²</span>`:""}</div>
         <div class="sbMeta">متاح ${fmt(r.avail)}${avg?` · متوسط السعر ${fmt(avg)} ريال`:""}${r.sqm?` · ${fmt(Math.round(r.sqm))} ريال/م²`:""}</div>
         ${r.blocked?`<div class="sbMeta" style="color:var(--rust)">محجوب ${fmt(r.blocked)}${blockedAvg?` · متوسط السعر التقديري ${fmt(blockedAvg)} ريال`:""}${r.blockedSqm?` · ${fmt(Math.round(r.blockedSqm))} ريال/م² تقديري`:""}</div>`:""}
         <div style="margin-top:5px">${soldBadge}</div>
