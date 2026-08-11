@@ -884,6 +884,8 @@ main{flex:1;min-height:0;position:relative}
 #supBldgSelBar .tot{font-family:"Noto Kufi Arabic";font-size:16px;font-weight:600;color:var(--green)}
 .supBldgRow{display:flex;align-items:center;gap:10px;padding:10px 8px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer}
 .supBldgRow.on{background:var(--green-soft);border-color:var(--green-soft-border)}
+.supBldgRow.locked{background:var(--bg);opacity:.65;cursor:not-allowed}
+.supBldgRow.locked .sbTick{border-color:var(--line);color:var(--muted)}
 .supBldgRow .sbTick{width:20px;height:20px;border-radius:6px;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px}
 .supBldgRow.on .sbTick{background:var(--green);border-color:var(--green);color:#fff}
 .supBldgRow .sbInfo{flex:1;min-width:0}
@@ -6790,7 +6792,8 @@ async function openSupplyBuildings(projectId){
     };
   });
   openSheet("supplyBuildingsSheet");
-  await Promise.all([loadSupplyBuildings(), loadPayplanQuotaInfo(p)]);
+  await Promise.all([loadSupplyBuildings(), loadPayplanQuotaInfo(p), loadBatches()]);
+  renderSupplyBuildingsList(); // إعادة رسم بعد اكتمال loadBatches لتفعيل قفل المبانٍ المضافة مسبقاً
 }
 /* حصة برنامج جداول الدفعات المرنة 2026 (PAYPLAN_PROJECTS) — "التوزيع النهائي" بالعرض
    المعتمد. المُستهلَك = مجموع avail_count لكل مبانٍ هذا المشروع المحفوظة بأي Batch سابقة
@@ -6974,14 +6977,19 @@ function renderSupplyBuildingsList(){
     } else if(attr){
       attrBadge = `<div class="src" style="margin-top:5px">جاذبية البيع: بيانات غير كافية${attr.f1!=null?` (تصميم ${attr.f1}%)`:""}${attr.f2!=null?` (سعر ${attr.f2}%)`:""}${attr.f3!=null?` (مبيعات ${attr.f3}%)`:""}</div>`;
     }
-    return `<div class="supBldgRow${on?" on":""}" data-b="${encodeURIComponent(r.building)}">
-      <div class="sbTick">${on?"✓":""}</div>
+    /* مبنى مضاف مسبقاً لأي batch — يُقفَل (لا يُختار من جديد بالخطأ)، مع شارة توضّح أي
+       batch بالضبط، بدل السماح بتكراره ضمن أكثر من batch بلا قصد */
+    const inBatch = findBatchForBuilding(supBldgProjectId, r.building);
+    const batchBadge = inBatch ? `<div class="pill" style="margin-top:5px;background:var(--bg);color:var(--muted);border:1px solid var(--line)">📦 مضاف بالفعل ضمن Batch: ${inBatch.name}</div>` : "";
+    return `<div class="supBldgRow${on?" on":""}${inBatch?" locked":""}" data-b="${encodeURIComponent(r.building)}"${inBatch?' data-locked="1"':""}>
+      <div class="sbTick">${on?"✓":inBatch?"🔒":""}</div>
       <div class="sbInfo">
         <div class="sbName">🏢 ${r.building}${r.beds!=null?` <span class="src" style="font-weight:400">· ~${r.beds} غرف</span>`:""}${r.size!=null?` <span class="src" style="font-weight:400">· ~${fmt(r.size)} م²</span>`:""}</div>
         <div class="sbMeta">متاح ${fmt(r.avail)}${avg?` · متوسط السعر ${fmt(avg)} ريال`:""}${r.sqm?` · ${fmt(Math.round(r.sqm))} ريال/م²`:""}</div>
         ${r.blocked?`<div class="sbMeta" style="color:var(--rust)">محجوب ${fmt(r.blocked)}${blockedAvg?` · متوسط السعر التقديري ${fmt(blockedAvg)} ريال`:""}${r.blockedSqm?` · ${fmt(Math.round(r.blockedSqm))} ريال/م² تقديري`:""}</div>`:""}
         <div style="margin-top:5px">${soldBadge}</div>
         ${attrBadge}
+        ${batchBadge}
       </div>
       <div style="text-align:end;flex-shrink:0">
         <b style="font-family:'Noto Kufi Arabic'">${rightVal}</b>
@@ -6989,11 +6997,21 @@ function renderSupplyBuildingsList(){
       </div>
     </div>`;
   }).join("");
-  $("supBldgList").querySelectorAll("[data-b]").forEach(el=>el.onclick=()=>{
-    const b=decodeURIComponent(el.dataset.b);
-    if(supBldgSelected.has(b)) supBldgSelected.delete(b); else supBldgSelected.add(b);
-    renderSupplyBuildingsList();
-    updateSupBldgSelBar();
+  $("supBldgList").querySelectorAll("[data-b]").forEach(el=>{
+    if(el.dataset.locked){
+      el.onclick=()=>{
+        const b=decodeURIComponent(el.dataset.b);
+        const inBatch=findBatchForBuilding(supBldgProjectId, b);
+        toast(`هذا المبنى مضاف بالفعل ضمن Batch "${inBatch?inBatch.name:""}" — أزله من هناك أولاً لإعادة تصنيفه`,"err");
+      };
+      return;
+    }
+    el.onclick=()=>{
+      const b=decodeURIComponent(el.dataset.b);
+      if(supBldgSelected.has(b)) supBldgSelected.delete(b); else supBldgSelected.add(b);
+      renderSupplyBuildingsList();
+      updateSupBldgSelBar();
+    };
   });
   updateSupBldgSelBar();
 }
@@ -7034,6 +7052,27 @@ let BATCHES=[], BATCH_BUILDINGS_CACHE={}, batchListExpanded=null;
 async function loadBatches(){
   try{ BATCHES = await sbSelect("supply_batches",{select:"*",order:"updated_at.desc"}); }
   catch(e){ BATCHES=[]; }
+  /* كل صفوف كل الـBatches دفعة واحدة (لا لكل batch على حدة) — يلزم لمعرفة أي مبنى مضاف
+     بأي batch أثناء تصفّح أي مشروع (منع إعادة اختياره)، ولعرض عدّاد وحدات/مبانٍ كل batch
+     بالقائمة المطوية بلا حاجة لفتحها. إعادة تحميل كامل بدل حذف جزئي من الكاش — نفس درس
+     خطأ الكاش القديم مع مبنى محجوب لم يظهر بعد إضافته */
+  BATCH_BUILDINGS_CACHE={};
+  try{
+    const allRows = await sbSelect("supply_batch_buildings",{select:"*"});
+    for(const row of (allRows||[])){
+      const arr = BATCH_BUILDINGS_CACHE[row.batch_id] || (BATCH_BUILDINGS_CACHE[row.batch_id]=[]);
+      arr.push(row);
+    }
+  }catch(e){}
+}
+/* هل هذا المبنى (بمشروع بعينه) مضاف بالفعل لأي batch؟ يُستخدم لمنع اختياره من جديد ضمن
+   batch أخرى بالخطأ — لازالة مبنى من batch لإعادة تصنيفه، يُحذَف من شاشة الـBatches أولاً */
+function findBatchForBuilding(projectId, buildingNumber){
+  for(const b of BATCHES){
+    const rows = BATCH_BUILDINGS_CACHE[b.id]||[];
+    if(rows.some(r=>r.project_id===projectId && r.building_number===buildingNumber)) return b;
+  }
+  return null;
 }
 $("supBldgSaveBatchBtn").onclick=async ()=>{
   const sel=supBldgRows.filter(r=>supBldgSelected.has(r.building));
@@ -7082,10 +7121,9 @@ async function addSelectionToBatch(batchId){
     }catch(e){ failed++; }
   }
   if(failed){ $("batchPickMsg").textContent=`فشل حفظ ${failed} من ${sel.length} مبنى`; return; }
-  /* بلا هذا، لو المستخدم فتح تفصيل هذه الـbatch قبل الإضافة (فتُخزَّن نتيجة فارغة/قديمة
-     مؤقتاً بـBATCH_BUILDINGS_CACHE)، تبقى الإضافة الجديدة غير ظاهرة له عند فتح القائمة
-     مرة أخرى حتى لو نجحت فعلياً بالقاعدة — لوحظ هذا فعلياً مع مبنى محجوب بالكامل */
-  delete BATCH_BUILDINGS_CACHE[batchId];
+  /* إعادة تحميل كامل (لا حذف جزئي من الكاش) — نفس درس خطأ الكاش القديم مع مبنى محجوب
+     لم يظهر بعد إضافته؛ يحدّث أيضاً قفل المبانٍ المضافة حديثاً بشاشة المبانٍ */
+  await loadBatches();
   toast("تم حفظ التحديد بالـBatch","ok");
   closeSheet("batchPickSheet");
   supBldgSelected=new Set(); renderSupplyBuildingsList();
@@ -7100,22 +7138,28 @@ $("supBatchesBtn").onclick=async ()=>{
   await loadBatches();
   renderBatchListBody();
 };
+/* عدّاد كل batch (مبانٍ/وحدات/قيمة) من BATCH_BUILDINGS_CACHE المحمَّل بالكامل مسبقاً
+   بـloadBatches() — يظهر بالسطر المطوي مباشرة بلا حاجة لفتح الـbatch، حسب الطلب */
+function batchTotals(batchId){
+  const bl=BATCH_BUILDINGS_CACHE[batchId]||[];
+  return {
+    bldgCount: bl.length,
+    availUnits: bl.reduce((s,x)=>s+(x.avail_count||0),0),
+    blockedUnits: bl.reduce((s,x)=>s+(x.blocked_count||0),0),
+    totalValue: bl.reduce((s,x)=>s+Number(x.avail_value||0)+Number(x.blocked_value||0),0),
+  };
+}
 async function renderBatchListBody(){
   if(!BATCHES.length){ $("batchListBody").innerHTML=`<div class="src" style="padding:20px 2px;text-align:center">لا توجد batches محفوظة بعد — اختر مبانٍ من أي مشروع وابدأ batch جديدة</div>`; return; }
-  const rowsHtml=await Promise.all(BATCHES.map(async b=>{
+  const rowsHtml=BATCHES.map(b=>{
     const expanded = batchListExpanded===b.id;
+    const bl=BATCH_BUILDINGS_CACHE[b.id]||[];
+    const t=batchTotals(b.id);
     let bldgsHtml="";
     if(expanded){
-      if(!BATCH_BUILDINGS_CACHE[b.id]){
-        try{ BATCH_BUILDINGS_CACHE[b.id]=await sbSelect("supply_batch_buildings",{select:"*",batch_id:`eq.${b.id}`,order:"added_at.desc"}); }
-        catch(e){ BATCH_BUILDINGS_CACHE[b.id]=[]; }
-      }
-      const bl=BATCH_BUILDINGS_CACHE[b.id];
-      const totAvail=bl.reduce((s,x)=>s+(x.avail_count||0),0), totAvailV=bl.reduce((s,x)=>s+Number(x.avail_value||0),0);
-      const totBlocked=bl.reduce((s,x)=>s+(x.blocked_count||0),0), totBlockedV=bl.reduce((s,x)=>s+Number(x.blocked_value||0),0);
       bldgsHtml = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">
-        <div class="cresrow hi"><span class="cl">إجمالي متاح</span><span class="cv">${fmt(totAvail)} وحدة — ${fmt(Math.round(totAvailV))} ريال</span></div>
-        ${totBlocked?`<div class="cresrow"><span class="cl">إجمالي محجوب (لقطة وقت الإضافة)</span><span class="cv">${fmt(totBlocked)} وحدة — ${fmt(Math.round(totBlockedV))} ريال تقديري</span></div>`:""}
+        <div class="cresrow hi"><span class="cl">إجمالي متاح</span><span class="cv">${fmt(t.availUnits)} وحدة — ${fmt(Math.round(bl.reduce((s,x)=>s+Number(x.avail_value||0),0)))} ريال</span></div>
+        ${t.blockedUnits?`<div class="cresrow"><span class="cl">إجمالي محجوب (لقطة وقت الإضافة)</span><span class="cv">${fmt(t.blockedUnits)} وحدة — ${fmt(Math.round(bl.reduce((s,x)=>s+Number(x.blocked_value||0),0)))} ريال تقديري</span></div>`:""}
         ${bl.map(x=>`<div class="supBldgRow" style="cursor:default">
           <div class="sbInfo">
             <div class="sbName">🏢 ${x.building_number} — ${x.project_name||""}</div>
@@ -7128,12 +7172,17 @@ async function renderBatchListBody(){
     }
     return `<div class="supProjRow" style="display:block;cursor:default">
       <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" data-expand="${b.id}">
-        <div><div class="spName">${b.name}</div>${b.notes?`<div class="spMeta">${b.notes}</div>`:""}<div class="spMeta">آخر تحديث: ${new Date(b.updated_at).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long",year:"numeric"})}</div></div>
+        <div>
+          <div class="spName">${b.name}</div>
+          ${b.notes?`<div class="spMeta">${b.notes}</div>`:""}
+          <div class="spMeta"><b style="font-family:'Noto Kufi Arabic'">${fmt(t.bldgCount)}</b> مبنى · <b style="font-family:'Noto Kufi Arabic'">${fmt(t.availUnits+t.blockedUnits)}</b> وحدة${t.blockedUnits?` (منها ${fmt(t.blockedUnits)} محجوب)`:""} · ${compact(t.totalValue)} ريال</div>
+          <div class="spMeta">آخر تحديث: ${new Date(b.updated_at).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long",year:"numeric"})}</div>
+        </div>
         <div class="src">${expanded?"▲":"▼"}</div>
       </div>
       ${bldgsHtml}
     </div>`;
-  }));
+  });
   $("batchListBody").innerHTML = rowsHtml.join("");
   $("batchListBody").querySelectorAll("[data-expand]").forEach(el=>el.onclick=async ()=>{
     const id=+el.dataset.expand;
@@ -7144,7 +7193,7 @@ async function renderBatchListBody(){
     e.stopPropagation();
     if(!confirm("إزالة هذا المبنى من الـBatch؟")) return;
     try{ await adminCall("supply_batch_remove_building",{p_row_id:+el.dataset.rmbldg}); }catch(e2){}
-    delete BATCH_BUILDINGS_CACHE[+el.dataset.batch];
+    await loadBatches();
     await renderBatchListBody();
   });
   $("batchListBody").querySelectorAll("[data-delbatch]").forEach(el=>el.onclick=async (e)=>{
