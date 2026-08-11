@@ -5481,6 +5481,10 @@ async function processSyncFile(){
        يُحسَب هنا (خارج فرع المطابقة) لأنه يُنقَل أيضاً لمرآة التخصيص عبر mirrorRows بصرف النظر
        عن مطابقة المشروع، ليُستخدم بمنتقي الوحدة البصري (عرض النموذج لكل وحدة) */
     const modelVal=row.model!=null?String(row.model).trim():"";
+    /* شريحة الوحدة (مستفيدين/غير مستفيدين) — تُحسَب هنا بصرف النظر عن مطابقة المشروع لأنها
+       تُنقَل أيضاً لمرآة التخصيص عبر mirrorRows (for_non_beneficiary)، تُستخدم لاحقاً لتصفية
+       شاشة "توزيع المعروض" على وحدات غير المستفيدين/المستثمرين حصراً */
+    const segTag=parseSegmentTag(row.target_segments);
 
     let city,dest,sector,devKind,pname;
     if(pid!=null){
@@ -5501,7 +5505,6 @@ async function processSyncFile(){
         modelAgg.set(mkey,m);
       }
       /* شريحة المعروض (مستفيدين/غير مستفيدين) — على كل صف مطابق بصرف النظر عن توفر عمود model */
-      const segTag=parseSegmentTag(row.target_segments);
       if(segTag){
         const sg=segAgg.get(pid) || {project_id:pid,beneficiary_count:0,non_beneficiary_count:0};
         sg[segTag+"_count"]++;
@@ -5537,6 +5540,11 @@ async function processSyncFile(){
       model: modelVal||null,
       building_number: (buildingNumKey && row[buildingNumKey]!=null && row[buildingNumKey]!=="") ? String(row[buildingNumKey]).trim() : null,
       unit_size: (unitSizeKey && row[unitSizeKey]!=null && row[unitSizeKey]!=="") ? Number(row[unitSizeKey])||null : null,
+      /* true فقط لو الوحدة متاحة لغير المستفيدين (segTag==="non_beneficiary" — أي شريحتها
+         تتضمن غير مستفيدين/شركات، وليست {beneficiary} حصراً) — نفس قاعدة parseSegmentTag
+         المستخدمة أصلاً بإحصاء المشروع، بلا أي منطق مختلف. null/فارغ = غير معروفة، تُستبعَد
+         من شاشة توزيع المعروض احتياطاً بدل افتراض الأهلية بالخطأ */
+      for_non_beneficiary: segTag==="non_beneficiary",
     });
   }
 
@@ -5581,6 +5589,7 @@ async function processSyncFile(){
     <div class="cresrow"><span class="cl">عمود رقم المبنى (building_number) بالملف</span><span class="cv">${buildingNumKey?`تم التعرّف عليه ("${buildingNumKey}")`:"لم يُعثر عليه بالملف"}</span></div>
     ${buildingNumKey?`<div class="cresrow"><span class="cl">وحدات معها رقم مبنى فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.building_number).length)}</span></div>`:""}
     <div class="cresrow"><span class="cl">عمود مساحة الوحدة (unit_size) بالملف</span><span class="cv">${unitSizeKey?`تم التعرّف عليه ("${unitSizeKey}")`:"لم يُعثر عليه بالملف"}</span></div>
+    <div class="cresrow"><span class="cl">وحدات متاحة لغير المستفيدين/المستثمرين (من target_segments)</span><span class="cv">${fmt(mirrorRows.filter(r=>r.for_non_beneficiary).length)} من ${fmt(mirrorRows.length)}</span></div>
   </div>
   ${unitCodeKey && mirrorRows.length && mirrorRows.filter(r=>r.unit_code).length===0 ? `<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ عمود رمز الوحدة موجود بالملف لكن كل قيمه فارغة بهذه الرفعة — تحقق من الملف المصدر</div>` : ""}
   ${!unitCodeKey ? `<div class="cwarn">لا يحتوي هذا الملف على عمود يمكن التعرّف عليه كرمز وحدة (unit_code) — ستُرفع كل الوحدات بدون رمز، ولن تعمل ميزات البحث المباشر والدعم الدقيق لكل وحدة حتى يُضاف هذا العمود للملف المصدر</div>` : ""}
@@ -5859,6 +5868,7 @@ async function processBlockedFile(){
     const beds=row.Number_of_Bedrooms!=null ? Math.round(row.Number_of_Bedrooms) : null;
     const modelVal=row.model!=null?String(row.model).trim():"";
     const priceNum=Number(row.price)||null, mohNum=Number(row.moh_price)||null;
+    const segTag=parseSegmentTag(row.target_segments);
 
     let city,sector,devKind,pname;
     if(pid!=null){
@@ -5880,6 +5890,7 @@ async function processBlockedFile(){
       model:modelVal||null, snapshot_date:todayISO,
       building_number: (buildingNumKeyB && row[buildingNumKeyB]!=null && row[buildingNumKeyB]!=="") ? String(row[buildingNumKeyB]).trim() : null,
       unit_size: (unitSizeKeyB && row[unitSizeKeyB]!=null && row[unitSizeKeyB]!=="") ? Number(row[unitSizeKeyB])||null : null,
+      for_non_beneficiary: segTag==="non_beneficiary",
     });
   }
 
@@ -5906,6 +5917,7 @@ async function processBlockedFile(){
     <div class="cresrow"><span class="cl">عمود رقم المبنى (building_number)</span><span class="cv">${buildingNumKeyB?`تم التعرّف عليه ("${buildingNumKeyB}")`:"لم يُعثر عليه بالملف"}</span></div>
     ${buildingNumKeyB?`<div class="cresrow"><span class="cl">وحدات معها رقم مبنى فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.building_number).length)}</span></div>`:""}
     <div class="cresrow"><span class="cl">عمود مساحة الوحدة (unit_size)</span><span class="cv">${unitSizeKeyB?`تم التعرّف عليه ("${unitSizeKeyB}")`:"لم يُعثر عليه بالملف"}</span></div>
+    <div class="cresrow"><span class="cl">وحدات متاحة لغير المستفيدين/المستثمرين (من target_segments)</span><span class="cv">${fmt(mirrorRows.filter(r=>r.for_non_beneficiary).length)} من ${fmt(mirrorRows.length)}</span></div>
   </div>
   ${!mirrorRows.length?`<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ لم يُعثر على أي صف بحالة "محجوب" بهذا الملف — تحقق أنك اخترت الملف الصحيح</div>`:""}
   ${unmatchedHtml}
