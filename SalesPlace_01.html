@@ -2083,7 +2083,9 @@ table.prods tr:last-child td{border:none}
         <b>توزيع المعروض لغير المستفيدين والمستثمرين</b>
         <span>عدد الوحدات المتاحة للبيع والمحجوبة (غير المتاحة) لكل مشروع بسعر غير المستفيدين — افتح مشروعاً لعرض تفصيل المبانٍ وبناء صفقة</span>
       </div>
-      <button type="button" class="btn ghost" id="supBatchesBtn" style="width:100%;margin-bottom:12px">📦 عرض الـBatches المحفوظة</button>
+      <button type="button" class="btn ghost" id="supBatchesBtn" style="width:100%;margin-bottom:8px">📦 عرض الـBatches المحفوظة</button>
+      <button type="button" class="btn ghost" id="supExportEmptyBtn" style="width:100%;margin-bottom:12px">📥 تصدير المبانٍ الفارغة بالكامل (Excel)</button>
+      <div id="supExportStatus" class="src" style="margin-bottom:10px"></div>
       <div class="cform">
         <div class="flabel">المدينة</div>
         <select id="supCitySel" class="dateInp" style="width:100%;text-align:start"><option value="">كل المدن</option></select>
@@ -6772,6 +6774,73 @@ async function renderSupplyOverview(){
   }).join("") : `<div class="src" style="padding:20px 2px;text-align:center">لا توجد مشاريع مطابقة للفلاتر الحالية</div>`;
   $("supplyProjList").querySelectorAll("[data-pid]").forEach(el=>el.onclick=()=>openSupplyBuildings(+el.dataset.pid));
 }
+/* تصدير كل المبانٍ "الفارغة بالكامل" (بلا أي مبيعات سابقة وبلا أي وحدة محجوبة، وعندها
+   وحدات متاحة فعلاً) عبر كل المشاريع — بلا التقيّد بفلاتر الشاشة الحالية، لأنه تصدير شامل
+   مطلوب صراحة. العائد الاستثماري يُحسَب بنفس دالة حاسبة العائد الفعلية بالتطبيق
+   (roiCalcUnit) بنفس افتراضاتها الافتراضية (7 سنوات، نمو محافظ 3%، إشغال 90%)، لا صيغة
+   جديدة موازية — تحويل CSV مباشرة (لا مكتبة كتابة xlsx مضمَّنة بالتطبيق) بترميز UTF-8 BOM
+   ليفتح بإكسل بعربي سليم. */
+function csvCell(v){
+  if(v==null) return "";
+  const s=String(v).replace(/"/g,'""');
+  return /[",\n]/.test(s) ? `"${s}"` : s;
+}
+async function exportEmptyBuildings(){
+  const btn=$("supExportEmptyBtn"); btn.disabled=true;
+  $("supExportStatus").textContent="جارٍ جلب نظرة عامة على كل المشاريع…";
+  let overview;
+  try{ overview=await sbCall("get_supply_overview",{p_unit_type:null}); }
+  catch(e){ $("supExportStatus").innerHTML=`<div class="cerr">تعذّر التحميل: ${e.message||e}</div>`; btn.disabled=false; return; }
+  const withAvail=(overview||[]).filter(r=>(r.avail_count||0)>0);
+
+  const years=7, growth=0.03, occ=0.9; // نفس القيم الافتراضية بحاسبة العائد الاستثماري بالتطبيق
+  const out=[];
+  let done=0, failedProjects=0;
+  for(const ov of withAvail){
+    done++;
+    $("supExportStatus").textContent=`جارٍ الفحص — مشروع ${done} من ${withAvail.length}…`;
+    const p=DATA.find(x=>x.id===ov.project_id);
+    if(!p) continue;
+    let buildings;
+    try{ buildings=await sbCall("get_supply_buildings",{p_project_id:ov.project_id, p_unit_type:null}); }
+    catch(e){ failedProjects++; continue; }
+    for(const b of (buildings||[])){
+      const avail=b.avail_count||0, blocked=b.blocked_count||0, sold=b.sold_count||0;
+      if(avail<=0 || blocked>0 || sold>0) continue; // فقط: كلها متاحة — بلا محجوب وبلا أي بيع سابق
+      const avgPrice = avail ? (b.avail_value||0)/avail : 0;
+      const pctOf = r => r.totalCost ? Math.round(r.totalNetReturn/r.totalCost*1000)/10 : null;
+      const roiHi=pctOf(roiCalcUnit(avgPrice,0.12,years,growth,occ,false));
+      const roiMed=pctOf(roiCalcUnit(avgPrice,0.09,years,growth,occ,false));
+      const roiBase=pctOf(roiCalcUnit(avgPrice,0.06,years,growth,occ,false));
+      const feat=(p.f && (p.f.unique||p.f.summary)) ? [p.f.unique,p.f.summary].filter(Boolean).join(" — ") : "";
+      out.push([
+        p.city, p.dest||"", p.short||p.name, p.dev, b.building_number||"بلا رقم مبنى",
+        avail, Math.round(b.avail_value||0), Math.round(avgPrice),
+        b.avail_sqm_value!=null?Math.round(b.avail_sqm_value):"",
+        b.avg_beds!=null?Math.round(b.avg_beds):"", b.avg_size!=null?Math.round(b.avg_size):"",
+        feat, roiHi, roiMed, roiBase,
+      ]);
+    }
+  }
+
+  if(!out.length){
+    $("supExportStatus").innerHTML=`<div class="cwarn">لم يُعثر على أي مبنى فارغ بالكامل (بلا مبيعات وبلا محجوب) حالياً${failedProjects?` — تعذّر فحص ${failedProjects} مشروعاً`:""}</div>`;
+    btn.disabled=false; return;
+  }
+
+  const headers=["المدينة","الوجهة","المشروع","المطوّر","رقم المبنى","عدد الوحدات المتاحة","القيمة الإجمالية (ريال)","متوسط سعر الوحدة (ريال)","متوسط سعر المتر (ريال)","~عدد الغرف","~المساحة (م²)","الميزات","عائد استثماري مرتفع % (إيجار 12%)","عائد استثماري متوسط % (إيجار 9%)","عائد استثماري أساسي % (إيجار 6%)"];
+  const csv = [headers, ...out].map(row=>row.map(csvCell).join(",")).join("\r\n");
+  const blob = new Blob(["﻿"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url; a.download=`المباني_الفارغة_بالكامل_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+
+  $("supExportStatus").innerHTML=`<div class="cwarn" style="background:var(--green-soft);border-color:var(--green-soft-border);color:var(--green)">تم تصدير ${fmt(out.length)} مبنى فارغاً بالكامل من ${fmt(withAvail.length)} مشروعاً${failedProjects?` (تعذّر فحص ${failedProjects} مشروعاً)`:""} — افتح الملف المُنزَّل مباشرة بإكسل</div>`;
+  btn.disabled=false;
+}
+$("supExportEmptyBtn").onclick=exportEmptyBuildings;
 async function openSupplyBuildings(projectId){
   const p=DATA.find(x=>x.id===projectId); if(!p) return;
   supBldgProjectId=projectId; supBldgType=""; supBldgSort="asc"; supBldgSelected=new Set(); supBldgRows=[];
