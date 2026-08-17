@@ -947,6 +947,13 @@ main{flex:1;min-height:0;position:relative}
 .zoomhint{position:absolute;bottom:14px;right:50%;transform:translateX(50%);z-index:800;background:rgba(27,43,68,.85);color:#fff;font-size:11px;padding:6px 13px;border-radius:99px;pointer-events:none;white-space:nowrap}
 .satToggle{position:absolute;top:10px;left:10px;z-index:800;background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;color:var(--ink);box-shadow:0 3px 10px rgba(0,0,0,.15)}
 .satToggle.on{background:var(--navy2);color:#fff;border-color:var(--navy2)}
+.poiToggle{left:auto;right:10px}
+.poiCatBar{position:absolute;top:52px;left:10px;right:10px;z-index:800;display:none;flex-wrap:wrap;gap:6px}
+.poiChip{background:#fff;border:1px solid var(--line);border-radius:99px;padding:5px 10px;font-size:11px;font-weight:700;color:var(--muted);box-shadow:0 2px 6px rgba(0,0,0,.12);opacity:.5}
+.poiChip.on{color:var(--ink);opacity:1;border-color:var(--navy2)}
+.poiStatus{position:absolute;bottom:14px;left:10px;z-index:800;background:rgba(27,43,68,.85);color:#fff;font-size:10.5px;padding:4px 10px;border-radius:99px;pointer-events:none;max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poiPin{width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid var(--navy2);display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+:root[data-theme="dark"] .poiChip{background:var(--surface);color:var(--ink)}
 
 /* ===== Performance ===== */
 .perf4{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
@@ -3546,6 +3553,84 @@ function bindDetailInteractions(){
 /* ---------- map ---------- */
 let map=null, layer=null, hintEl=null, curPins=[], streetLayer=null, satLayer=null, isSat=false;
 const LBL_ZOOM=11;
+
+/* ---------- الأماكن المهمة القريبة (مستشفيات، مدارس، مساجد، مولات، صيدليات) ----------
+   طلب المستخدم: "نحط ... اي اماكن مهمة قريبة على الخريطة نفسها". أسماء الشوارع موجودة
+   أصلاً بطبقتي OSM/Carto المستخدمتين (بيانات الخرائط نفسها تتضمنها) — الناقص فعلياً كان
+   أماكن حقيقية بمواقع دقيقة، فبنيناها كطبقة حيّة عبر Overpass API (خدمة استعلام عامة
+   ومجانية فوق بيانات OpenStreetMap، بلا مفتاح API، بنفس نمط طلبات بلاطات الخريطة الحالية —
+   وليست حزمة برمجية جديدة، مجرد fetch() لخدمة خارجية) بدل تخمين مواقع من نص "مميزات
+   الوجهة" الحر (لا توجد إحداثيات موثوقة فيه). تُجلب فقط عند تفعيل الزر وبتقريب كافٍ
+   (POI_MIN_ZOOM) لتفادي إرهاق الخدمة العامة بمربعات جغرافية ضخمة، مع تخزين مؤقت بالجلسة
+   بمفتاح حدود الخريطة المقرَّبة لتفادي إعادة الجلب لنفس المنطقة. */
+const POI_MIN_ZOOM=14;
+const POI_CATS=[
+  {key:"hospital", icon:"🏥", label:"مستشفى/عيادة", match:t=>t.amenity==="hospital"||t.amenity==="clinic"},
+  {key:"school", icon:"🏫", label:"مدرسة", match:t=>t.amenity==="school"},
+  {key:"university", icon:"🎓", label:"جامعة/كلية", match:t=>t.amenity==="university"||t.amenity==="college"},
+  {key:"mosque", icon:"🕌", label:"مسجد", match:t=>t.amenity==="place_of_worship"&&(t.religion==null||t.religion==="muslim")},
+  {key:"mall", icon:"🛍️", label:"مول", match:t=>t.shop==="mall"},
+  {key:"pharmacy", icon:"💊", label:"صيدلية", match:t=>t.amenity==="pharmacy"},
+];
+function poiCategoryOf(tags){ return tags ? (POI_CATS.find(c=>c.match(tags))||null) : null; }
+let poiLayer=null, showPOI=false, poiCache={}, poiFetchTimer=null, lastPOIElements=[];
+let poiActiveCats=new Set(POI_CATS.map(c=>c.key));
+let poiBtnEl=null, poiCatBarEl=null, poiStatusEl=null;
+function buildOverpassQuery(b){
+  const bbox=`${b.getSouth().toFixed(5)},${b.getWest().toFixed(5)},${b.getNorth().toFixed(5)},${b.getEast().toFixed(5)}`;
+  return `[out:json][timeout:15];(
+    node["amenity"="hospital"](${bbox});
+    node["amenity"="clinic"](${bbox});
+    node["amenity"="school"](${bbox});
+    node["amenity"="university"](${bbox});
+    node["amenity"="college"](${bbox});
+    node["amenity"="place_of_worship"]["religion"="muslim"](${bbox});
+    node["shop"="mall"](${bbox});
+    node["amenity"="pharmacy"](${bbox});
+  );out center 250;`;
+}
+function renderPOIs(elements){
+  if(!poiLayer) return;
+  poiLayer.clearLayers();
+  let shown=0;
+  for(const el of elements){
+    const cat=poiCategoryOf(el.tags);
+    if(!cat || !poiActiveCats.has(cat.key)) continue;
+    const lat=el.lat!=null?el.lat:(el.center&&el.center.lat), lon=el.lon!=null?el.lon:(el.center&&el.center.lon);
+    if(lat==null||lon==null) continue;
+    const name=(el.tags&&el.tags.name) || cat.label;
+    const m=L.marker([lat,lon],{icon:L.divIcon({className:"", iconSize:[26,26], iconAnchor:[13,13],
+      html:`<div class="poiPin">${cat.icon}</div>`})});
+    m.bindPopup(`<b>${name}</b><br><span style="color:#667">${cat.label}</span>`);
+    m.addTo(poiLayer);
+    shown++;
+  }
+  return shown;
+}
+function setPOIStatus(txt){ if(poiStatusEl) poiStatusEl.textContent=txt; }
+async function fetchPOIs(){
+  if(!showPOI || !map) return;
+  if(map.getZoom() < POI_MIN_ZOOM){ poiLayer.clearLayers(); setPOIStatus("قرّب الخريطة أكثر لعرض الأماكن القريبة"); return; }
+  const b=map.getBounds();
+  const key=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()].map(n=>n.toFixed(3)).join(",");
+  if(poiCache[key]){ lastPOIElements=poiCache[key]; const n=renderPOIs(lastPOIElements); setPOIStatus(n?`${fmt(n)} مكاناً قريباً`:"لا توجد أماكن معروفة قريبة بهذا النطاق"); return; }
+  clearTimeout(poiFetchTimer);
+  poiFetchTimer=setTimeout(async ()=>{
+    setPOIStatus("جارٍ البحث عن الأماكن القريبة…");
+    try{
+      const q=buildOverpassQuery(b);
+      const res=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:"data="+encodeURIComponent(q)});
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      const data=await res.json();
+      const elements=(data.elements||[]).filter(e=>e.tags && (e.lat!=null || e.center));
+      poiCache[key]=elements; lastPOIElements=elements;
+      const n=renderPOIs(elements);
+      setPOIStatus(n?`${fmt(n)} مكاناً قريباً`:"لا توجد أماكن معروفة قريبة بهذا النطاق");
+    }catch(e){
+      setPOIStatus("تعذّر تحميل الأماكن القريبة الآن — حاول مجدداً");
+    }
+  },700);
+}
 function domType(types){
   let best=null,bn=-1,tie=false;
   for(const t of TYPES){ const c=types[t]||0; if(c>bn){best=t;bn=c;tie=false;} else if(c===bn&&c>0)tie=true; }
@@ -3576,6 +3661,30 @@ function initMap(){
     else{ map.removeLayer(satLayer); streetLayer.addTo(map); satBtn.textContent="🛰 قمر صناعي"; satBtn.classList.remove("on"); }
   };
   $("map").appendChild(satBtn);
+
+  poiLayer=L.layerGroup();
+  poiBtnEl=document.createElement("button"); poiBtnEl.className="satToggle poiToggle"; poiBtnEl.textContent="📍 أماكن قريبة";
+  poiBtnEl.onclick=()=>{
+    showPOI=!showPOI;
+    poiBtnEl.classList.toggle("on",showPOI);
+    poiCatBarEl.style.display = showPOI ? "flex" : "none";
+    if(showPOI){ poiLayer.addTo(map); fetchPOIs(); }
+    else{ map.removeLayer(poiLayer); setPOIStatus(""); }
+  };
+  $("map").appendChild(poiBtnEl);
+  poiCatBarEl=document.createElement("div"); poiCatBarEl.className="poiCatBar";
+  poiCatBarEl.innerHTML=POI_CATS.map(c=>`<button type="button" class="poiChip on" data-cat="${c.key}">${c.icon} ${c.label}</button>`).join("");
+  $("map").appendChild(poiCatBarEl);
+  poiCatBarEl.querySelectorAll(".poiChip").forEach(ch=>ch.onclick=()=>{
+    const k=ch.dataset.cat;
+    if(poiActiveCats.has(k)){ poiActiveCats.delete(k); ch.classList.remove("on"); }
+    else{ poiActiveCats.add(k); ch.classList.add("on"); }
+    renderPOIs(lastPOIElements);
+  });
+  poiStatusEl=document.createElement("div"); poiStatusEl.className="poiStatus";
+  $("map").appendChild(poiStatusEl);
+  map.on("moveend zoomend",()=>{ if(showPOI) fetchPOIs(); });
+
   map.on("zoomend",updateLabels);
   $("legend").innerHTML=[["فيلا",TCOL["فيلا"]],["شقة",TCOL["شقة"]],["تاون هاوس",TCOL["تاون هاوس"]],["مختلط",TCOL["مختلط"]]].map(([t,c])=>`<span class="lg"><span class="dot" style="background:${c}"></span>${t}</span>`).join("");
   renderMap(filtered());
