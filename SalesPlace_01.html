@@ -1248,6 +1248,7 @@ main{flex:1;min-height:0;position:relative}
 .ldot{width:7px;height:7px;border-radius:99px;display:inline-block;margin-left:6px}
 .ldot.ok{background:var(--green)}
 .ldot.bad{background:var(--rust)}
+.ldot.out{background:var(--muted)}
 @media(min-width:900px){
   #aUserList{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-items:start}
 }
@@ -1603,6 +1604,7 @@ table.prods tr:last-child td{border:none}
       <button id="helpBtn" class="hbtn" title="شرح المصطلحات">؟</button>
       <button id="bankInfoBtn" class="hbtn" title="نسب بنوك التمويل">🏦</button>
       <button id="adminBtn" class="hbtn" style="display:none" title="لوحة الإدارة">🛡️</button>
+      <button id="logoutBtn" class="hbtn" title="تسجيل الخروج">🚪</button>
       <div class="datebadge" id="userBadge" style="cursor:pointer" title="تغيير كلمة المرور">بيانات 29 يوليو 2026 · <span id="userTag"></span> ⚙<span id="liveBadge" class="embedded"></span></div>
     </div>
   </div>
@@ -1946,6 +1948,7 @@ table.prods tr:last-child td{border:none}
       <div id="aLog" style="display:none">
         <div class="alogHead">
           <div id="aLogStats"></div>
+          <button class="tbtn" id="aLogClear" title="حذف كل ما قبل 3 أيام نهائياً من قاعدة البيانات">🧹 مسح الأقدم من 3 أيام</button>
           <button class="tbtn" id="aLogRefresh">تحديث ↻</button>
         </div>
         <div id="aLogList"></div>
@@ -5326,6 +5329,7 @@ function buildAdminTab(){
     if(which==="banks") loadAdminBanks();
   });
   $("aLogRefresh").onclick=loadAdminLog;
+  $("aLogClear").onclick=clearOldLoginLog;
   $("aAddBtn").onclick=()=>{
     $("auUser").value=""; $("auName").value=""; $("auPass").value=""; $("auMsg").textContent="";
     $("auRoleUser").classList.add("on"); $("auRoleAdmin").classList.remove("on");
@@ -7294,7 +7298,7 @@ async function loadAdminUsers(){
   $("aUserList").innerHTML =
     (permsAvailable ? "" : `<div class="src" style="margin-bottom:10px">تحرير الصلاحيات غير متاح بعد — شغّل ملف user_permissions.sql على قاعدة البيانات لتفعيله<br>السبب الفعلي: ${v2ErrReason}</div>`) +
     users.map(u=>{
-    const last = u.last_login ? new Date(u.last_login).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"short"}) : "لم يدخل بعد";
+    const last = u.last_login ? new Date(u.last_login).toLocaleString("ar-SA-u-ca-gregory",{dateStyle:"medium",timeStyle:"short"}) : "لم يدخل بعد";
     const perm = Object.assign({},PERM_ALL,u.permissions||{});
     const permChips = !permsAvailable ? "" : u.is_admin ? `<div class="umeta">المدير يرى كل بنود القائمة دائماً</div>` : `
       <div class="uperm" data-u="${u.username}">
@@ -7359,15 +7363,32 @@ async function loadAdminLog(){
   try{ res=await adminCall("admin_login_log",{p_limit:300}); }
   catch(e){ $("aLogList").innerHTML=`<div style="color:var(--rust);font-size:12px">تعذّر الاتصال بالخادم</div>`; return; }
   if(!res||!res.ok){ $("aLogList").innerHTML=`<div style="color:var(--rust);font-size:12px">${(res&&res.msg)||"تعذّر التحميل"}</div>`; return; }
-  const log=res.log||[];
+  const loginRows=(res.log||[]).map(r=>({...r, event:"login"}));
+  /* سجل الخروج مصدر منفصل تماماً (login_log_logout.sql) — لا يمسّ ولا يعتمد على
+     admin_login_log الأصلية، فقط يُدمَج بعرض واحد بالعميل؛ فشله (مثلاً قبل تشغيل
+     login_log_logout.sql) لا يوقف عرض سجل الدخول */
+  let logoutRows=[];
+  try{
+    const lo=await sbSelect("login_log_logout",{select:"username,at",order:"at.desc",limit:"300"});
+    logoutRows=(lo||[]).map(r=>({at:r.at, username:r.username, ok:null, reason:"تسجيل خروج", event:"logout"}));
+  }catch(e){}
+  const log=[...loginRows, ...logoutRows].sort((a,b)=>new Date(b.at)-new Date(a.at));
   const today=new Date().toDateString();
-  const todayRows=log.filter(r=>new Date(r.at).toDateString()===today);
-  const okCount=todayRows.filter(r=>r.ok).length, badCount=todayRows.filter(r=>!r.ok).length;
+  const todayLogins=loginRows.filter(r=>new Date(r.at).toDateString()===today);
+  const okCount=todayLogins.filter(r=>r.ok).length, badCount=todayLogins.filter(r=>!r.ok).length;
   $("aLogStats").innerHTML=`اليوم: <b>${okCount}</b> دخول ناجح · <b style="color:var(--rust)">${badCount}</b> محاولة فاشلة · إجمالي آخر 3 أيام: ${log.length}`;
   $("aLogList").innerHTML = `<div class="ucard" style="padding:0">` + (log.map(r=>{
-    const t=new Date(r.at).toLocaleString("ar-SA",{dateStyle:"short",timeStyle:"short"});
-    return `<div class="lrow"><div><span class="ldot ${r.ok?"ok":"bad"}"></span><span class="lu">${r.username||"—"}</span> — <span style="color:var(--muted)">${r.reason||""}</span></div><div class="lt">${t}</div></div>`;
+    const t=new Date(r.at).toLocaleString("ar-SA-u-ca-gregory",{dateStyle:"short",timeStyle:"short"});
+    const dotCls = r.event==="logout" ? "out" : (r.ok?"ok":"bad");
+    return `<div class="lrow"><div><span class="ldot ${dotCls}"></span><span class="lu">${r.username||"—"}</span> — <span style="color:var(--muted)">${r.reason||""}</span></div><div class="lt">${t}</div></div>`;
   }).join("") || `<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">لا يوجد سجل بعد</div>`) + `</div>`;
+}
+async function clearOldLoginLog(){
+  if(!confirm("حذف كل سجلات الدخول والخروج الأقدم من 3 أيام نهائياً من القاعدة؟ لا يمكن التراجع.")) return;
+  const r=await adminCall("admin_clear_login_log",{p_days:3});
+  if(!r||!r.ok) return toast((r&&r.msg)||"تعذّر الحذف","err");
+  toast(r.msg||"تم الحذف","ok");
+  loadAdminLog();
 }
 
 /* ---------- affordability calculator (beneficiaries / REDF) ----------
@@ -8447,6 +8468,7 @@ async function tryUnlock(){
     }catch(e){ PERMS=Object.assign({},PERM_ALL); SERVER_ONBOARDED=null; }
     boot();
     syncLiveData();
+    resetIdleTimer();
     /* install-hint prompt removed per request */
   }catch(e){
     lockErr("تعذّر فك البيانات — قد يكون ملف التطبيق قديماً، اطلب النسخة الأحدث");
@@ -8472,6 +8494,28 @@ async function autoRefreshLiveData(){
 }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") autoRefreshLiveData(); });
 setInterval(autoRefreshLiveData, 15*60*1000);
+
+/* تسجيل الخروج — يدوياً عبر زر 🚪 بالهيدر، أو تلقائياً بعد 60 دقيقة خمول كامل (بلا أي
+   نقرة/لمسة/تمرير). نسجّل وقت الخروج فعلياً بقاعدة البيانات (login_log_logout.sql) قبل
+   إعادة تحميل الصفحة — إعادة التحميل الكاملة أبسط وأضمن من محاولة تصفير كل متغيرات
+   الجلسة يدوياً (DATA، الصلاحيات، حالة الشاشات...) وتضمن عودة نظيفة تماماً لشاشة الدخول */
+let idleTimer=null;
+const IDLE_LOGOUT_MS = 60*60*1000; // 60 دقيقة
+function resetIdleTimer(){
+  if(!CURUSER) return;
+  clearTimeout(idleTimer);
+  idleTimer=setTimeout(()=>doLogout(true), IDLE_LOGOUT_MS);
+}
+["click","keydown","touchstart","mousemove","scroll"].forEach(evt=>document.addEventListener(evt, resetIdleTimer, {passive:true}));
+async function doLogout(auto){
+  if(!CURUSER) return;
+  if(!auto && !confirm("تسجيل الخروج من الحساب؟")) return;
+  clearTimeout(idleTimer);
+  try{ await sbCall("record_logout",{p_user:CURUSER,p_pass:CURPASS}); }catch(e){}
+  if(auto) alert("تم تسجيل خروجك تلقائياً بسبب عدم النشاط لمدة 60 دقيقة");
+  location.reload();
+}
+$("logoutBtn").onclick=()=>doLogout(false);
 
 $("lockBtn").onclick=tryUnlock;
 $("userBadge").onclick=()=>{ if(CURUSER) doChangePw(); };
