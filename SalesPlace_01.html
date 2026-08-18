@@ -1019,6 +1019,20 @@ main{flex:1;min-height:0;position:relative}
 .pendRow i.contract{background:var(--green)}
 .pendRow span{flex:1;font-size:12px;color:var(--ink)}
 .pendRow b{font-size:15px;font-family:"Noto Kufi Arabic"}
+.durRow{padding:9px 0;border-top:1px dashed var(--line)}
+.durRow:first-of-type{border-top:none}
+.durLbl{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.durVals{display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:var(--muted)}
+.durVals b{color:var(--ink)}
+.mrRow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px dashed var(--line)}
+.mrRow:first-of-type{border-top:none}
+.mrRank{width:24px;height:24px;border-radius:50%;background:var(--surface2,#eef1f6);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--muted);flex:none}
+.mrInfo{flex:1;min-width:0}
+.mrProj{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrMeta{font-size:10.5px;color:var(--muted);margin-top:1px}
+.mrCnt{text-align:center;flex:none}
+.mrCnt b{display:block;font-size:15px;font-family:"Noto Kufi Arabic";color:var(--green)}
+.mrCnt span{font-size:9.5px;color:var(--muted)}
 .mfoot{font-size:10.5px;color:var(--muted);margin-top:8px;line-height:1.7}
 .mfoot b{color:var(--ink);font-family:"Noto Kufi Arabic"}
 .pill.ab{font-weight:600}
@@ -1746,10 +1760,22 @@ table.prods tr:last-child td{border:none}
             <button class="chip" id="secEast">الشرقي</button>
           </div>
         </div>
+        <div class="scGroup">
+          <span class="scLbl">نوع المنتج</span>
+          <div class="chips">
+            <button class="chip on" id="utAll">الكل</button>
+            <button class="chip" id="utVilla">فيلا</button>
+            <button class="chip" id="utApt">شقة</button>
+            <button class="chip" id="utTown">تاون هاوس</button>
+          </div>
+        </div>
         </div>
       </div>
       <div class="flabel" id="salesMonthLbl" style="margin:14px 0 4px"></div>
+      <div id="salesPeriodBadge"></div>
       <div id="salesGrid"></div>
+      <div id="modelsRankBtn"></div>
+      <div id="salesDurCard"></div>
     </div>
   </div>
   <div class="view" id="destView">
@@ -2196,6 +2222,16 @@ table.prods tr:last-child td{border:none}
     <div class="sheetbody">
       <h2 style="margin:0 0 10px">الـBatches المحفوظة</h2>
       <div id="batchListBody"></div>
+    </div>
+  </div>
+  <!-- Design models ranked by sales -->
+  <div class="scrim" id="modelsRankScrim"></div>
+  <div class="sheet" id="modelsRankSheet">
+    <div class="handle" data-drag="modelsRankSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 4px">النماذج الأكثر مبيعاً</h2>
+      <div class="src" id="modelsRankSub" style="margin-bottom:10px"></div>
+      <div id="modelsRankBody"></div>
     </div>
   </div>
   <!-- Challenge add/edit sheet -->
@@ -3137,7 +3173,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim",supplyBuildingsSheet:"supplyBuildingsScrim",batchPickSheet:"batchPickScrim",batchListSheet:"batchListScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim",supplyBuildingsSheet:"supplyBuildingsScrim",batchPickSheet:"batchPickScrim",batchListSheet:"batchListScrim",modelsRankSheet:"modelsRankScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -3146,7 +3182,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet","supplyBuildingsSheet","batchPickSheet","batchListSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet","supplyBuildingsSheet","batchPickSheet","batchListSheet","modelsRankSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -4003,14 +4039,15 @@ $("hTileSupply").onclick=()=>setView("supply");
 $("hTileAfford").onclick=()=>openAffordSheet();
 
 const _now=new Date();
-let salesGran="month", salesMetric="contract", salesDev="all", salesSector="all",
+let salesGran="month", salesMetric="contract", salesDev="all", salesSector="all", salesUnitType="all",
     salesYear="2026", salesMonth=String(_now.getMonth()+1).padStart(2,"0");
 function updateSalesCtrlSummary(){
   const granLbl={day:"يومي",month:"شهري",quarter:"ربعي"}[salesGran];
   const metLbl={book:"الحجوزات",ist:"الاستصناع",contract:"العقود"}[salesMetric];
   const devLbl={all:"كل المطورين",nhc:"NHC",other:"مطورون آخرون"}[salesDev];
   const secLbl=salesSector==="all"?"كل القطاعات":salesSector;
-  $("salesCtrlSummary").textContent=`${salesYear} · ${granLbl} · ${metLbl} · ${devLbl} · ${secLbl}`;
+  const utLbl=salesUnitType==="all"?"كل الأنواع":salesUnitType;
+  $("salesCtrlSummary").textContent=`${salesYear} · ${granLbl} · ${metLbl} · ${devLbl} · ${secLbl} · ${utLbl}`;
 }
 function wireSalesCtrl(){
   $("salesMonthSel").value=salesMonth; // افتراضي: الشهر الحالي
@@ -4031,8 +4068,13 @@ function wireSalesCtrl(){
   Object.entries(d).forEach(([k,btn])=>btn.onclick=()=>{ salesDev=k; Object.values(d).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); updateSalesCtrlSummary(); renderSales(); });
   const sec={all:$("secAll"),"الأوسط":$("secMid"),"الغربي":$("secWest"),"الشرقي":$("secEast")};
   Object.entries(sec).forEach(([k,btn])=>btn.onclick=()=>{ salesSector=k; Object.values(sec).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); updateSalesCtrlSummary(); renderSales(); });
+  const ut={all:$("utAll"),"فيلا":$("utVilla"),"شقة":$("utApt"),"تاون هاوس":$("utTown")};
+  Object.entries(ut).forEach(([k,btn])=>btn.onclick=()=>{ salesUnitType=k; Object.values(ut).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); updateSalesCtrlSummary(); renderSales(); });
   $("salesYear").onchange=()=>{ salesYear=$("salesYear").value; updateSalesCtrlSummary(); renderSales(); };
   $("salesMonthSel").onchange=()=>{ salesMonth=$("salesMonthSel").value; renderSales(); };
+  $("modelsRankBtn").innerHTML = `<button class="btn ghost" style="width:100%;max-width:640px;margin:12px auto;display:block" id="modelsRankOpenBtn">🏆 عرض النماذج الأكثر مبيعاً (حسب الفلتر أعلاه)</button>`;
+  $("modelsRankOpenBtn").onclick = renderModelsRank;
+  $("modelsRankScrim").onclick = ()=>closeSheet("modelsRankSheet");
   updateSalesCtrlSummary();
 }
 const MNAMES={"01":"يناير","02":"فبراير","03":"مارس","04":"أبريل","05":"مايو","06":"يونيو",
@@ -4050,6 +4092,29 @@ function barLabel(iso,gran){
   if(gran==="day") return String(+iso.split("-")[2]);
   return periodLabel(iso,gran);
 }
+/* هل الفترة (يوم/شهر/ربع) المحدَّدة بـperiodISO لا تزال جارية اليوم فعلياً؟ لو نعم، ترجع
+   عدد الأيام المنقضية منها وإجماليها — تُستخدَم لاستبعادها من حساب "الاتجاه" (مقارنة غير
+   عادلة بفترة مكتملة) ولحساب "المتوقع لنهاية الفترة" بوتيرة الإنجاز حتى الآن */
+function periodProgress(periodISO, gran){
+  const [y,m,d]=periodISO.split("-").map(Number);
+  const now=new Date();
+  if(gran==="day"){
+    const isToday = now.getFullYear()===y && (now.getMonth()+1)===m && now.getDate()===d;
+    return isToday ? {elapsedDays:1,totalDays:1} : null; /* يوم كامل واحد دائماً — لا تُعرض إسقاط run-rate لبيانات جزء يوم لأنها غير موثوقة عملياً */
+  }
+  if(gran==="month"){
+    const isCurrent = now.getFullYear()===y && (now.getMonth()+1)===m;
+    if(!isCurrent) return null;
+    return {elapsedDays: now.getDate(), totalDays: new Date(y,m,0).getDate()};
+  }
+  const q=Math.ceil(m/3), qStartMonth=(q-1)*3+1;
+  const start=new Date(y,qStartMonth-1,1), end=new Date(y,qStartMonth+2,0);
+  if(now<start || now>end) return null;
+  return {
+    elapsedDays: Math.round((now-start)/86400000)+1,
+    totalDays: Math.round((end-start)/86400000)+1,
+  };
+}
 function renderPendingCard(){
   if(!BOOK) return "";
   let reserved=0, istisnaActive=0;
@@ -4065,7 +4130,7 @@ function renderPendingCard(){
   return `<div class="salesCard" style="max-width:640px;margin:12px auto 0">
     <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px">المعلّق حتى تاريخه — لم يتحوّل لعقد نهائي بعد</div>
     <div class="src" style="margin-bottom:9px">لقطة حالية من مخزون الداشبورد، لا مجموع فترة</div>
-    <div class="pendRow"><i class="ist"></i><span>عقود استصناع موقّعة، بانتظار العقد النهائي</span><b>${fmt(istisnaActive)}</b></div>
+    <div class="pendRow"><i class="ist"></i><span>عقود استصناع موقّعة من ضمن المحجوز، بانتظار العقد النهائي</span><b>${fmt(istisnaActive)}</b></div>
     <div class="pendRow"><i class="book"></i><span>وحدات محجوزة، بانتظار عقد الاستصناع</span><b>${fmt(reserved)}</b></div>
   </div>`;
 }
@@ -4090,11 +4155,23 @@ async function renderSales(){
     pFrom = `${salesYear}-01-01`;
     pTo = `${salesYear}-12-31`;
   }
+  /* فلتر نوع المنتج: get_sales_report/get_project_totals دالتان قديمتان سابقتان لهذا
+     المستودع (مصدرهما غير معروف)، وتعديلهما مباشرة لإضافة معامل جديد يحمل خطر تغيير سلوك
+     الحالة الافتراضية (كل الأنواع) بصمت لأننا لا نملك الكود الأصلي لنتأكد. لذا: لو الفلتر
+     "الكل" (الحالة الأكثر استخداماً) تبقى الدالتان الأصليتان بلا أي تغيير كما كانتا؛ ولو
+     اختير نوع محدد فقط، نستخدم دالتين جديدتين مبنيتين هنا بأنفسنا فوق unit_allocation_mirror
+     مباشرة (sales_analytics_v2.sql) — بنفس الشكل، لكن بمعرفة كاملة بمصدرها */
+  const utParam = salesUnitType==="all" ? null : salesUnitType;
+  const reportFn = utParam ? "get_sales_report_by_type" : "get_sales_report";
+  const totalsFn = utParam ? "get_project_totals_by_type" : "get_project_totals";
+  const reportArgs = {p_granularity:salesGran,p_metric:METKEY[salesMetric],p_from:pFrom,p_to:pTo,p_sector:secParam,p_dev_kind:devParam};
+  const totalsArgs = {p_metric:METKEY[salesMetric],p_from:pFrom,p_to:pTo,p_sector:secParam,p_dev_kind:devParam};
+  if(utParam){ reportArgs.p_unit_type=utParam; totalsArgs.p_unit_type=utParam; }
   let report, projReport;
   try{
     [report, projReport] = await Promise.all([
-      sbCall("get_sales_report",{p_granularity:salesGran,p_metric:METKEY[salesMetric],p_from:pFrom,p_to:pTo,p_sector:secParam,p_dev_kind:devParam}),
-      sbCall("get_project_totals",{p_metric:METKEY[salesMetric],p_from:pFrom,p_to:pTo,p_sector:secParam,p_dev_kind:devParam}),
+      sbCall(reportFn, reportArgs),
+      sbCall(totalsFn, totalsArgs),
     ]);
   }catch(e){
     if(myReq!==salesReqId) return;
@@ -4122,7 +4199,14 @@ async function renderSales(){
   let targetSummary=null;
   if(salesGran!=="day"){
     try{
-      const fromM=+shown[0].period.split("-")[1], toM=+shown[shown.length-1].period.split("-")[1];
+      const fromM=+shown[0].period.split("-")[1];
+      /* period لكل عمود ربعي مُعنوَن بأول شهر بالربع (مثال: يوليو=٧ للربع الثالث) —
+         استخدام هذا الرقم مباشرةً كـ"إلى شهر" كان يقصّ المستهدف على شهر واحد فقط من
+         الربع الأخير المعروض بدل أشهره الثلاثة، فيصبح مستهدف كامل المدى المعروض أصغر
+         ظاهرياً مما يجب فعلاً، وتبدو نسبة "من المستهدف" غير منطقية. نكمّل لآخر شهر
+         بالربع فعلياً، بنفس الحساب المستخدم أصلاً لكل عمود على حدة أدناه (q*3) */
+      let toM=+shown[shown.length-1].period.split("-")[1];
+      if(salesGran==="quarter") toM = Math.ceil(toM/3)*3;
       targetSummary = await sbCall("get_target_summary",{p_year:+salesYear,p_from_month:fromM,p_to_month:toM,p_sector:secParam,p_dev_kind:devParam});
     }catch(e){ targetSummary=null; } /* sales_targets.sql قد لا يكون شُغّل بعد — الشاشة تعمل عادي بدونه */
   }
@@ -4151,9 +4235,18 @@ async function renderSales(){
      الإجمالي أكبر بصرياً من البقية (أهم رقم بالشاشة)، والاتجاه له حالة محايدة عند تغيّر طفيف
      بدل إجباره ▲ أو ▼ على فروق لا دلالة لها. */
   const avgPerPeriod = Math.round(total/shown.length);
+  /* آخر عمود معروض قد يكون فترة جارية لم تنتهِ بعد (اليوم الحالي، الشهر الحالي، أو الربع
+     الحالي) — مقارنته مباشرة بفترة سابقة مكتملة بالكامل تُظهر هبوطاً كبيراً مضلِّلاً وهمياً
+     (المشاهَد فعلياً بلقطة الشاشة: ٤٩٪ هبوط بالربع الثالث كان فقط لأن الربع لم ينتهِ بعد،
+     وليس تراجعاً حقيقياً بالمبيعات). نستثني الفترة الجارية من حساب "الاتجاه" (نقارن آخر
+     فترتين مكتملتين)، ونعرض بدلاً عنها "المتوقع لنهاية الفترة" المبني على وتيرة الإنجاز
+     حتى الآن (run rate) */
+  const lastIdx = shown.length-1;
+  const curInfo = periodProgress(shown[lastIdx].period, salesGran);
+  const compareEndIdx = curInfo ? lastIdx-1 : lastIdx;
   let trendPct=null, trendState=null;
-  if(shown.length>=2){
-    const last=Number(shown[shown.length-1].cnt), prev=Number(shown[shown.length-2].cnt);
+  if(compareEndIdx>=1){
+    const last=Number(shown[compareEndIdx].cnt), prev=Number(shown[compareEndIdx-1].cnt);
     if(prev>0){
       trendPct=Math.round(((last-prev)/prev)*100);
       trendState = Math.abs(trendPct)<3 ? "flat" : trendPct>0 ? "up" : "down";
@@ -4161,14 +4254,26 @@ async function renderSales(){
   }
   const trendCls = trendState==="up" ? "hi" : trendState==="down" ? "warn" : "";
   const trendTxt = trendState==null ? "—" : trendState==="flat" ? `◆ ${trendPct>=0?"+":""}${trendPct}%` : `${trendState==="up"?"▲":"▼"} ${Math.abs(trendPct)}%`;
+  const periodWord = granLbl==="يومي"?"اليوم":granLbl==="شهري"?"الشهر":"الربع";
   const targetPct = (targetSummary && targetSummary.total>0) ? Math.round((total/targetSummary.total)*100) : null;
   const targetCls = targetPct==null ? "" : targetPct>=100 ? "hi" : targetPct<70 ? "warn" : "";
+  let projectedTxt=null;
+  if(curInfo && curInfo.elapsedDays < curInfo.totalDays){
+    const actualSoFar = Number(shown[lastIdx].cnt);
+    projectedTxt = fmt(Math.round(actualSoFar * curInfo.totalDays / curInfo.elapsedDays));
+  }
   const kpiRow = `<div class="bigStats">
     <div class="bigStat hi lg" id="kpiTotal" title="${periodLabel(report[0].period,salesGran)} – ${periodLabel(report[report.length-1].period,salesGran)}"><b>${fmt(total)}</b><span>الإجمالي</span></div>
-    <div class="bigStat" id="kpiAvg"><b>${fmt(avgPerPeriod)}</b><span>متوسط ${granLbl==="يومي"?"اليوم":granLbl==="شهري"?"الشهر":"الربع"}</span></div>
-    <div class="bigStat ${trendCls}"><b>${trendTxt}</b><span>الاتجاه</span></div>
-    ${targetPct!=null?`<div class="bigStat ${targetCls}"><b>${fmt(targetPct)}%</b><span>من المستهدف (${fmt(total)} / ${fmt(Math.round(targetSummary.total))})</span></div>`:""}
-  </div>`;
+    <div class="bigStat" id="kpiAvg"><b>${fmt(avgPerPeriod)}</b><span>متوسط ${periodWord}</span></div>
+    <div class="bigStat ${trendCls}"><b>${trendTxt}</b><span>الاتجاه (آخر فترتين مكتملتين)</span></div>
+    ${projectedTxt!=null?`<div class="bigStat"><b>${projectedTxt}</b><span>المتوقع لنهاية ${periodWord} (Run rate)</span></div>`:""}
+    ${targetPct!=null?`<div class="bigStat ${targetCls}"><b>${fmt(targetPct)}%</b><span>من المستهدف — تحقّق ${fmt(total)} من أصل ${fmt(Math.round(targetSummary.total))}</span></div>`:""}
+  </div>
+  ${(targetPct!=null && utParam) ? `<div class="src" style="text-align:center;margin-top:2px">⚠ المستهدف يشمل كل أنواع الوحدات — لا يوجد مستهدف منفصل مسجَّل لكل نوع على حدة</div>` : ""}`;
+  const periodBadgeTxt = curInfo
+    ? `🔴 نحن الآن ضمن ${periodLabel(shown[lastIdx].period,salesGran)} — البيانات جزئية حتى تاريخه (${fmt(curInfo.elapsedDays)} من ${fmt(curInfo.totalDays)} يوماً)`
+    : `⚪ آخر فترة معروضة (${periodLabel(shown[lastIdx].period,salesGran)}) مكتملة بالكامل`;
+  $("salesPeriodBadge").innerHTML = `<div class="src" style="text-align:center;margin:2px 0 10px">${periodBadgeTxt}</div>`;
 
   /* أعمدة أوسع + تسميات مختصرة (بلا تكرار السنة إن كانت كل الفترات المعروضة بنفس السنة) بدل
      تراكب النصوص تحت الأعمدة، وشارت أعمدة نظيف بلا خط اتجاه فوقه يشتّت القراءة.
@@ -4253,6 +4358,66 @@ async function renderSales(){
     });
     $("projNoMatch").style.display = (q && !anyShown) ? "" : "none";
   };
+  renderSalesDurations();
+}
+async function renderSalesDurations(){
+  const secParam = salesSector==="all" ? null : salesSector;
+  const utParam = salesUnitType==="all" ? null : salesUnitType;
+  let d=null;
+  try{ d = await sbCall("get_avg_durations",{p_sector:secParam,p_unit_type:utParam}); }
+  catch(e){ d=null; } /* sales_analytics_v2.sql قد لا يكون شُغّل بعد — لا يوقف بقية الشاشة */
+  if(!d){ $("salesDurCard").innerHTML=""; return; }
+  const row=(lbl,obj)=>{
+    if(!obj) return "";
+    const a = obj.n_book_to_istisna>0 ? `${fmt(obj.avg_book_to_istisna)} يوم (${fmt(obj.n_book_to_istisna)} وحدة)` : "لا بيانات كافية";
+    const b = obj.n_istisna_to_contract>0 ? `${fmt(obj.avg_istisna_to_contract)} يوم (${fmt(obj.n_istisna_to_contract)} وحدة)` : "لا بيانات كافية";
+    return `<div class="durRow"><div class="durLbl">${lbl}</div><div class="durVals"><span>حجز ← استصناع: <b>${a}</b></span><span>استصناع ← عقد نهائي: <b>${b}</b></span></div></div>`;
+  };
+  $("salesDurCard").innerHTML = `<div class="salesCard" style="max-width:640px;margin:12px auto 0">
+    <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px">متوسط المدة بين المراحل (أيام)</div>
+    <div class="src" style="margin-bottom:9px">لقطة حالية من آخر ملف تخصيص — لا مجموع فترة</div>
+    ${row("الكل", d.all)}
+    ${row("NHC", d.nhc)}
+    ${row("المطورون", d.other)}
+  </div>`;
+}
+function computeModelsRanking(){
+  const rows=[];
+  for(const p of DATA){
+    if(salesSector!=="all" && p.sector!==salesSector) continue;
+    const isNHC = p.dev.trim()==="NHC";
+    if(salesDev==="nhc" && !isNHC) continue;
+    if(salesDev==="other" && isNHC) continue;
+    const mSpecs = MODELS ? MODELS[p.id] : null;
+    if(!mSpecs) continue;
+    const live = MODELSTAT ? MODELSTAT[String(p.id)] : null;
+    for(const [mkey,ms] of Object.entries(mSpecs)){
+      if(salesUnitType!=="all" && ms.type!==salesUnitType) continue;
+      const st = live ? live[mkey] : null;
+      const contracted = st ? (st.contracted||0) : 0;
+      if(contracted<=0) continue;
+      rows.push({project:p.short, model:mkey, type:ms.type, beds:ms.beds, size:ms.size, contracted});
+    }
+  }
+  rows.sort((a,b)=>b.contracted-a.contracted);
+  return rows;
+}
+function renderModelsRank(){
+  const rows=computeModelsRanking();
+  const devLbl={all:"كل المطورين",nhc:"NHC",other:"مطورون آخرون"}[salesDev];
+  const secLbl=salesSector==="all"?"كل القطاعات":salesSector;
+  const utLbl=salesUnitType==="all"?"كل الأنواع":salesUnitType;
+  $("modelsRankSub").textContent = `${devLbl} · ${secLbl} · ${utLbl} — الأعداد لقطة حيّة من آخر تخصيص، مرتّبة من الأعلى للأقل`;
+  $("modelsRankBody").innerHTML = rows.length ? rows.map((r,i)=>`
+    <div class="mrRow">
+      <div class="mrRank">${i+1}</div>
+      <div class="mrInfo">
+        <div class="mrProj">${r.project}</div>
+        <div class="mrMeta">${r.model.replace("model_","نموذج ")} · ${r.type}${r.beds?` · ${r.beds} غرف`:""}${r.size?` · ${fmt(r.size)} م²`:""}</div>
+      </div>
+      <div class="mrCnt"><b>${fmt(r.contracted)}</b><span>متعاقَد</span></div>
+    </div>`).join("") : `<div class="src" style="text-align:center;padding:24px">لا توجد وحدات متعاقَد عليها مطابقة لهذا الفلتر</div>`;
+  openSheet("modelsRankSheet");
 }
 wireSalesCtrl();
 $("dealBannerX").onclick=()=>{ $("dealBanner").style.display="none"; };
