@@ -1397,11 +1397,13 @@ table.prods tr:last-child td{border:none}
 .bkseg.avail{background:var(--green)}
 .bkseg.reserved{background:var(--gold)}
 .bkseg.contracted{background:var(--line)}
+.bkseg.blocked{background:var(--rust)}
 .bklegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:9px;font-size:11px;color:var(--ink)}
 .bklegend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-inline-end:5px;vertical-align:middle}
 .bklegend i.avail{background:var(--green)}
 .bklegend i.reserved{background:var(--gold)}
 .bklegend i.contracted{background:var(--muted)}
+.bklegend i.blocked{background:var(--rust)}
 .modelgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:11px}
 .modelcard{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:12px 13px;box-shadow:var(--shadow)}
 .mcHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -1775,6 +1777,7 @@ table.prods tr:last-child td{border:none}
       <div id="salesPeriodBadge"></div>
       <div id="salesGrid"></div>
       <div id="modelsRankBtn"></div>
+      <div id="invAnalysisBtn"></div>
       <div id="salesDurCard"></div>
     </div>
   </div>
@@ -2232,6 +2235,16 @@ table.prods tr:last-child td{border:none}
       <h2 style="margin:0 0 4px">النماذج الأكثر مبيعاً</h2>
       <div class="src" id="modelsRankSub" style="margin-bottom:10px"></div>
       <div id="modelsRankBody"></div>
+    </div>
+  </div>
+  <!-- Inventory analysis: available/blocked/sold distribution -->
+  <div class="scrim" id="invAnalysisScrim"></div>
+  <div class="sheet" id="invAnalysisSheet">
+    <div class="handle" data-drag="invAnalysisSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 4px">تحليل المخزون</h2>
+      <div class="src" id="invAnalysisSub" style="margin-bottom:10px"></div>
+      <div id="invAnalysisBody"></div>
     </div>
   </div>
   <!-- Challenge add/edit sheet -->
@@ -3173,7 +3186,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim",supplyBuildingsSheet:"supplyBuildingsScrim",batchPickSheet:"batchPickScrim",batchListSheet:"batchListScrim",modelsRankSheet:"modelsRankScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim",supplyBuildingsSheet:"supplyBuildingsScrim",batchPickSheet:"batchPickScrim",batchListSheet:"batchListScrim",modelsRankSheet:"modelsRankScrim",invAnalysisSheet:"invAnalysisScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -3182,7 +3195,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet","supplyBuildingsSheet","batchPickSheet","batchListSheet","modelsRankSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet","supplyBuildingsSheet","batchPickSheet","batchListSheet","modelsRankSheet","invAnalysisSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -4075,6 +4088,9 @@ function wireSalesCtrl(){
   $("modelsRankBtn").innerHTML = `<button class="btn ghost" style="width:100%;max-width:640px;margin:12px auto;display:block" id="modelsRankOpenBtn">🏆 عرض النماذج الأكثر مبيعاً (حسب الفلتر أعلاه)</button>`;
   $("modelsRankOpenBtn").onclick = renderModelsRank;
   $("modelsRankScrim").onclick = ()=>closeSheet("modelsRankSheet");
+  $("invAnalysisBtn").innerHTML = `<button class="btn ghost" style="width:100%;max-width:640px;margin:8px auto;display:block" id="invAnalysisOpenBtn">📦 تحليل المخزون (متاح/محجوب/مباع)</button>`;
+  $("invAnalysisOpenBtn").onclick = renderInventoryAnalysis;
+  $("invAnalysisScrim").onclick = ()=>closeSheet("invAnalysisSheet");
   updateSalesCtrlSummary();
 }
 const MNAMES={"01":"يناير","02":"فبراير","03":"مارس","04":"أبريل","05":"مايو","06":"يونيو",
@@ -4418,6 +4434,65 @@ function renderModelsRank(){
       <div class="mrCnt"><b>${fmt(r.contracted)}</b><span>متعاقَد</span></div>
     </div>`).join("") : `<div class="src" style="text-align:center;padding:24px">لا توجد وحدات متعاقَد عليها مطابقة لهذا الفلتر</div>`;
   openSheet("modelsRankSheet");
+}
+async function renderInventoryAnalysis(){
+  const secParam = salesSector==="all" ? null : salesSector;
+  const devParam = salesDev==="all" ? null : salesDev;
+  const utParam = salesUnitType==="all" ? null : salesUnitType;
+  const devLbl={all:"كل المطورين",nhc:"NHC",other:"مطورون آخرون"}[salesDev];
+  const secLbl=salesSector==="all"?"كل القطاعات":salesSector;
+  const utLbl=salesUnitType==="all"?"كل الأنواع":salesUnitType;
+  $("invAnalysisSub").textContent = `${devLbl} · ${secLbl} · ${utLbl} — لقطة حيّة من آخر تخصيص`;
+  $("invAnalysisBody").innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
+  openSheet("invAnalysisSheet");
+  let d;
+  try{ d = await sbCall("get_inventory_analysis",{p_sector:secParam,p_dev_kind:devParam,p_unit_type:utParam}); }
+  catch(e){ d=null; }
+  if(!d || !d.totals){
+    $("invAnalysisBody").innerHTML = `<div class="src" style="text-align:center;padding:24px">تعذّر تحميل تحليل المخزون — تحقّق من تشغيل inventory_analysis.sql على القاعدة</div>`;
+    return;
+  }
+  const t=d.totals;
+  const grand = (t.avail_count||0)+(t.reserved_count||0)+(t.contracted_count||0)+(t.blocked_count||0);
+  const pct = n => grand ? Math.round(n/grand*100) : 0;
+  const distHtml = `<div class="salesCard" style="max-width:640px;margin:0 auto 12px">
+    <div class="scTotal" style="border:none;padding:0;margin-bottom:9px;font-size:13px">توزيع المخزون الكامل — إجمالي ${fmt(grand)} وحدة</div>
+    <div class="bkbar">
+      <span class="bkseg avail" style="width:${pct(t.avail_count)}%"></span>
+      <span class="bkseg reserved" style="width:${pct(t.reserved_count)}%"></span>
+      <span class="bkseg contracted" style="width:${pct(t.contracted_count)}%"></span>
+      <span class="bkseg blocked" style="width:${pct(t.blocked_count)}%"></span>
+    </div>
+    <div class="bklegend">
+      <span><i class="avail"></i>متاح ${fmt(t.avail_count)} (${pct(t.avail_count)}٪)</span>
+      <span><i class="reserved"></i>محجوز ${fmt(t.reserved_count)} (${pct(t.reserved_count)}٪)</span>
+      <span><i class="contracted"></i>مباع (عقد نهائي) ${fmt(t.contracted_count)} (${pct(t.contracted_count)}٪)</span>
+      <span><i class="blocked"></i>محجوب ${fmt(t.blocked_count)} (${pct(t.blocked_count)}٪)</span>
+    </div>
+  </div>`;
+  const section = (title, obj, icoCls) => {
+    if(!obj || !obj.count) return `<div class="salesCard" style="max-width:640px;margin:0 auto 12px"><div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px">${title}</div><div class="src">لا توجد وحدات مطابقة لهذا الفلتر</div></div>`;
+    const rows = (obj.by_project||[]).slice(0,50).map((r,i)=>`
+      <div class="mrRow">
+        <div class="mrRank">${i+1}</div>
+        <div class="mrInfo">
+          <div class="mrProj">${r.project_name}</div>
+          <div class="mrMeta">متوسط السعر ${r.avg_price!=null?compact(r.avg_price)+" ريال":"—"}</div>
+        </div>
+        <div class="mrCnt"><b>${fmt(r.count)}</b><span>وحدة</span></div>
+      </div>`).join("");
+    return `<div class="salesCard" style="max-width:640px;margin:0 auto 12px">
+      <div class="scTotal" style="border:none;padding:0;margin-bottom:9px;font-size:13px">${title} — ${fmt(obj.count)} وحدة</div>
+      <div class="dest3" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">
+        <div class="dstat"><b>${obj.avg_price!=null?compact(obj.avg_price):"—"}</b><span>متوسط السعر (ريال)</span></div>
+        <div class="dstat"><b>${obj.avg_sqm_price!=null?fmt(obj.avg_sqm_price):"—"}</b><span>سعر المتر (ريال)</span></div>
+        <div class="dstat"><b>${obj.avg_size!=null?fmt(obj.avg_size):"—"}</b><span>متوسط المساحة (م²)</span></div>
+      </div>
+      <div class="src" style="margin-bottom:4px">حسب المشروع (أعلى ٥٠)</div>
+      ${rows || `<div class="src" style="text-align:center;padding:12px">لا توجد بيانات مشاريع</div>`}
+    </div>`;
+  };
+  $("invAnalysisBody").innerHTML = distHtml + section("📗 المتاح للبيع", d.avail) + section("🔒 المحجوب", d.blocked);
 }
 wireSalesCtrl();
 $("dealBannerX").onclick=()=>{ $("dealBanner").style.display="none"; };
