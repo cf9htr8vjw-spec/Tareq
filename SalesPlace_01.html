@@ -2242,7 +2242,33 @@ table.prods tr:last-child td{border:none}
   <div class="sheet" id="invAnalysisSheet">
     <div class="handle" data-drag="invAnalysisSheet"></div>
     <div class="sheetbody">
-      <h2 style="margin:0 0 4px">تحليل المخزون</h2>
+      <h2 style="margin:0 0 10px">تحليل المخزون</h2>
+      <div class="scGroup">
+        <span class="scLbl">القطاع</span>
+        <div class="chips">
+          <button class="chip on" id="invSecAll">الكل</button>
+          <button class="chip" id="invSecMid">الأوسط</button>
+          <button class="chip" id="invSecWest">الغربي</button>
+          <button class="chip" id="invSecEast">الشرقي</button>
+        </div>
+      </div>
+      <div class="scGroup">
+        <span class="scLbl">المطوّر</span>
+        <div class="chips">
+          <button class="chip on" id="invSdAll">الكل</button>
+          <button class="chip" id="invSdNHC">NHC</button>
+          <button class="chip" id="invSdOther">المطورون</button>
+        </div>
+      </div>
+      <div class="scGroup" style="margin-bottom:12px">
+        <span class="scLbl">نوع المنتج</span>
+        <div class="chips">
+          <button class="chip on" id="invUtAll">الكل</button>
+          <button class="chip" id="invUtVilla">فيلا</button>
+          <button class="chip" id="invUtApt">شقة</button>
+          <button class="chip" id="invUtTown">تاون هاوس</button>
+        </div>
+      </div>
       <div class="src" id="invAnalysisSub" style="margin-bottom:10px"></div>
       <div id="invAnalysisBody"></div>
     </div>
@@ -4054,6 +4080,21 @@ $("hTileAfford").onclick=()=>openAffordSheet();
 const _now=new Date();
 let salesGran="month", salesMetric="contract", salesDev="all", salesSector="all", salesUnitType="all",
     salesYear="2026", salesMonth=String(_now.getMonth()+1).padStart(2,"0");
+const DEV_CHIP_IDS={all:["sdAll","invSdAll"], nhc:["sdNHC","invSdNHC"], other:["sdOther","invSdOther"]};
+const SEC_CHIP_IDS={all:["secAll","invSecAll"], "الأوسط":["secMid","invSecMid"], "الغربي":["secWest","invSecWest"], "الشرقي":["secEast","invSecEast"]};
+const UT_CHIP_IDS={all:["utAll","invUtAll"], "فيلا":["utVilla","invUtVilla"], "شقة":["utApt","invUtApt"], "تاون هاوس":["utTown","invUtTown"]};
+function applyChipGroup(idsMap, activeKey){
+  Object.values(idsMap).flat().forEach(id=>{ const el=$(id); if(el) el.classList.remove("on"); });
+  (idsMap[activeKey]||[]).forEach(id=>{ const el=$(id); if(el) el.classList.add("on"); });
+}
+function afterSalesFilterChange(){
+  updateSalesCtrlSummary();
+  renderSales();
+  if($("invAnalysisSheet").classList.contains("on")) renderInventoryAnalysis();
+}
+function setSalesDev(k){ salesDev=k; applyChipGroup(DEV_CHIP_IDS,k); afterSalesFilterChange(); }
+function setSalesSector(k){ salesSector=k; applyChipGroup(SEC_CHIP_IDS,k); afterSalesFilterChange(); }
+function setSalesUnitType(k){ salesUnitType=k; applyChipGroup(UT_CHIP_IDS,k); afterSalesFilterChange(); }
 function updateSalesCtrlSummary(){
   const granLbl={day:"يومي",month:"شهري",quarter:"ربعي"}[salesGran];
   const metLbl={book:"الحجوزات",ist:"الاستصناع",contract:"العقود"}[salesMetric];
@@ -4077,12 +4118,13 @@ function wireSalesCtrl(){
   });
   const m={book:$("mBook"),ist:$("mIst"),contract:$("mContract")};
   Object.entries(m).forEach(([k,btn])=>btn.onclick=()=>{ salesMetric=k; Object.values(m).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); updateSalesCtrlSummary(); renderSales(); });
-  const d={all:$("sdAll"),nhc:$("sdNHC"),other:$("sdOther")};
-  Object.entries(d).forEach(([k,btn])=>btn.onclick=()=>{ salesDev=k; Object.values(d).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); updateSalesCtrlSummary(); renderSales(); });
-  const sec={all:$("secAll"),"الأوسط":$("secMid"),"الغربي":$("secWest"),"الشرقي":$("secEast")};
-  Object.entries(sec).forEach(([k,btn])=>btn.onclick=()=>{ salesSector=k; Object.values(sec).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); updateSalesCtrlSummary(); renderSales(); });
-  const ut={all:$("utAll"),"فيلا":$("utVilla"),"شقة":$("utApt"),"تاون هاوس":$("utTown")};
-  Object.entries(ut).forEach(([k,btn])=>btn.onclick=()=>{ salesUnitType=k; Object.values(ut).forEach(b=>b.classList.remove("on")); btn.classList.add("on"); updateSalesCtrlSummary(); renderSales(); });
+  /* مجموعات الشرائح مكرَّرة بمكانين: لوحة فلاتر شاشة مبيعاتنا، وشاشة "تحليل المخزون" (تحتاج
+     نفس الفلاتر لكن بلا الدقّة الزمنية يومي/شهري/ربعي — المخزون لقطة لحظية بلا معنى للدقّة
+     الزمنية) — نفس المتغيرات (salesDev/salesSector/salesUnitType) تتحكم بالاثنين معاً، وأي
+     تغيير بأي مكان يزامن الشريحتين ويحدّث الشاشتين فوراً بلا حاجة للتنقل بينهما يدوياً */
+  Object.entries(DEV_CHIP_IDS).forEach(([k,ids])=>ids.forEach(id=>{ const el=$(id); if(el) el.onclick=()=>setSalesDev(k); }));
+  Object.entries(SEC_CHIP_IDS).forEach(([k,ids])=>ids.forEach(id=>{ const el=$(id); if(el) el.onclick=()=>setSalesSector(k); }));
+  Object.entries(UT_CHIP_IDS).forEach(([k,ids])=>ids.forEach(id=>{ const el=$(id); if(el) el.onclick=()=>setSalesUnitType(k); }));
   $("salesYear").onchange=()=>{ salesYear=$("salesYear").value; updateSalesCtrlSummary(); renderSales(); };
   $("salesMonthSel").onchange=()=>{ salesMonth=$("salesMonthSel").value; renderSales(); };
   $("modelsRankBtn").innerHTML = `<button class="btn ghost" style="width:100%;max-width:640px;margin:12px auto;display:block" id="modelsRankOpenBtn">🏆 عرض النماذج الأكثر مبيعاً (حسب الفلتر أعلاه)</button>`;
@@ -4436,6 +4478,9 @@ function renderModelsRank(){
   openSheet("modelsRankSheet");
 }
 async function renderInventoryAnalysis(){
+  applyChipGroup(DEV_CHIP_IDS, salesDev);
+  applyChipGroup(SEC_CHIP_IDS, salesSector);
+  applyChipGroup(UT_CHIP_IDS, salesUnitType);
   const secParam = salesSector==="all" ? null : salesSector;
   const devParam = salesDev==="all" ? null : salesDev;
   const utParam = salesUnitType==="all" ? null : salesUnitType;
@@ -4470,6 +4515,17 @@ async function renderInventoryAnalysis(){
       <span><i class="blocked"></i>محجوب ${fmt(t.blocked_count)} (${pct(t.blocked_count)}٪)</span>
     </div>
   </div>`;
+  const cmpRow = (lbl, obj, cls) => `<div class="mrRow">
+    <div class="mrInfo"><div class="mrProj"><i class="ldot ${cls}" style="width:9px;height:9px;margin-left:6px"></i>${lbl}</div><div class="mrMeta">${obj&&obj.count?fmt(obj.count)+" وحدة":"لا توجد وحدات"}</div></div>
+    <div class="mrCnt"><b>${obj&&obj.avg_price!=null?compact(obj.avg_price):"—"}</b><span>متوسط السعر</span></div>
+  </div>`;
+  const cmpHtml = `<div class="salesCard" style="max-width:640px;margin:0 auto 12px">
+    <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px">مقارنة السعر — مباع مقابل متاح مقابل محجوب</div>
+    <div class="src" style="margin-bottom:6px">متوسط سعر الوحدة (ريال) — يبيّن هل المحجوب أغلى أو أرخص مما يُباع فعلياً</div>
+    ${cmpRow("مباع (عقد نهائي)", d.sold, "ok")}
+    ${cmpRow("متاح للبيع", d.avail, "out")}
+    ${cmpRow("محجوب", d.blocked, "bad")}
+  </div>`;
   const section = (title, obj, icoCls) => {
     if(!obj || !obj.count) return `<div class="salesCard" style="max-width:640px;margin:0 auto 12px"><div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px">${title}</div><div class="src">لا توجد وحدات مطابقة لهذا الفلتر</div></div>`;
     const rows = (obj.by_project||[]).slice(0,50).map((r,i)=>`
@@ -4492,7 +4548,7 @@ async function renderInventoryAnalysis(){
       ${rows || `<div class="src" style="text-align:center;padding:12px">لا توجد بيانات مشاريع</div>`}
     </div>`;
   };
-  $("invAnalysisBody").innerHTML = distHtml + section("📗 المتاح للبيع", d.avail) + section("🔒 المحجوب", d.blocked);
+  $("invAnalysisBody").innerHTML = distHtml + cmpHtml + section("📗 المتاح للبيع", d.avail) + section("🔒 المحجوب", d.blocked);
 }
 wireSalesCtrl();
 $("dealBannerX").onclick=()=>{ $("dealBanner").style.display="none"; };

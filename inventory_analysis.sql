@@ -21,6 +21,7 @@ stable
 as $function$
 declare
   v_totals jsonb;
+  v_sold jsonb;
   v_avail jsonb;
   v_avail_by_proj jsonb;
   v_blocked jsonb;
@@ -33,6 +34,22 @@ begin
   ) into v_totals
   from unit_allocation_mirror
   where (p_sector is null or sector = p_sector)
+    and (p_dev_kind is null or (p_dev_kind='nhc' and dev_kind='nhc') or (p_dev_kind='other' and dev_kind<>'nhc'))
+    and (p_unit_type is null or unit_type = p_unit_type);
+
+  -- "مباع" = عقد نهائي موقّع (contracted) — للمقارنة بأسعار المتاح والمحجوب حالياً، وليس
+  -- تفصيلاً حسب المشروع (غير مطلوب هنا، فقط رقم مقارنة إجمالي)
+  select jsonb_build_object(
+    'count', count(*),
+    'avg_price', round(avg(price) filter (where price>0)),
+    'avg_sqm_price', case when sum(unit_size) filter (where unit_size>0)>0
+      then round(sum(price) filter (where unit_size>0) / sum(unit_size) filter (where unit_size>0))
+      else null end,
+    'avg_size', round(avg(unit_size) filter (where unit_size>0))
+  ) into v_sold
+  from unit_allocation_mirror
+  where status='contracted'
+    and (p_sector is null or sector = p_sector)
     and (p_dev_kind is null or (p_dev_kind='nhc' and dev_kind='nhc') or (p_dev_kind='other' and dev_kind<>'nhc'))
     and (p_unit_type is null or unit_type = p_unit_type);
 
@@ -89,6 +106,7 @@ begin
 
   return jsonb_build_object(
     'totals', v_totals || jsonb_build_object('blocked_count', coalesce((v_blocked->>'count')::int,0)),
+    'sold', v_sold,
     'avail', v_avail || jsonb_build_object('by_project', v_avail_by_proj),
     'blocked', v_blocked || jsonb_build_object('by_project', v_blocked_by_proj)
   );
