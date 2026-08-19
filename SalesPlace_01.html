@@ -1776,6 +1776,7 @@ table.prods tr:last-child td{border:none}
       <div class="flabel" id="salesMonthLbl" style="margin:14px 0 4px"></div>
       <div id="salesPeriodBadge"></div>
       <div id="salesGrid"></div>
+      <div id="perfBtn"></div>
       <div id="modelsRankBtn"></div>
       <div id="invAnalysisBtn"></div>
       <div id="salesDurCard"></div>
@@ -2235,6 +2236,42 @@ table.prods tr:last-child td{border:none}
       <h2 style="margin:0 0 4px">النماذج الأكثر مبيعاً</h2>
       <div class="src" id="modelsRankSub" style="margin-bottom:10px"></div>
       <div id="modelsRankBody"></div>
+    </div>
+  </div>
+  <!-- Performance monitoring: internal conversion funnel (booking→istisna→contract) -->
+  <div class="scrim" id="perfScrim"></div>
+  <div class="sheet" id="perfSheet">
+    <div class="handle" data-drag="perfSheet"></div>
+    <div class="sheetbody">
+      <h2 style="margin:0 0 4px">🎯 مراقبة الأداء — قمع التحويل الداخلي</h2>
+      <div class="src" style="margin-bottom:10px">حجز ← استصناع ← عقد موقّع — الطبقة الوحيدة التي تقيس الكفاءة التشغيلية بعد قرار الشراء</div>
+      <div class="scGroup">
+        <span class="scLbl">القطاع</span>
+        <div class="chips">
+          <button class="chip on" id="perfSecAll">الكل</button>
+          <button class="chip" id="perfSecMid">الأوسط</button>
+          <button class="chip" id="perfSecWest">الغربي</button>
+          <button class="chip" id="perfSecEast">الشرقي</button>
+        </div>
+      </div>
+      <div class="scGroup">
+        <span class="scLbl">المطوّر</span>
+        <div class="chips">
+          <button class="chip on" id="perfSdAll">الكل</button>
+          <button class="chip" id="perfSdNHC">NHC</button>
+          <button class="chip" id="perfSdOther">المطورون</button>
+        </div>
+      </div>
+      <div class="scGroup" style="margin-bottom:12px">
+        <span class="scLbl">نوع المنتج</span>
+        <div class="chips">
+          <button class="chip on" id="perfUtAll">الكل</button>
+          <button class="chip" id="perfUtVilla">فيلا</button>
+          <button class="chip" id="perfUtApt">شقة</button>
+          <button class="chip" id="perfUtTown">تاون هاوس</button>
+        </div>
+      </div>
+      <div id="perfBody"></div>
     </div>
   </div>
   <!-- Inventory analysis: available/blocked/sold distribution -->
@@ -3212,7 +3249,7 @@ function refreshDestOptions(){
 function preview(){ let n=0; for(const p of DATA) if(vm(p)) n++; $("fPrev").textContent=fmt(n); }
 
 /* ---------- sheets ---------- */
-const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim",supplyBuildingsSheet:"supplyBuildingsScrim",batchPickSheet:"batchPickScrim",batchListSheet:"batchListScrim",modelsRankSheet:"modelsRankScrim",invAnalysisSheet:"invAnalysisScrim"};
+const SCRIM_OF={fSheet:"fScrim",dSheet:"dScrim",auSheet:"auScrim",cmpSheet:"cmpScrim",pwSheet:"pwScrim",helpSheet:"helpScrim",roiSheet:"roiScrim",clogSheet:"clogScrim",dealSheet:"dealScrim",dealSumSheet:"dealSumScrim",unitPickSheet:"unitPickScrim",offerEditSheet:"offerEditScrim",newsEditSheet:"newsEditScrim",bankEditSheet:"bankEditScrim",bankInfoSheet:"bankInfoScrim",affordSheet:"affordScrim",devDetailSheet:"devDetailScrim",chFormSheet:"chFormScrim",chResolveSheet:"chResolveScrim",critEditSheet:"critEditScrim",scoreEntrySheet:"scoreEntryScrim",supplyBuildingsSheet:"supplyBuildingsScrim",batchPickSheet:"batchPickScrim",batchListSheet:"batchListScrim",modelsRankSheet:"modelsRankScrim",invAnalysisSheet:"invAnalysisScrim",perfSheet:"perfScrim"};
 function openSheet(id){ $(id).classList.add("on"); $(SCRIM_OF[id]||"dScrim").classList.add("on"); }
 function closeSheet(id){ $(id).classList.remove("on"); $(SCRIM_OF[id]||"dScrim").classList.remove("on"); }
 $("fBtn").onclick=()=>{preview(); openSheet("fSheet");};
@@ -3221,7 +3258,7 @@ $("dScrim").onclick=()=>closeSheet("dSheet");
 $("dClose").onclick=()=>closeSheet("dSheet");
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet","supplyBuildingsSheet","batchPickSheet","batchListSheet","modelsRankSheet","invAnalysisSheet"].forEach(id=>{
+    ["fSheet","dSheet","auSheet","cmpSheet","pwSheet","helpSheet","roiSheet","clogSheet","dealSheet","dealSumSheet","unitPickSheet","offerEditSheet","newsEditSheet","bankEditSheet","bankInfoSheet","affordSheet","devDetailSheet","chFormSheet","chResolveSheet","critEditSheet","scoreEntrySheet","supplyBuildingsSheet","batchPickSheet","batchListSheet","modelsRankSheet","invAnalysisSheet","perfSheet"].forEach(id=>{
       if($(id).classList.contains("on")) closeSheet(id);
     });
   }
@@ -4080,9 +4117,9 @@ $("hTileAfford").onclick=()=>openAffordSheet();
 const _now=new Date();
 let salesGran="month", salesMetric="contract", salesDev="all", salesSector="all", salesUnitType="all",
     salesYear="2026", salesMonth=String(_now.getMonth()+1).padStart(2,"0");
-const DEV_CHIP_IDS={all:["sdAll","invSdAll"], nhc:["sdNHC","invSdNHC"], other:["sdOther","invSdOther"]};
-const SEC_CHIP_IDS={all:["secAll","invSecAll"], "الأوسط":["secMid","invSecMid"], "الغربي":["secWest","invSecWest"], "الشرقي":["secEast","invSecEast"]};
-const UT_CHIP_IDS={all:["utAll","invUtAll"], "فيلا":["utVilla","invUtVilla"], "شقة":["utApt","invUtApt"], "تاون هاوس":["utTown","invUtTown"]};
+const DEV_CHIP_IDS={all:["sdAll","invSdAll","perfSdAll"], nhc:["sdNHC","invSdNHC","perfSdNHC"], other:["sdOther","invSdOther","perfSdOther"]};
+const SEC_CHIP_IDS={all:["secAll","invSecAll","perfSecAll"], "الأوسط":["secMid","invSecMid","perfSecMid"], "الغربي":["secWest","invSecWest","perfSecWest"], "الشرقي":["secEast","invSecEast","perfSecEast"]};
+const UT_CHIP_IDS={all:["utAll","invUtAll","perfUtAll"], "فيلا":["utVilla","invUtVilla","perfUtVilla"], "شقة":["utApt","invUtApt","perfUtApt"], "تاون هاوس":["utTown","invUtTown","perfUtTown"]};
 function applyChipGroup(idsMap, activeKey){
   Object.values(idsMap).flat().forEach(id=>{ const el=$(id); if(el) el.classList.remove("on"); });
   (idsMap[activeKey]||[]).forEach(id=>{ const el=$(id); if(el) el.classList.add("on"); });
@@ -4091,6 +4128,7 @@ function afterSalesFilterChange(){
   updateSalesCtrlSummary();
   renderSales();
   if($("invAnalysisSheet").classList.contains("on")) renderInventoryAnalysis();
+  if($("perfSheet").classList.contains("on")) renderPerformanceMonitor();
 }
 function setSalesDev(k){ salesDev=k; applyChipGroup(DEV_CHIP_IDS,k); afterSalesFilterChange(); }
 function setSalesSector(k){ salesSector=k; applyChipGroup(SEC_CHIP_IDS,k); afterSalesFilterChange(); }
@@ -4133,6 +4171,9 @@ function wireSalesCtrl(){
   $("invAnalysisBtn").innerHTML = `<button class="btn ghost" style="width:100%;max-width:640px;margin:8px auto;display:block" id="invAnalysisOpenBtn">📦 تحليل المخزون (متاح/محجوب/مباع)</button>`;
   $("invAnalysisOpenBtn").onclick = renderInventoryAnalysis;
   $("invAnalysisScrim").onclick = ()=>closeSheet("invAnalysisSheet");
+  $("perfBtn").innerHTML = `<button class="btn" style="width:100%;max-width:640px;margin:8px auto;display:block" id="perfOpenBtn">🎯 مراقبة الأداء (حجز ← استصناع ← عقد)</button>`;
+  $("perfOpenBtn").onclick = renderPerformanceMonitor;
+  $("perfScrim").onclick = ()=>closeSheet("perfSheet");
   updateSalesCtrlSummary();
 }
 const MNAMES={"01":"يناير","02":"فبراير","03":"مارس","04":"أبريل","05":"مايو","06":"يونيو",
@@ -4549,6 +4590,112 @@ async function renderInventoryAnalysis(){
     </div>`;
   };
   $("invAnalysisBody").innerHTML = distHtml + cmpHtml + section("📗 المتاح للبيع", d.avail) + section("🔒 المحجوب", d.blocked);
+}
+/* ---------- مراقبة الأداء — الطبقة ٢: قمع التحويل الداخلي (حجز←استصناع←عقد) ----------
+   من برومبت "نظام إدارة أداء" — الطبقة الوحيدة الجاهزة بيانياً اليوم بلا نقص (تواريخ
+   الحجز/الاستصناع/العقد موجودة أصلاً بـunit_allocation_mirror). لا تُبنى المتوسط وحده أبداً
+   — البيانات التاريخية موزّعة ثنائياً (انقسام حاد بين إغلاق سريع جداً وبطيء جداً)، فالمتوسط
+   وحده يخفي هذا الانقسام؛ نعرض الوسيط والتوزيع الشرائحي دائماً معه. طبقة التمويل (٤) مستثناة
+   حالياً بطلب صريح — لا مصدر بيانات راتب/نسبة ربح فعلية مربوطة بوحدة مباعة أصلاً. */
+function funnelFilterArgs(){
+  return {
+    p_sector: perfSector==="all" ? null : perfSector,
+    p_dev_kind: perfDev==="all" ? null : perfDev,
+    p_unit_type: perfUnitType==="all" ? null : perfUnitType,
+  };
+}
+let perfSector="all", perfDev="all", perfUnitType="all";
+function pctBar(pct, label){
+  const p = pct!=null ? Math.round(pct) : 0;
+  return `<div class="dstat"><b>${pct!=null?p+"٪":"—"}</b><span>${label}</span></div>`;
+}
+async function renderPerformanceMonitor(){
+  perfSector=salesSector; perfDev=salesDev; perfUnitType=salesUnitType;
+  applyChipGroup(SEC_CHIP_IDS, salesSector);
+  applyChipGroup(DEV_CHIP_IDS, salesDev);
+  applyChipGroup(UT_CHIP_IDS, salesUnitType);
+  $("perfBody").innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
+  openSheet("perfSheet");
+  const args = funnelFilterArgs();
+  let monthly, byProject, stuck;
+  try{
+    [monthly, byProject, stuck] = await Promise.all([
+      sbCall("get_funnel_monthly", {...args, p_months:12}),
+      sbCall("get_funnel_by_project", {...args, p_months:12}),
+      sbCall("get_stuck_units", args),
+    ]);
+  }catch(e){ monthly=null; }
+  if(!Array.isArray(monthly)){
+    $("perfBody").innerHTML = `<div class="src" style="text-align:center;padding:24px">تعذّر تحميل مراقبة الأداء — تحقّق من تشغيل funnel_layer2.sql على القاعدة</div>`;
+    return;
+  }
+  /* الوحدات العالقة — أول عنصر بالشاشة كما يطلب البرومبت: أرخص وأسرع إجراء ممكن (تشغيلي بحت) */
+  const stuckRows = (stuck||[]);
+  const stuckHtml = `<div class="salesCard" style="max-width:640px;margin:0 auto 12px;border-color:var(--rust-soft-border)">
+    <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px;color:var(--rust)">🚨 وحدات عالقة أكثر من 90 يوماً بلا عقد نهائي — ${fmt(stuckRows.length)} وحدة</div>
+    <div class="src" style="margin-bottom:8px">محجوزة ولم تتحوّل لعقد نهائي — إجراء فريق العمليات، لا فريق المبيعات</div>
+    ${stuckRows.length ? stuckRows.slice(0,50).map(r=>`
+      <div class="mrRow">
+        <div class="mrInfo">
+          <div class="mrProj">${r.project_name}${r.building_number?" · مبنى "+r.building_number:""}${r.zone_number?" · زون "+r.zone_number:""}</div>
+          <div class="mrMeta">حجز بتاريخ ${new Date(r.booking_date).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"short",year:"numeric"})}${r.unit_code?" · "+r.unit_code:""}</div>
+        </div>
+        <div class="mrCnt"><b style="color:var(--rust)">${fmt(r.days_stuck)}</b><span>يوماً</span></div>
+      </div>`).join("") : `<div class="src" style="text-align:center;padding:12px">لا توجد وحدات عالقة — ممتاز</div>`}
+    ${stuckRows.length>50?`<div class="src" style="text-align:center;margin-top:6px">وأكثر من ${fmt(stuckRows.length-50)} وحدة أخرى...</div>`:""}
+  </div>`;
+
+  /* تنبيه: نسبة استصناع→عقد انخفضت شهرين متتاليين — من آخر 3 أشهر فيها بيانات كافية */
+  const withRate = monthly.filter(m=>m.contract_rate!=null);
+  let declineAlert = "";
+  if(withRate.length>=3){
+    const last3 = withRate.slice(-3);
+    if(last3[2].contract_rate < last3[1].contract_rate && last3[1].contract_rate < last3[0].contract_rate){
+      declineAlert = `<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust);margin-bottom:12px">
+        ⚠ نسبة التحول استصناع←عقد تنخفض للشهر الثاني على التوالي (${Math.round(last3[0].contract_rate)}٪ ← ${Math.round(last3[1].contract_rate)}٪ ← ${Math.round(last3[2].contract_rate)}٪) — يستحق مراجعة فورية
+      </div>`;
+    }
+  }
+
+  /* إجمالي مجمَّع عبر كل الأشهر المعروضة، لبطاقات المؤشرات العلوية */
+  const tot = monthly.reduce((s,m)=>({
+    booked:s.booked+Number(m.booked_count||0), istisna:s.istisna+Number(m.istisna_count||0), contract:s.contract+Number(m.contract_count||0),
+  }), {booked:0,istisna:0,contract:0});
+  const istisnaRateAll = tot.booked ? tot.istisna/tot.booked*100 : null;
+  const contractRateAll = tot.istisna ? tot.contract/tot.istisna*100 : null;
+  const durRows = monthly.filter(m=>m.mean_days!=null);
+  const lastDur = durRows.length ? durRows[durRows.length-1] : null;
+
+  const kpiHtml = `<div class="salesCard" style="max-width:640px;margin:0 auto 12px">
+    <div class="scTotal" style="border:none;padding:0;margin-bottom:9px;font-size:13px">آخر 12 شهراً — ${fmt(tot.booked)} حجز</div>
+    <div class="dest3" style="grid-template-columns:repeat(2,1fr);margin-bottom:8px">
+      ${pctBar(istisnaRateAll, "حجز ← استصناع")}
+      ${pctBar(contractRateAll, "استصناع ← عقد")}
+    </div>
+    ${lastDur ? `<div class="src" style="margin-bottom:6px">مدة التحول (حجز←عقد)، آخر شهر ببيانات: <b style="color:var(--ink)">متوسط ${fmt(lastDur.mean_days)} يوماً</b> · <b style="color:var(--ink)">وسيط ${fmt(lastDur.median_days)} يوماً</b> — الوسيط أدق لأن التوزيع منقسم، ليس متجانساً</div>
+    <div class="dest3" style="grid-template-columns:repeat(4,1fr)">
+      ${pctBar(lastDur.pct_le7, "≤7 أيام")}
+      ${pctBar(lastDur.pct_8_30, "8-30 يوماً")}
+      ${pctBar(lastDur.pct_31_90, "31-90 يوماً")}
+      ${pctBar(lastDur.pct_gt90, "أكثر من 90")}
+    </div>` : `<div class="src" style="text-align:center">لا توجد عقود مكتملة كافية لحساب توزيع المدة بعد</div>`}
+  </div>`;
+
+  const projRows = (byProject||[]);
+  const projHtml = `<div class="salesCard" style="max-width:640px;margin:0 auto 12px">
+    <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px">حسب المشروع — الأضعف أولاً (نسبة استصناع←عقد)</div>
+    <div class="src" style="margin-bottom:8px">مشاريع بأقل من 3 حجوزات بالمدى المعروض مستبعدة (نسب غير ذات دلالة إحصائية)</div>
+    ${projRows.length ? projRows.slice(0,50).map(r=>`
+      <div class="mrRow">
+        <div class="mrInfo">
+          <div class="mrProj">${r.project_name}</div>
+          <div class="mrMeta">${fmt(r.booked_count)} حجز · استصناع ${r.istisna_rate!=null?Math.round(r.istisna_rate)+"٪":"—"} · عقد ${r.contract_rate!=null?Math.round(r.contract_rate)+"٪":"—"}${r.median_days!=null?" · وسيط "+fmt(r.median_days)+" يوم":""}</div>
+        </div>
+        <div class="mrCnt"><b style="color:${r.contract_rate!=null&&r.contract_rate<70?'var(--rust)':'var(--green)'}">${r.contract_rate!=null?Math.round(r.contract_rate)+"٪":"—"}</b><span>عقد</span></div>
+      </div>`).join("") : `<div class="src" style="text-align:center;padding:12px">لا توجد بيانات كافية</div>`}
+  </div>`;
+
+  $("perfBody").innerHTML = stuckHtml + declineAlert + kpiHtml + projHtml;
 }
 wireSalesCtrl();
 $("dealBannerX").onclick=()=>{ $("dealBanner").style.display="none"; };
@@ -5866,6 +6013,10 @@ async function processSyncFile(){
      بدلاً منه) — فراغه لبعض الصفوف طبيعي وليس عطلاً بالمطابقة */
   const buildingNumKey = resolveHeaderKey(rows, ["building_number","buildingnumber","building no","building_no","buildingno"]);
   const unitSizeKey = resolveHeaderKey(rows, ["unit_size","unitsize","unit size"]);
+  /* رقم الزون — لتصنيف "زون نشط مقابل لم يُطرح بعد" بشاشة تحليل المخزون؛ التخمين الأول
+     لاسم العمود (نفس أسلوب المطابقة المرنة المستخدم أعلاه) — لو ما تعرّف عليه السطر
+     التشخيصي بملخص الرفع يوضّح ذلك فوراً بدل فشل صامت، ونصحّح الاسم الحقيقي حينها */
+  const zoneNumKey = resolveHeaderKey(rows, ["zone_number","zonenumber","zone no","zone_no","zoneno","zone","رقم الزون","الزون","zone_id","zoneid"]);
 
   const statusAgg=new Map(); // key -> {project_id,unit_type,beds,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY
   const modelAgg=new Map(); // key `${pid}|${model}` -> {project_id,model,avail,reserved,contracted} — DASHBOARD PROJECTS ONLY، من عمود model
@@ -5955,6 +6106,7 @@ async function processSyncFile(){
       model: modelVal||null,
       building_number: (buildingNumKey && row[buildingNumKey]!=null && row[buildingNumKey]!=="") ? String(row[buildingNumKey]).trim() : null,
       unit_size: (unitSizeKey && row[unitSizeKey]!=null && row[unitSizeKey]!=="") ? Number(row[unitSizeKey])||null : null,
+      zone_number: (zoneNumKey && row[zoneNumKey]!=null && row[zoneNumKey]!=="") ? String(row[zoneNumKey]).trim() : null,
       /* true فقط لو الوحدة متاحة لغير المستفيدين (segTag==="non_beneficiary" — أي شريحتها
          تتضمن غير مستفيدين/شركات، وليست {beneficiary} حصراً) — نفس قاعدة parseSegmentTag
          المستخدمة أصلاً بإحصاء المشروع، بلا أي منطق مختلف. null/فارغ = غير معروفة، تُستبعَد
@@ -6004,11 +6156,14 @@ async function processSyncFile(){
     <div class="cresrow"><span class="cl">عمود رقم المبنى (building_number) بالملف</span><span class="cv">${buildingNumKey?`تم التعرّف عليه ("${buildingNumKey}")`:"لم يُعثر عليه بالملف"}</span></div>
     ${buildingNumKey?`<div class="cresrow"><span class="cl">وحدات معها رقم مبنى فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.building_number).length)}</span></div>`:""}
     <div class="cresrow"><span class="cl">عمود مساحة الوحدة (unit_size) بالملف</span><span class="cv">${unitSizeKey?`تم التعرّف عليه ("${unitSizeKey}")`:"لم يُعثر عليه بالملف"}</span></div>
+    <div class="cresrow"><span class="cl">عمود رقم الزون (zone_number) بالملف</span><span class="cv">${zoneNumKey?`تم التعرّف عليه ("${zoneNumKey}")`:"لم يُعثر عليه بالملف"}</span></div>
+    ${zoneNumKey?`<div class="cresrow"><span class="cl">وحدات معها رقم زون فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.zone_number).length)}</span></div>`:""}
     <div class="cresrow"><span class="cl">وحدات متاحة لغير المستفيدين/المستثمرين (من target_segments)</span><span class="cv">${fmt(mirrorRows.filter(r=>r.for_non_beneficiary).length)} من ${fmt(mirrorRows.length)}</span></div>
   </div>
   ${unitCodeKey && mirrorRows.length && mirrorRows.filter(r=>r.unit_code).length===0 ? `<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ عمود رمز الوحدة موجود بالملف لكن كل قيمه فارغة بهذه الرفعة — تحقق من الملف المصدر</div>` : ""}
   ${!unitCodeKey ? `<div class="cwarn">لا يحتوي هذا الملف على عمود يمكن التعرّف عليه كرمز وحدة (unit_code) — ستُرفع كل الوحدات بدون رمز، ولن تعمل ميزات البحث المباشر والدعم الدقيق لكل وحدة حتى يُضاف هذا العمود للملف المصدر</div>` : ""}
   ${!buildingNumKey ? `<div class="cwarn">لا يحتوي هذا الملف على عمود رقم المبنى (building_number) — لن تعمل شاشة توزيع المعروض بتفصيل المبانٍ لهذا المشروع حتى يُضاف هذا العمود للملف المصدر</div>` : ""}
+  ${!zoneNumKey ? `<div class="cwarn">لا يحتوي هذا الملف على عمود يمكن التعرّف عليه كرقم زون — إن كان العمود موجوداً باسم مختلف عن المحاولات المعروفة (zone_number/zone/رقم الزون)، أبلغ الاسم الفعلي لتصحيح المطابقة</div>` : ""}
   ${unmatchedHtml}
   <button class="btn" id="syncUpload" style="width:100%;margin-top:12px">رفع التحديث إلى القاعدة</button>`;
   $("syncStart").disabled=false;
@@ -6264,6 +6419,7 @@ async function processBlockedFile(){
   const unitCodeKeyB = resolveHeaderKeyB(rows, ["unit_code","unitcode","unit id","unitid","uid"]);
   const buildingNumKeyB = resolveHeaderKeyB(rows, ["building_number","buildingnumber","building no","building_no","buildingno"]);
   const unitSizeKeyB = resolveHeaderKeyB(rows, ["unit_size","unitsize","unit size"]);
+  const zoneNumKeyB = resolveHeaderKeyB(rows, ["zone_number","zonenumber","zone no","zone_no","zoneno","zone","رقم الزون","الزون","zone_id","zoneid"]);
 
   const mirrorRows=[]; // صف واحد لكل وحدة محجوبة صالحة — يُرفع كاملاً كمرآة خام
   const blockedAgg=new Map(); // project_id -> عدد — تجميع خفيف لعرض البطاقات/التفاصيل دون قراءة المرآة الكاملة
@@ -6305,6 +6461,7 @@ async function processBlockedFile(){
       model:modelVal||null, snapshot_date:todayISO,
       building_number: (buildingNumKeyB && row[buildingNumKeyB]!=null && row[buildingNumKeyB]!=="") ? String(row[buildingNumKeyB]).trim() : null,
       unit_size: (unitSizeKeyB && row[unitSizeKeyB]!=null && row[unitSizeKeyB]!=="") ? Number(row[unitSizeKeyB])||null : null,
+      zone_number: (zoneNumKeyB && row[zoneNumKeyB]!=null && row[zoneNumKeyB]!=="") ? String(row[zoneNumKeyB]).trim() : null,
       for_non_beneficiary: segTag==="non_beneficiary",
     });
   }
@@ -6332,6 +6489,8 @@ async function processBlockedFile(){
     <div class="cresrow"><span class="cl">عمود رقم المبنى (building_number)</span><span class="cv">${buildingNumKeyB?`تم التعرّف عليه ("${buildingNumKeyB}")`:"لم يُعثر عليه بالملف"}</span></div>
     ${buildingNumKeyB?`<div class="cresrow"><span class="cl">وحدات معها رقم مبنى فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.building_number).length)}</span></div>`:""}
     <div class="cresrow"><span class="cl">عمود مساحة الوحدة (unit_size)</span><span class="cv">${unitSizeKeyB?`تم التعرّف عليه ("${unitSizeKeyB}")`:"لم يُعثر عليه بالملف"}</span></div>
+    <div class="cresrow"><span class="cl">عمود رقم الزون (zone_number)</span><span class="cv">${zoneNumKeyB?`تم التعرّف عليه ("${zoneNumKeyB}")`:"لم يُعثر عليه بالملف"}</span></div>
+    ${zoneNumKeyB?`<div class="cresrow"><span class="cl">وحدات معها رقم زون فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.zone_number).length)}</span></div>`:""}
     <div class="cresrow"><span class="cl">وحدات متاحة لغير المستفيدين/المستثمرين (من target_segments)</span><span class="cv">${fmt(mirrorRows.filter(r=>r.for_non_beneficiary).length)} من ${fmt(mirrorRows.length)}</span></div>
   </div>
   ${!mirrorRows.length?`<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)">⚠ لم يُعثر على أي صف بحالة "محجوب" بهذا الملف — تحقق أنك اخترت الملف الصحيح</div>`:""}
