@@ -1019,6 +1019,28 @@ main{flex:1;min-height:0;position:relative}
 .pendRow i.contract{background:var(--green)}
 .pendRow span{flex:1;font-size:12px;color:var(--ink)}
 .pendRow b{font-size:15px;font-family:"Noto Kufi Arabic"}
+.sectorMatrix{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:11.5px}
+.sectorMatrix th{font-size:9.5px;color:var(--muted);font-weight:700;padding:0 5px 4px;text-align:center}
+.sectorMatrix th:first-child{text-align:start}
+.sectorRow{cursor:pointer}
+.sectorRow td{background:var(--surface);padding:9px 5px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sectorRow td:first-child{border-inline-start:1px solid var(--line);border-start-start-radius:12px;border-end-start-radius:12px;text-align:start;padding-inline-start:10px;font-weight:800;color:var(--ink);font-size:12.5px}
+.sectorRow td:last-child{border-inline-end:1px solid var(--line);border-start-end-radius:12px;border-end-end-radius:12px}
+.sectorRow.expanded td{border-color:var(--navy2)}
+.sectorRow .arw{font-size:9px;color:var(--muted);margin-inline-start:4px;display:inline-block;transition:transform .15s}
+.sectorRow.expanded .arw{transform:rotate(180deg)}
+.stackNum{display:flex;flex-direction:column;gap:1px;align-items:center}
+.stackNum b{font-size:13px;font-family:"Noto Kufi Arabic";color:var(--ink)}
+.stackNum span{font-size:9px;color:var(--muted)}
+.scoreCell{display:inline-block;min-width:46px;padding:3px 7px;border-radius:8px;font-weight:800;font-family:"Noto Kufi Arabic";font-size:12px}
+.scoreCell.good{background:var(--green-soft);color:var(--green)}
+.scoreCell.mid{background:var(--gold-soft);color:var(--gold-text2)}
+.scoreCell.bad{background:var(--rust-soft);color:var(--rust)}
+.scoreSub{font-size:9px;color:var(--muted);margin-top:3px}
+.sectorDetail{background:var(--bg);border:1px solid var(--navy2);border-radius:12px;padding:12px;margin:-4px 0 12px}
+.sdGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.projDetailRow{cursor:pointer}
+.projDetailBody{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;margin:4px 0 8px}
 .durRow{padding:9px 0;border-top:1px dashed var(--line)}
 .durRow:first-of-type{border-top:none}
 .durLbl{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px}
@@ -2243,16 +2265,26 @@ table.prods tr:last-child td{border:none}
   <div class="sheet" id="perfSheet">
     <div class="handle" data-drag="perfSheet"></div>
     <div class="sheetbody">
-      <h2 style="margin:0 0 4px">🎯 مراقبة الأداء — قمع التحويل الداخلي</h2>
-      <div class="src" style="margin-bottom:10px">حجز ← استصناع ← عقد موقّع — الطبقة الوحيدة التي تقيس الكفاءة التشغيلية بعد قرار الشراء</div>
+      <h2 style="margin:0 0 4px">🎯 مراقبة الأداء — مصفوفة القطاعات</h2>
+      <div class="src" style="margin-bottom:10px">مستهدف/محقق/مؤشر الحجوزات/مؤشر الاستصناع لكل قطاع — اضغط أي قطاع لتفصيل إضافي</div>
       <div class="scGroup">
-        <span class="scLbl">القطاع</span>
+        <span class="scLbl">الفترة</span>
         <div class="chips">
-          <button class="chip on" id="perfSecAll">الكل</button>
-          <button class="chip" id="perfSecMid">الأوسط</button>
-          <button class="chip" id="perfSecWest">الغربي</button>
-          <button class="chip" id="perfSecEast">الشرقي</button>
+          <button class="chip on" id="perfPerMonth">شهر</button>
+          <button class="chip" id="perfPerYear">سنة كاملة</button>
         </div>
+        <select id="perfMonthSel" class="dateInp">
+          <option value="01">يناير</option><option value="02">فبراير</option><option value="03">مارس</option>
+          <option value="04">أبريل</option><option value="05">مايو</option><option value="06">يونيو</option>
+          <option value="07">يوليو</option><option value="08">أغسطس</option><option value="09">سبتمبر</option>
+          <option value="10">أكتوبر</option><option value="11">نوفمبر</option><option value="12">ديسمبر</option>
+        </select>
+        <select id="perfYearSel" class="dateInp">
+          <option value="2024">2024</option>
+          <option value="2025">2025</option>
+          <option value="2026" selected>2026</option>
+          <option value="2027">2027</option>
+        </select>
       </div>
       <div class="scGroup">
         <span class="scLbl">المطوّر</span>
@@ -4118,7 +4150,7 @@ const _now=new Date();
 let salesGran="month", salesMetric="contract", salesDev="all", salesSector="all", salesUnitType="all",
     salesYear="2026", salesMonth=String(_now.getMonth()+1).padStart(2,"0");
 const DEV_CHIP_IDS={all:["sdAll","invSdAll","perfSdAll"], nhc:["sdNHC","invSdNHC","perfSdNHC"], other:["sdOther","invSdOther","perfSdOther"]};
-const SEC_CHIP_IDS={all:["secAll","invSecAll","perfSecAll"], "الأوسط":["secMid","invSecMid","perfSecMid"], "الغربي":["secWest","invSecWest","perfSecWest"], "الشرقي":["secEast","invSecEast","perfSecEast"]};
+const SEC_CHIP_IDS={all:["secAll","invSecAll"], "الأوسط":["secMid","invSecMid"], "الغربي":["secWest","invSecWest"], "الشرقي":["secEast","invSecEast"]};
 const UT_CHIP_IDS={all:["utAll","invUtAll","perfUtAll"], "فيلا":["utVilla","invUtVilla","perfUtVilla"], "شقة":["utApt","invUtApt","perfUtApt"], "تاون هاوس":["utTown","invUtTown","perfUtTown"]};
 function applyChipGroup(idsMap, activeKey){
   Object.values(idsMap).flat().forEach(id=>{ const el=$(id); if(el) el.classList.remove("on"); });
@@ -4171,9 +4203,14 @@ function wireSalesCtrl(){
   $("invAnalysisBtn").innerHTML = `<button class="btn ghost" style="width:100%;max-width:640px;margin:8px auto;display:block" id="invAnalysisOpenBtn">📦 تحليل المخزون (متاح/محجوب/مباع)</button>`;
   $("invAnalysisOpenBtn").onclick = renderInventoryAnalysis;
   $("invAnalysisScrim").onclick = ()=>closeSheet("invAnalysisSheet");
-  $("perfBtn").innerHTML = `<button class="btn" style="width:100%;max-width:640px;margin:8px auto;display:block" id="perfOpenBtn">🎯 مراقبة الأداء (حجز ← استصناع ← عقد)</button>`;
+  $("perfBtn").innerHTML = `<button class="btn" style="width:100%;max-width:640px;margin:8px auto;display:block" id="perfOpenBtn">🎯 مراقبة الأداء (مصفوفة القطاعات)</button>`;
   $("perfOpenBtn").onclick = renderPerformanceMonitor;
   $("perfScrim").onclick = ()=>closeSheet("perfSheet");
+  $("perfPerMonth").onclick = ()=>{ perfPeriodMode="month"; $("perfPerMonth").classList.add("on"); $("perfPerYear").classList.remove("on"); renderPerformanceMonitor(); };
+  $("perfPerYear").onclick = ()=>{ perfPeriodMode="year"; $("perfPerYear").classList.add("on"); $("perfPerMonth").classList.remove("on"); renderPerformanceMonitor(); };
+  $("perfMonthSel").value = perfMonth;
+  $("perfMonthSel").onchange = ()=>{ perfMonth=$("perfMonthSel").value; renderPerformanceMonitor(); };
+  $("perfYearSel").onchange = ()=>{ perfYear=$("perfYearSel").value; renderPerformanceMonitor(); };
   updateSalesCtrlSummary();
 }
 const MNAMES={"01":"يناير","02":"فبراير","03":"مارس","04":"أبريل","05":"مايو","06":"يونيو",
@@ -4591,50 +4628,73 @@ async function renderInventoryAnalysis(){
   };
   $("invAnalysisBody").innerHTML = distHtml + cmpHtml + section("📗 المتاح للبيع", d.avail) + section("🔒 المحجوب", d.blocked);
 }
-/* ---------- مراقبة الأداء — الطبقة ٢: قمع التحويل الداخلي (حجز←استصناع←عقد) ----------
-   من برومبت "نظام إدارة أداء" — الطبقة الوحيدة الجاهزة بيانياً اليوم بلا نقص (تواريخ
-   الحجز/الاستصناع/العقد موجودة أصلاً بـunit_allocation_mirror). لا تُبنى المتوسط وحده أبداً
-   — البيانات التاريخية موزّعة ثنائياً (انقسام حاد بين إغلاق سريع جداً وبطيء جداً)، فالمتوسط
-   وحده يخفي هذا الانقسام؛ نعرض الوسيط والتوزيع الشرائحي دائماً معه. طبقة التمويل (٤) مستثناة
-   حالياً بطلب صريح — لا مصدر بيانات راتب/نسبة ربح فعلية مربوطة بوحدة مباعة أصلاً. */
-function funnelFilterArgs(){
-  return {
-    p_sector: perfSector==="all" ? null : perfSector,
-    p_dev_kind: perfDev==="all" ? null : perfDev,
-    p_unit_type: perfUnitType==="all" ? null : perfUnitType,
-  };
+/* ---------- مراقبة الأداء — مصفوفة القطاعات ----------
+   إعادة بناء كاملة حسب تصميم مرسوم يدوياً بعد أن التصميم الأول (بطاقات متتالية) طلع غير
+   مفيد وصعب القراءة عملياً. صف لكل قطاع، أعمدة: مستهدف (شهر/سنة) | محقق (شهر/سنة) | مؤشر
+   الحجوزات (IN=حجوزات بدأت بالفترة المحدَّدة، OUT=كم منها وصل لعقد حتى تاريخه، والنسبة) |
+   مؤشر الاستصناع (نفس الفكرة، من زاوية عقود الاستصناع الموقّعة بالفترة). الضغط على أي
+   قطاع يفتح تفصيلاً إضافياً (نسبة متاح:محجوب، % نماذج راكدة/نشطة، وسيط أيام التحوّل)،
+   وداخله قائمة مشاريع بنفس المؤشرات لكل مشروع على حدة. طبقة التمويل مستثناة بطلب صريح. */
+let perfDev="all", perfUnitType="all";
+let perfPeriodMode="month", perfMonth=String(_now.getMonth()+1).padStart(2,"0"), perfYear="2026";
+let perfExpandedSector=null, perfSectorDetail=null, perfExpandedProject=null;
+function scoreCell(pct){
+  if(pct==null) return `<span class="scoreCell mid">—</span>`;
+  const cls = pct>=90 ? "good" : pct>=70 ? "mid" : "bad";
+  return `<span class="scoreCell ${cls}">${Math.round(pct)}٪</span>`;
 }
-let perfSector="all", perfDev="all", perfUnitType="all";
-function pctBar(pct, label){
-  const p = pct!=null ? Math.round(pct) : 0;
-  return `<div class="dstat"><b>${pct!=null?p+"٪":"—"}</b><span>${label}</span></div>`;
+function achieveColor(achieved, target){
+  if(!target) return "var(--ink)";
+  const pct = achieved/target*100;
+  return pct>=100 ? "var(--green)" : pct>=70 ? "var(--gold-text2)" : "var(--rust)";
 }
 async function renderPerformanceMonitor(){
-  perfSector=salesSector; perfDev=salesDev; perfUnitType=salesUnitType;
-  applyChipGroup(SEC_CHIP_IDS, salesSector);
+  perfDev=salesDev; perfUnitType=salesUnitType;
   applyChipGroup(DEV_CHIP_IDS, salesDev);
   applyChipGroup(UT_CHIP_IDS, salesUnitType);
+  $("perfMonthSel").value = perfMonth;
+  $("perfYearSel").value = perfYear;
+  $("perfMonthSel").style.display = perfPeriodMode==="month" ? "" : "none";
   $("perfBody").innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
   openSheet("perfSheet");
-  const args = funnelFilterArgs();
-  let monthly, byProject, stuck;
+  const devArg = perfDev==="all" ? null : perfDev;
+  const typeArg = perfUnitType==="all" ? null : perfUnitType;
+  let scorecard, monthlyAll, stuckAll;
   try{
-    [monthly, byProject, stuck] = await Promise.all([
-      sbCall("get_funnel_monthly", {...args, p_months:12}),
-      sbCall("get_funnel_by_project", {...args, p_months:12}),
-      sbCall("get_stuck_units", args),
+    [scorecard, monthlyAll, stuckAll] = await Promise.all([
+      sbCall("get_sector_scorecard", {p_year:+perfYear, p_month:+perfMonth, p_period_mode:perfPeriodMode, p_dev_kind:devArg, p_unit_type:typeArg}),
+      sbCall("get_funnel_monthly", {p_sector:null, p_dev_kind:devArg, p_unit_type:typeArg, p_months:12}),
+      sbCall("get_stuck_units", {p_sector:null, p_dev_kind:devArg, p_unit_type:typeArg}),
     ]);
-  }catch(e){ monthly=null; }
-  if(!Array.isArray(monthly)){
-    $("perfBody").innerHTML = `<div class="src" style="text-align:center;padding:24px">تعذّر تحميل مراقبة الأداء — تحقّق من تشغيل funnel_layer2.sql على القاعدة</div>`;
+  }catch(e){ scorecard=null; }
+  if(!Array.isArray(scorecard)){
+    $("perfBody").innerHTML = `<div class="src" style="text-align:center;padding:24px">تعذّر تحميل مصفوفة القطاعات — تحقّق من تشغيل sector_scorecard.sql (وzone_number.sql وfunnel_layer2.sql قبله) على القاعدة</div>`;
     return;
   }
-  /* الوحدات العالقة — أول عنصر بالشاشة كما يطلب البرومبت: أرخص وأسرع إجراء ممكن (تشغيلي بحت) */
-  const stuckRows = (stuck||[]);
-  const stuckHtml = `<div class="salesCard" style="max-width:640px;margin:0 auto 12px;border-color:var(--rust-soft-border)">
+  const monthWord = MNAMES[perfMonth];
+  const rows = scorecard.map(r=>{
+    const isOpen = perfExpandedSector===r.sector;
+    return `<tr class="sectorRow${isOpen?" expanded":""}" data-sector="${r.sector}">
+      <td>${r.sector}<span class="arw">▾</span></td>
+      <td><div class="stackNum"><b style="color:${achieveColor(r.achieved_month,r.target_month)}">${fmt(r.achieved_month)}</b><span>مستهدف ${r.target_month?fmt(Math.round(r.target_month)):"—"}</span></div></td>
+      <td><div class="stackNum"><b style="color:${achieveColor(r.achieved_year,r.target_year)}">${fmt(r.achieved_year)}</b><span>مستهدف ${r.target_year?fmt(Math.round(r.target_year)):"—"}</span></div></td>
+      <td>${scoreCell(r.booking_rate)}<div class="scoreSub">${fmt(r.booking_out||0)} من ${fmt(r.booking_in||0)}</div></td>
+      <td>${scoreCell(r.istisna_rate)}<div class="scoreSub">${fmt(r.istisna_out||0)} من ${fmt(r.istisna_in||0)}</div></td>
+    </tr>${isOpen?`<tr><td colspan="5" style="padding:0"><div id="sectorDetailBox"></div></td></tr>`:""}`;
+  }).join("");
+  const matrixHtml = `<div class="salesCard" style="max-width:680px;margin:0 auto 12px;overflow-x:auto">
+    <div class="scTotal" style="border:none;padding:0;margin-bottom:2px;font-size:13px">${perfPeriodMode==="month"?monthWord+" "+perfYear:"سنة "+perfYear+" كاملة"}</div>
+    <table class="sectorMatrix"><thead><tr>
+      <th>القطاع</th><th>المحقق شهرياً<br>(مستهدف الشهر)</th><th>المحقق سنوياً<br>(مستهدف السنة)</th><th>مؤشر الحجوزات<br>(حجز←عقد)</th><th>مؤشر الاستصناع<br>(استصناع←عقد)</th>
+    </tr></thead><tbody>${rows || `<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted)">لا توجد بيانات</td></tr>`}</tbody></table>
+  </div>`;
+
+  /* قسم ثانوي: الوحدات العالقة + تنبيه الانخفاض المتتالي — إجمالي كل القطاعات بنفس الفلاتر */
+  const stuckRows = (stuckAll||[]);
+  const stuckHtml = `<div class="salesCard" style="max-width:680px;margin:0 auto 12px;border-color:var(--rust-soft-border)">
     <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px;color:var(--rust)">🚨 وحدات عالقة أكثر من 90 يوماً بلا عقد نهائي — ${fmt(stuckRows.length)} وحدة</div>
     <div class="src" style="margin-bottom:8px">محجوزة ولم تتحوّل لعقد نهائي — إجراء فريق العمليات، لا فريق المبيعات</div>
-    ${stuckRows.length ? stuckRows.slice(0,50).map(r=>`
+    ${stuckRows.length ? stuckRows.slice(0,20).map(r=>`
       <div class="mrRow">
         <div class="mrInfo">
           <div class="mrProj">${r.project_name}${r.building_number?" · مبنى "+r.building_number:""}${r.zone_number?" · زون "+r.zone_number:""}</div>
@@ -4642,60 +4702,84 @@ async function renderPerformanceMonitor(){
         </div>
         <div class="mrCnt"><b style="color:var(--rust)">${fmt(r.days_stuck)}</b><span>يوماً</span></div>
       </div>`).join("") : `<div class="src" style="text-align:center;padding:12px">لا توجد وحدات عالقة — ممتاز</div>`}
-    ${stuckRows.length>50?`<div class="src" style="text-align:center;margin-top:6px">وأكثر من ${fmt(stuckRows.length-50)} وحدة أخرى...</div>`:""}
+    ${stuckRows.length>20?`<div class="src" style="text-align:center;margin-top:6px">وأكثر من ${fmt(stuckRows.length-20)} وحدة أخرى...</div>`:""}
   </div>`;
-
-  /* تنبيه: نسبة استصناع→عقد انخفضت شهرين متتاليين — من آخر 3 أشهر فيها بيانات كافية */
-  const withRate = monthly.filter(m=>m.contract_rate!=null);
   let declineAlert = "";
-  if(withRate.length>=3){
-    const last3 = withRate.slice(-3);
-    if(last3[2].contract_rate < last3[1].contract_rate && last3[1].contract_rate < last3[0].contract_rate){
-      declineAlert = `<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust);margin-bottom:12px">
-        ⚠ نسبة التحول استصناع←عقد تنخفض للشهر الثاني على التوالي (${Math.round(last3[0].contract_rate)}٪ ← ${Math.round(last3[1].contract_rate)}٪ ← ${Math.round(last3[2].contract_rate)}٪) — يستحق مراجعة فورية
-      </div>`;
+  if(Array.isArray(monthlyAll)){
+    const withRate = monthlyAll.filter(m=>m.contract_rate!=null);
+    if(withRate.length>=3){
+      const last3 = withRate.slice(-3);
+      if(last3[2].contract_rate < last3[1].contract_rate && last3[1].contract_rate < last3[0].contract_rate){
+        declineAlert = `<div class="cwarn" style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust);max-width:680px;margin:0 auto 12px">
+          ⚠ نسبة التحول استصناع←عقد تنخفض للشهر الثاني على التوالي (${Math.round(last3[0].contract_rate)}٪ ← ${Math.round(last3[1].contract_rate)}٪ ← ${Math.round(last3[2].contract_rate)}٪) — يستحق مراجعة فورية
+        </div>`;
+      }
     }
   }
 
-  /* إجمالي مجمَّع عبر كل الأشهر المعروضة، لبطاقات المؤشرات العلوية */
-  const tot = monthly.reduce((s,m)=>({
-    booked:s.booked+Number(m.booked_count||0), istisna:s.istisna+Number(m.istisna_count||0), contract:s.contract+Number(m.contract_count||0),
-  }), {booked:0,istisna:0,contract:0});
-  const istisnaRateAll = tot.booked ? tot.istisna/tot.booked*100 : null;
-  const contractRateAll = tot.istisna ? tot.contract/tot.istisna*100 : null;
-  const durRows = monthly.filter(m=>m.mean_days!=null);
-  const lastDur = durRows.length ? durRows[durRows.length-1] : null;
-
-  const kpiHtml = `<div class="salesCard" style="max-width:640px;margin:0 auto 12px">
-    <div class="scTotal" style="border:none;padding:0;margin-bottom:9px;font-size:13px">آخر 12 شهراً — ${fmt(tot.booked)} حجز</div>
-    <div class="dest3" style="grid-template-columns:repeat(2,1fr);margin-bottom:8px">
-      ${pctBar(istisnaRateAll, "حجز ← استصناع")}
-      ${pctBar(contractRateAll, "استصناع ← عقد")}
+  $("perfBody").innerHTML = matrixHtml + declineAlert + stuckHtml;
+  $("perfBody").querySelectorAll(".sectorRow").forEach(row=>row.onclick=()=>toggleSectorDetail(row.dataset.sector));
+  if(perfExpandedSector) renderSectorDetailBox();
+}
+async function toggleSectorDetail(sector){
+  if(perfExpandedSector===sector){ perfExpandedSector=null; perfSectorDetail=null; perfExpandedProject=null; }
+  else{ perfExpandedSector=sector; perfSectorDetail=null; perfExpandedProject=null; }
+  await renderPerformanceMonitor();
+}
+/* أرقام هذه البطاقة (نسبة متاح:محجوب، وسيط الأيام) عشرية بطبيعتها (٧٫٥، ٣٥٫٥ يوم) — fmt()
+   المستخدمة لبقية التطبيق تقرّب لعدد صحيح دائماً (مصمَّمة لأعداد الوحدات)، فتخفي الكسر هنا؛
+   نعرض رقماً عشرياً بمنزلة واحدة فقط لو فيه كسر فعلي، وإلا صحيحاً بلا صفر زائد */
+function fmt1(n){
+  const r = Math.round(n*10)/10;
+  return Number.isInteger(r) ? nf.format(r) : r.toFixed(1);
+}
+function detailStat(val, label, suffix){
+  return `<div class="dstat"><b>${val!=null?fmt1(val)+(suffix||""):"—"}</b><span>${label}</span></div>`;
+}
+async function renderSectorDetailBox(){
+  const box = $("sectorDetailBox");
+  if(!box) return;
+  box.innerHTML = `<div class="sectorDetail" style="text-align:center;color:var(--muted);font-size:12px">جارٍ التحميل…</div>`;
+  if(!perfSectorDetail){
+    const devArg = perfDev==="all" ? null : perfDev;
+    const typeArg = perfUnitType==="all" ? null : perfUnitType;
+    try{ perfSectorDetail = await sbCall("get_sector_detail", {p_sector:perfExpandedSector, p_dev_kind:devArg, p_unit_type:typeArg}); }
+    catch(e){ perfSectorDetail = null; }
+  }
+  const d = perfSectorDetail;
+  const box2 = $("sectorDetailBox"); if(!box2) return;
+  if(!d){ box2.innerHTML = `<div class="sectorDetail">تعذّر تحميل تفاصيل ${perfExpandedSector}</div>`; return; }
+  const projects = d.by_project||[];
+  box2.innerHTML = `<div class="sectorDetail">
+    <div class="sdGrid">
+      ${detailStat(d.avail_blocked_ratio, "نسبة متاح:محجوب")}
+      ${detailStat(d.pct_active, "% نماذج نشطة (آخر 30 يوم)", "٪")}
+      ${detailStat(d.pct_stagnant, "% نماذج راكدة (آخر 30 يوم)", "٪")}
+      ${detailStat(d.median_book_contract, "وسيط أيام حجز←عقد", " يوم")}
+      ${detailStat(d.median_istisna_contract, "وسيط أيام استصناع←عقد", " يوم")}
+      ${detailStat(d.avail_count, "وحدات متاحة")}
     </div>
-    ${lastDur ? `<div class="src" style="margin-bottom:6px">مدة التحول (حجز←عقد)، آخر شهر ببيانات: <b style="color:var(--ink)">متوسط ${fmt(lastDur.mean_days)} يوماً</b> · <b style="color:var(--ink)">وسيط ${fmt(lastDur.median_days)} يوماً</b> — الوسيط أدق لأن التوزيع منقسم، ليس متجانساً</div>
-    <div class="dest3" style="grid-template-columns:repeat(4,1fr)">
-      ${pctBar(lastDur.pct_le7, "≤7 أيام")}
-      ${pctBar(lastDur.pct_8_30, "8-30 يوماً")}
-      ${pctBar(lastDur.pct_31_90, "31-90 يوماً")}
-      ${pctBar(lastDur.pct_gt90, "أكثر من 90")}
-    </div>` : `<div class="src" style="text-align:center">لا توجد عقود مكتملة كافية لحساب توزيع المدة بعد</div>`}
-  </div>`;
-
-  const projRows = (byProject||[]);
-  const projHtml = `<div class="salesCard" style="max-width:640px;margin:0 auto 12px">
-    <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px">حسب المشروع — الأضعف أولاً (نسبة استصناع←عقد)</div>
-    <div class="src" style="margin-bottom:8px">مشاريع بأقل من 3 حجوزات بالمدى المعروض مستبعدة (نسب غير ذات دلالة إحصائية)</div>
-    ${projRows.length ? projRows.slice(0,50).map(r=>`
-      <div class="mrRow">
-        <div class="mrInfo">
-          <div class="mrProj">${r.project_name}</div>
-          <div class="mrMeta">${fmt(r.booked_count)} حجز · استصناع ${r.istisna_rate!=null?Math.round(r.istisna_rate)+"٪":"—"} · عقد ${r.contract_rate!=null?Math.round(r.contract_rate)+"٪":"—"}${r.median_days!=null?" · وسيط "+fmt(r.median_days)+" يوم":""}</div>
+    <div class="src" style="margin-bottom:6px">حسب المشروع (${fmt(projects.length)})</div>
+    ${projects.map(p=>{
+      const isOpen = perfExpandedProject===p.project_name;
+      return `<div class="mrRow projDetailRow" data-proj="${p.project_name.replace(/"/g,'&quot;')}">
+        <div class="mrInfo"><div class="mrProj">${p.project_name}<span class="arw" style="display:inline-block;margin-inline-start:4px;font-size:9px;color:var(--muted)${isOpen?';transform:rotate(180deg)':''}">▾</span></div>
+        <div class="mrMeta">متاح ${fmt(p.avail_count)} · محجوب ${fmt(p.blocked_count)}</div></div>
+      </div>${isOpen?`<div class="projDetailBody">
+        <div class="sdGrid">
+          ${detailStat(p.pct_active,"% نماذج نشطة","٪")}
+          ${detailStat(p.pct_stagnant,"% نماذج راكدة","٪")}
+          ${detailStat(p.median_book_contract,"وسيط أيام حجز←عقد"," يوم")}
+          ${detailStat(p.median_istisna_contract,"وسيط أيام استصناع←عقد"," يوم")}
         </div>
-        <div class="mrCnt"><b style="color:${r.contract_rate!=null&&r.contract_rate<70?'var(--rust)':'var(--green)'}">${r.contract_rate!=null?Math.round(r.contract_rate)+"٪":"—"}</b><span>عقد</span></div>
-      </div>`).join("") : `<div class="src" style="text-align:center;padding:12px">لا توجد بيانات كافية</div>`}
+      </div>`:""}`;
+    }).join("") || `<div class="src" style="text-align:center;padding:10px">لا توجد مشاريع مطابقة</div>`}
   </div>`;
-
-  $("perfBody").innerHTML = stuckHtml + declineAlert + kpiHtml + projHtml;
+  box2.querySelectorAll(".projDetailRow").forEach(row=>row.onclick=(e)=>{
+    e.stopPropagation();
+    perfExpandedProject = perfExpandedProject===row.dataset.proj ? null : row.dataset.proj;
+    renderSectorDetailBox();
+  });
 }
 wireSalesCtrl();
 $("dealBannerX").onclick=()=>{ $("dealBanner").style.display="none"; };
