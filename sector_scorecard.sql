@@ -65,7 +65,7 @@ begin
     round(100.0 * b.booking_out / nullif(b.booking_in,0), 1) as booking_rate,
     i.istisna_in, i.istisna_out,
     round(100.0 * i.istisna_out / nullif(i.istisna_in,0), 1) as istisna_rate
-  from (select distinct sector from unit_allocation_mirror where sector is not null) s
+  from (select distinct m0.sector from unit_allocation_mirror m0 where m0.sector is not null) s
   left join lateral (
     select count(*) as booking_in, count(*) filter (where contract_date is not null) as booking_out
     from unit_allocation_mirror m
