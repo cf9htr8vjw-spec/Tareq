@@ -4659,18 +4659,23 @@ async function renderPerformanceMonitor(){
   openSheet("perfSheet");
   const devArg = perfDev==="all" ? null : perfDev;
   const typeArg = perfUnitType==="all" ? null : perfUnitType;
-  let scorecard, monthlyAll, stuckAll;
+  /* المصفوفة (get_sector_scorecard) هي المحتوى الأساسي — تفشل الشاشة كاملة لو فشلت.
+     القائمتان الثانويتان (get_funnel_monthly وget_stuck_units، من funnel_layer2.sql) لا
+     توقفان عرض المصفوفة لو فشلتا — كانتا مجمَّعتين بـPromise.all سابقاً فيخفي فشل أي منهما
+     رسالة الخطأ الحقيقية عن سبب فشل المصفوفة نفسها بالضبط، وهذا بالضبط ما صار عملياً. */
+  let scorecard, perfLoadErr=null;
   try{
-    [scorecard, monthlyAll, stuckAll] = await Promise.all([
-      sbCall("get_sector_scorecard", {p_year:+perfYear, p_month:+perfMonth, p_period_mode:perfPeriodMode, p_dev_kind:devArg, p_unit_type:typeArg}),
-      sbCall("get_funnel_monthly", {p_sector:null, p_dev_kind:devArg, p_unit_type:typeArg, p_months:12}),
-      sbCall("get_stuck_units", {p_sector:null, p_dev_kind:devArg, p_unit_type:typeArg}),
-    ]);
-  }catch(e){ scorecard=null; }
+    scorecard = await sbCall("get_sector_scorecard", {p_year:+perfYear, p_month:+perfMonth, p_period_mode:perfPeriodMode, p_dev_kind:devArg, p_unit_type:typeArg});
+  }catch(e){ scorecard=null; perfLoadErr=e.message||String(e); }
   if(!Array.isArray(scorecard)){
-    $("perfBody").innerHTML = `<div class="src" style="text-align:center;padding:24px">تعذّر تحميل مصفوفة القطاعات — تحقّق من تشغيل sector_scorecard.sql (وzone_number.sql وfunnel_layer2.sql قبله) على القاعدة</div>`;
+    $("perfBody").innerHTML = `<div class="src" style="text-align:center;padding:24px">تعذّر تحميل مصفوفة القطاعات — تحقّق من تشغيل sector_scorecard.sql (وzone_number.sql وfunnel_layer2.sql قبله) على القاعدة<br><span style="color:var(--rust)">السبب الفعلي: ${perfLoadErr||"غير معروف"}</span></div>`;
     return;
   }
+  let monthlyAll=null, stuckAll=null;
+  try{ monthlyAll = await sbCall("get_funnel_monthly", {p_sector:null, p_dev_kind:devArg, p_unit_type:typeArg, p_months:12}); }
+  catch(e){ console.error("[تشخيص] فشل تحميل الاتجاه الشهري (تنبيه الانخفاض المتتالي لن يظهر):", e.message||e); }
+  try{ stuckAll = await sbCall("get_stuck_units", {p_sector:null, p_dev_kind:devArg, p_unit_type:typeArg}); }
+  catch(e){ console.error("[تشخيص] فشل تحميل قائمة الوحدات العالقة:", e.message||e); }
   const monthWord = MNAMES[perfMonth];
   const rows = scorecard.map(r=>{
     const isOpen = perfExpandedSector===r.sector;
@@ -4689,9 +4694,12 @@ async function renderPerformanceMonitor(){
     </tr></thead><tbody>${rows || `<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted)">لا توجد بيانات</td></tr>`}</tbody></table>
   </div>`;
 
-  /* قسم ثانوي: الوحدات العالقة + تنبيه الانخفاض المتتالي — إجمالي كل القطاعات بنفس الفلاتر */
-  const stuckRows = (stuckAll||[]);
-  const stuckHtml = `<div class="salesCard" style="max-width:680px;margin:0 auto 12px;border-color:var(--rust-soft-border)">
+  /* قسم ثانوي: الوحدات العالقة + تنبيه الانخفاض المتتالي — إجمالي كل القطاعات بنفس الفلاتر.
+     لو فشل تحميل القائمة (funnel_layer2.sql لم يُشغَّل بعد مثلاً) لا نعرض القسم إطلاقاً —
+     عرض "لا توجد وحدات عالقة" هنا كان يوهم بصفر مؤكَّد بينما الحقيقة أن التحميل فشل أصلاً */
+  const stuckHtml = !Array.isArray(stuckAll) ? "" : (()=>{
+  const stuckRows = stuckAll;
+  return `<div class="salesCard" style="max-width:680px;margin:0 auto 12px;border-color:var(--rust-soft-border)">
     <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px;color:var(--rust)">🚨 وحدات عالقة أكثر من 90 يوماً بلا عقد نهائي — ${fmt(stuckRows.length)} وحدة</div>
     <div class="src" style="margin-bottom:8px">محجوزة ولم تتحوّل لعقد نهائي — إجراء فريق العمليات، لا فريق المبيعات</div>
     ${stuckRows.length ? stuckRows.slice(0,20).map(r=>`
@@ -4704,6 +4712,7 @@ async function renderPerformanceMonitor(){
       </div>`).join("") : `<div class="src" style="text-align:center;padding:12px">لا توجد وحدات عالقة — ممتاز</div>`}
     ${stuckRows.length>20?`<div class="src" style="text-align:center;margin-top:6px">وأكثر من ${fmt(stuckRows.length-20)} وحدة أخرى...</div>`:""}
   </div>`;
+  })();
   let declineAlert = "";
   if(Array.isArray(monthlyAll)){
     const withRate = monthlyAll.filter(m=>m.contract_rate!=null);
