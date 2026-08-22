@@ -4687,6 +4687,7 @@ async function renderInventoryAnalysis(){
 let perfDev="all", perfUnitType="all";
 let perfPeriodMode="month", perfMonth=String(_now.getMonth()+1).padStart(2,"0"), perfYear="2026";
 let perfExpandedSector=null, perfSectorDetail=null, perfExpandedProject=null;
+let perfInactiveDays=90;
 function scoreCell(pct){
   if(pct==null) return `<span class="scoreCell mid">—</span>`;
   const cls = pct>=90 ? "good" : pct>=70 ? "mid" : "bad";
@@ -4709,9 +4710,9 @@ async function renderPerformanceMonitor(){
   const devArg = perfDev==="all" ? null : perfDev;
   const typeArg = perfUnitType==="all" ? null : perfUnitType;
   /* المصفوفة (get_sector_scorecard) هي المحتوى الأساسي — تفشل الشاشة كاملة لو فشلت.
-     القائمتان الثانويتان (get_funnel_monthly وget_stuck_units، من funnel_layer2.sql) لا
-     توقفان عرض المصفوفة لو فشلتا — كانتا مجمَّعتين بـPromise.all سابقاً فيخفي فشل أي منهما
-     رسالة الخطأ الحقيقية عن سبب فشل المصفوفة نفسها بالضبط، وهذا بالضبط ما صار عملياً. */
+     القوائم الثانوية (get_funnel_monthly وget_dormant_projects) لا توقفان عرض المصفوفة لو
+     فشلتا — كانتا مجمَّعتين بـPromise.all سابقاً فيخفي فشل أي منهما رسالة الخطأ الحقيقية عن
+     سبب فشل المصفوفة نفسها بالضبط، وهذا بالضبط ما صار عملياً. */
   let scorecard, perfLoadErr=null;
   try{
     scorecard = await sbCall("get_sector_scorecard", {p_year:+perfYear, p_month:+perfMonth, p_period_mode:perfPeriodMode, p_dev_kind:devArg, p_unit_type:typeArg});
@@ -4720,11 +4721,11 @@ async function renderPerformanceMonitor(){
     $("perfBody").innerHTML = `<div class="src" style="text-align:center;padding:24px">تعذّر تحميل مصفوفة القطاعات — تحقّق من تشغيل sector_scorecard.sql (وzone_number.sql وfunnel_layer2.sql قبله) على القاعدة<br><span style="color:var(--rust)">السبب الفعلي: ${perfLoadErr||"غير معروف"}</span></div>`;
     return;
   }
-  let monthlyAll=null, stuckAll=null;
+  let monthlyAll=null, dormantAll=null;
   try{ monthlyAll = await sbCall("get_funnel_monthly", {p_sector:null, p_dev_kind:devArg, p_unit_type:typeArg, p_months:12}); }
   catch(e){ console.error("[تشخيص] فشل تحميل الاتجاه الشهري (تنبيه الانخفاض المتتالي لن يظهر):", e.message||e); }
-  try{ stuckAll = await sbCall("get_stuck_units", {p_sector:null, p_dev_kind:devArg, p_unit_type:typeArg}); }
-  catch(e){ console.error("[تشخيص] فشل تحميل قائمة الوحدات العالقة:", e.message||e); }
+  try{ dormantAll = await sbCall("get_dormant_projects", {p_sector:null, p_dev_kind:devArg, p_unit_type:typeArg, p_inactive_days:perfInactiveDays}); }
+  catch(e){ console.error("[تشخيص] فشل تحميل قائمة المشاريع بلا حركة:", e.message||e); }
   const monthWord = MNAMES[perfMonth];
   const rows = scorecard.map(r=>{
     const isOpen = perfExpandedSector===r.sector;
@@ -4743,23 +4744,27 @@ async function renderPerformanceMonitor(){
     </tr></thead><tbody>${rows || `<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted)">لا توجد بيانات</td></tr>`}</tbody></table>
   </div>`;
 
-  /* قسم ثانوي: الوحدات العالقة + تنبيه الانخفاض المتتالي — إجمالي كل القطاعات بنفس الفلاتر.
-     لو فشل تحميل القائمة (funnel_layer2.sql لم يُشغَّل بعد مثلاً) لا نعرض القسم إطلاقاً —
-     عرض "لا توجد وحدات عالقة" هنا كان يوهم بصفر مؤكَّد بينما الحقيقة أن التحميل فشل أصلاً */
-  const stuckHtml = !Array.isArray(stuckAll) ? "" : (()=>{
-  const stuckRows = stuckAll;
+  /* قسم ثانوي: مشاريع بلا حركة (بمستوى المشروع، لا الوحدة) + تنبيه الانخفاض المتتالي —
+     إجمالي كل القطاعات بنفس الفلاتر. فترة "عدم النشاط" (perfInactiveDays) parameter قابل
+     للتغيير من شرائح تحت المصفوفة، منفصل عن فترة المصفوفة نفسها (شهر/سنة). لو فشل التحميل
+     لا نعرض القسم إطلاقاً — عرض "لا يوجد" هنا كان يوهم بصفر مؤكَّد بينما الحقيقة أن التحميل فشل */
+  const inactChips = [30,60,90,180].map(d=>
+    `<button type="button" class="chip${perfInactiveDays===d?" on":""}" data-inact="${d}">${d} يوم</button>`).join("");
+  const dormantHtml = !Array.isArray(dormantAll) ? "" : (()=>{
+  const rows = dormantAll;
   return `<div class="salesCard" style="max-width:680px;margin:0 auto 12px;border-color:var(--rust-soft-border)">
-    <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px;color:var(--rust)">🚨 وحدات عالقة أكثر من 90 يوماً بلا عقد نهائي — ${fmt(stuckRows.length)} وحدة</div>
-    <div class="src" style="margin-bottom:8px">محجوزة ولم تتحوّل لعقد نهائي — إجراء فريق العمليات، لا فريق المبيعات</div>
-    ${stuckRows.length ? stuckRows.slice(0,20).map(r=>`
+    <div class="scTotal" style="border:none;padding:0;margin-bottom:4px;font-size:13px;color:var(--rust)">🚨 مشاريع بلا حركة — ${fmt(rows.length)} مشروعاً</div>
+    <div class="src" style="margin-bottom:8px">لا حجوزات ولا عقود استصناع ولا عقود نهائية خلال الفترة المحدَّدة أدناه</div>
+    <div class="chips" id="perfInactChips" style="margin-bottom:10px">${inactChips}</div>
+    ${rows.length ? rows.slice(0,30).map(r=>`
       <div class="mrRow">
         <div class="mrInfo">
-          <div class="mrProj">${r.project_name}${r.building_number?" · مبنى "+r.building_number:""}${r.zone_number?" · زون "+r.zone_number:""}</div>
-          <div class="mrMeta">حجز بتاريخ ${new Date(r.booking_date).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"short",year:"numeric"})}${r.unit_code?" · "+r.unit_code:""}</div>
+          <div class="mrProj">${r.project_name}</div>
+          <div class="mrMeta">${r.last_activity_date ? "آخر نشاط: "+new Date(r.last_activity_date).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"short",year:"numeric"}) : "لا يوجد أي نشاط مسجَّل إطلاقاً"}</div>
         </div>
-        <div class="mrCnt"><b style="color:var(--rust)">${fmt(r.days_stuck)}</b><span>يوماً</span></div>
-      </div>`).join("") : `<div class="src" style="text-align:center;padding:12px">لا توجد وحدات عالقة — ممتاز</div>`}
-    ${stuckRows.length>20?`<div class="src" style="text-align:center;margin-top:6px">وأكثر من ${fmt(stuckRows.length-20)} وحدة أخرى...</div>`:""}
+        <div class="mrCnt"><b style="color:var(--rust)">${r.days_since_activity!=null?fmt(r.days_since_activity):"—"}</b><span>${r.days_since_activity!=null?"يوماً":""}</span></div>
+      </div>`).join("") : `<div class="src" style="text-align:center;padding:12px">لا توجد مشاريع بلا حركة خلال هذه الفترة — ممتاز</div>`}
+    ${rows.length>30?`<div class="src" style="text-align:center;margin-top:6px">وأكثر من ${fmt(rows.length-30)} مشروعاً آخر...</div>`:""}
   </div>`;
   })();
   let declineAlert = "";
@@ -4775,8 +4780,10 @@ async function renderPerformanceMonitor(){
     }
   }
 
-  $("perfBody").innerHTML = matrixHtml + declineAlert + stuckHtml;
+  $("perfBody").innerHTML = matrixHtml + declineAlert + dormantHtml;
   $("perfBody").querySelectorAll(".sectorRow").forEach(row=>row.onclick=()=>toggleSectorDetail(row.dataset.sector));
+  const inactBox=$("perfInactChips");
+  if(inactBox) inactBox.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{ perfInactiveDays=+c.dataset.inact; renderPerformanceMonitor(); });
   if(perfExpandedSector) renderSectorDetailBox();
 }
 async function toggleSectorDetail(sector){
