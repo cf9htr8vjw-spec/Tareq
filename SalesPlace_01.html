@@ -4165,26 +4165,56 @@ async function loadModelAnalytics(){
 }
 function renderModelAnalyticsCard(m){
   const totalUnits=(m.avail_count||0)+(m.reserved_count||0)+(m.contracted_count||0)+(m.blocked_count||0);
-  const byMonth={}; (m.monthly||[]).forEach(x=>{ byMonth[x.month]=x.cnt; });
-  const mx=Math.max(1,...Array.from({length:12},(_,i)=>byMonth[i+1]||0));
+  const soldToDate=(m.reserved_count||0)+(m.contracted_count||0);
+  const sellThroughPct = totalUnits ? Math.round(soldToDate/totalUnits*100) : null;
+  const byMonth={}; (m.monthly||[]).forEach(x=>{ byMonth[x.month]={cnt:x.cnt,value:x.value}; });
+  const mx=Math.max(1,...Array.from({length:12},(_,i)=>(byMonth[i+1]&&byMonth[i+1].cnt)||0));
   const bars=Array.from({length:12},(_,i)=>{
-    const mnum=i+1, cnt=byMonth[mnum]||0;
+    const mnum=i+1, e=byMonth[mnum]||{cnt:0,value:0}, cnt=e.cnt||0;
     const pct = totalUnits ? Math.round(cnt/totalUnits*100) : 0;
     const h = cnt ? Math.max(4,(cnt/mx)*100) : 2;
     const lbl=MNAMES[String(mnum).padStart(2,"0")];
-    return `<div class="mb" style="width:30px" title="${lbl} ${maYear}: ${fmt(cnt)} عقد${totalUnits?` — ${pct}% من إجمالي النموذج`:""}">
+    const valTxt = e.value ? ` — ${compact(e.value)} ريال` : "";
+    return `<div class="mb" style="width:30px" title="${lbl} ${maYear}: ${fmt(cnt)} عقد${valTxt}${totalUnits?` — ${pct}% من إجمالي النموذج`:""}">
       <div class="mbVal">${cnt?fmt(cnt):""}</div>
       <i style="height:${h}%;${cnt?"":"opacity:.25"}"></i><span>${lbl}</span></div>`;
   }).join("");
-  return `<div class="salesCard" style="max-width:640px;margin:0 auto 12px">
-    <div class="scTotal" style="border:none;padding:0;margin-bottom:9px;font-size:13px">${m.model}</div>
-    <div class="stats4" style="margin-bottom:10px">
+
+  /* المواصفات الثابتة (النوع/الغرف/المساحة/نطاق السعر لكل شريحة) من كتالوج التصميم
+     المضمّن بالتطبيق (MODELS)، بنفس مفتاح النموذج الحرفي — لا تتغيّر، فتُدمج هنا محلياً
+     بلا أي نداء إضافي للقاعدة، تماماً بنفس أسلوب بطاقة النموذج بشاشة تفاصيل المشروع */
+  const spec = (MODELS && MODELS[maProjectId]) ? MODELS[maProjectId][m.model] : null;
+  const rangeTxt=(lo,avg,hi)=> (lo&&hi) ? `${compact(lo)}–${compact(hi)} (متوسط ${compact(avg)})` : null;
+  const bRange = spec ? rangeTxt(spec.bMin,spec.bAvg,spec.bMax) : null;
+  const nRange = spec ? rangeTxt(spec.nMin,spec.nAvg,spec.nMax) : null;
+  const specHead = spec ? `
+    <div class="mcHead"><b>${m.model}</b>${spec.type?`<span class="mcType">${spec.type}</span>`:""}</div>
+    <div class="mcIcons">
+      ${spec.beds?`<span>🛏️ ${spec.beds}</span>`:""}
+      ${spec.baths?`<span>🚿 ${spec.baths}</span>`:""}
+      ${spec.size?`<span>📐 ${fmt(spec.size)} م²</span>`:""}
+    </div>
+    ${bRange||nRange?`<div class="mcPrice">${bRange?`مستفيدون: ${bRange} ريال`:""}${bRange&&nRange?" · ":""}${nRange?`غير مستفيدين: ${nRange} ريال`:""}</div>`:""}
+    ${spec.n?`<div class="mcCount">${fmt(spec.n)} وحدة بكتالوج التصميم</div>`:""}
+  ` : `<div class="mcHead"><b>${m.model}</b></div>`;
+
+  const valueLine = (m.avail_value||m.blocked_value) ? `<div class="src" style="margin:8px 0 2px">
+    ${m.avail_value?`قيمة المتاح: <b>${compact(m.avail_value)} ريال</b>${m.avail_sqm_value?` (سعر م² ≈ ${fmt(Math.round(m.avail_sqm_value))} ريال)`:""}`:""}
+    ${m.avail_value&&m.blocked_value?" · ":""}
+    ${m.blocked_value?`قيمة المحجوب: <b style="color:var(--rust)">${compact(m.blocked_value)} ريال</b>${m.blocked_sqm_value?` (سعر م² ≈ ${fmt(Math.round(m.blocked_sqm_value))} ريال)`:""}`:""}
+  </div>` : "";
+
+  return `<div class="modelcard" style="max-width:640px;margin:0 auto 12px">
+    ${specHead}
+    <div class="stats4" style="margin:12px 0 4px">
       <div class="stat"><b>${fmt(m.avail_count||0)}</b><span>متاح حي</span></div>
       <div class="stat"><b>${fmt(m.reserved_count||0)}</b><span>محجوز</span></div>
       <div class="stat"><b>${fmt(m.contracted_count||0)}</b><span>متعاقَد</span></div>
       <div class="stat"><b style="color:var(--rust)">${fmt(m.blocked_count||0)}</b><span>محجوب</span></div>
     </div>
-    <div class="mbarsWrap"><div class="mbarsInner" style="width:${12*30}px">
+    ${sellThroughPct!=null?`<div class="src">نسبة البيع الإجمالية (محجوز+متعاقَد ÷ الإجمالي الحي): <b style="color:var(--green)">${sellThroughPct}%</b></div>`:""}
+    ${valueLine}
+    <div class="mbarsWrap" style="margin-top:10px"><div class="mbarsInner" style="width:${12*30}px">
       <div class="mbars withval" style="width:${12*30}px">${bars}</div>
     </div></div>
     <div class="src" style="text-align:center;margin-top:4px">مبيعات العقود الموقّعة شهرياً ${maYear} — النسبة % من إجمالي وحدات النموذج الحالي (متاح+محجوز+متعاقَد+محجوب)</div>
