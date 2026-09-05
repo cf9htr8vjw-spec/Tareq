@@ -2162,6 +2162,7 @@ table.prods tr:last-child td{border:none}
       <div class="src" id="maProjMeta" style="margin-bottom:10px"></div>
       <div class="chips" id="maYearChips" style="margin-bottom:12px"></div>
       <div id="maStatus" class="src"></div>
+      <div id="maSummary" style="margin-bottom:16px"></div>
       <div id="maModelList"></div>
     </div>
   </div>
@@ -3306,6 +3307,7 @@ function openDetail(id){
         }).join("");
         h+=`<div class="modelgrid">${cards}</div>`;
         h+=`<div class="src" style="margin-top:9px">النماذج بنفس الرقم متطابقة تصميماً ومساحةً تقريباً — فرق السعر داخل النموذج الواحد يعود لموقع الوحدة أو الطابق.</div>`;
+        h+=`<button type="button" class="btn ghost modelAnalyticsGo" data-pid="${p.id}" style="width:100%;margin-top:11px">📊 تحليل الأداء الشهري لكل نموذج</button>`;
       }
       h+=`<div class="src">من قاعدة بيانات التخصيص التفصيلية بتاريخ ${lastSyncLabel()}.</div></div>`;
     }
@@ -3479,6 +3481,11 @@ function openDetail(id){
   },35);
 }
 function bindDetailInteractions(){
+  $("dBody").querySelectorAll(".modelAnalyticsGo").forEach(b=>b.onclick=(e)=>{
+    e.stopPropagation();
+    closeSheet("dSheet");
+    openModelAnalytics(+b.dataset.pid);
+  });
   $("dBody").querySelectorAll(".calcgo").forEach(b=>b.onclick=(e)=>{
     e.stopPropagation();
     closeSheet("dSheet");
@@ -4151,6 +4158,7 @@ async function openModelAnalytics(projectId){
 }
 async function loadModelAnalytics(){
   $("maStatus").textContent="جارٍ التحميل من القاعدة…";
+  $("maSummary").innerHTML="";
   $("maModelList").innerHTML="";
   let rows;
   try{
@@ -4161,13 +4169,50 @@ async function loadModelAnalytics(){
     return;
   }
   $("maStatus").textContent = rows.length ? "" : "لا توجد نماذج مسجَّلة لهذا المشروع بمرآة التخصيص";
+  $("maSummary").innerHTML = rows.length ? renderModelSummaryTable(rows) : "";
   $("maModelList").innerHTML = rows.map(renderModelAnalyticsCard).join("");
 }
-function renderModelAnalyticsCard(m){
+/* أرقام مشتقة مشتركة بين جدول الملخّص وبطاقة التفصيل — بلا تكرار حساب */
+function modelDerived(m){
   const totalUnits=(m.avail_count||0)+(m.reserved_count||0)+(m.contracted_count||0)+(m.blocked_count||0);
   const soldToDate=(m.reserved_count||0)+(m.contracted_count||0);
   const sellThroughPct = totalUnits ? Math.round(soldToDate/totalUnits*100) : null;
   const byMonth={}; (m.monthly||[]).forEach(x=>{ byMonth[x.month]={cnt:x.cnt,value:x.value}; });
+  const yearCnt=(m.monthly||[]).reduce((s,x)=>s+(x.cnt||0),0);
+  const yearValue=(m.monthly||[]).reduce((s,x)=>s+(x.value||0),0);
+  /* متوسط السحب الشهري لنفس السنة المختارة: مبيعات السنة ÷ عدد الأشهر المنقضية فعلياً منها
+     (كل الـ12 لو سنة سابقة، وحتى الشهر الحالي فقط لو السنة الجارية) ÷ إجمالي وحدات النموذج */
+  const now=new Date(); const curY=now.getFullYear(), curM=now.getMonth()+1;
+  const monthsElapsed = maYear<curY ? 12 : (maYear===curY ? curM : 0);
+  const avgMonthlyPct = (monthsElapsed>0 && totalUnits) ? Math.round((yearCnt/monthsElapsed)/totalUnits*100*10)/10 : null;
+  const spec = (MODELS && MODELS[maProjectId]) ? MODELS[maProjectId][m.model] : null;
+  return {totalUnits,soldToDate,sellThroughPct,byMonth,yearCnt,yearValue,avgMonthlyPct,spec};
+}
+function renderModelSummaryTable(rows){
+  const trs = rows.map(m=>{
+    const d=modelDerived(m), spec=d.spec;
+    return `<tr>
+      <td><b>${m.model}</b></td>
+      <td>${spec&&spec.type||"—"}</td>
+      <td>${spec&&spec.beds!=null?spec.beds:"—"}</td>
+      <td>${spec&&spec.size?fmt(spec.size):"—"}</td>
+      <td>${fmt(m.avail_count||0)}</td>
+      <td>${fmt(m.reserved_count||0)}</td>
+      <td>${fmt(m.contracted_count||0)}</td>
+      <td>${fmt(m.blocked_count||0)}</td>
+      <td>${d.sellThroughPct!=null?d.sellThroughPct+"%":"—"}</td>
+      <td>${d.avgMonthlyPct!=null?d.avgMonthlyPct+"%":"—"}</td>
+    </tr>`;
+  }).join("");
+  return `<div class="tw"><table class="prods">
+    <thead><tr><th>النموذج</th><th>النوع</th><th>الغرف</th><th>المساحة (م²)</th><th>متاح</th><th>محجوز</th><th>متعاقَد</th><th>محجوب</th><th>نسبة البيع</th><th>سحب شهري ${maYear}</th></tr></thead>
+    <tbody>${trs}</tbody>
+  </table></div>
+  <div class="src" style="margin-top:6px">سحب شهري = متوسط عقود الشهر ÷ إجمالي وحدات النموذج، لكل الأشهر المنقضية من ${maYear}.</div>`;
+}
+function renderModelAnalyticsCard(m){
+  const d=modelDerived(m);
+  const {totalUnits,sellThroughPct,byMonth,spec}=d;
   const mx=Math.max(1,...Array.from({length:12},(_,i)=>(byMonth[i+1]&&byMonth[i+1].cnt)||0));
   const bars=Array.from({length:12},(_,i)=>{
     const mnum=i+1, e=byMonth[mnum]||{cnt:0,value:0}, cnt=e.cnt||0;
@@ -4180,10 +4225,6 @@ function renderModelAnalyticsCard(m){
       <i style="height:${h}%;${cnt?"":"opacity:.25"}"></i><span>${lbl}</span></div>`;
   }).join("");
 
-  /* المواصفات الثابتة (النوع/الغرف/المساحة/نطاق السعر لكل شريحة) من كتالوج التصميم
-     المضمّن بالتطبيق (MODELS)، بنفس مفتاح النموذج الحرفي — لا تتغيّر، فتُدمج هنا محلياً
-     بلا أي نداء إضافي للقاعدة، تماماً بنفس أسلوب بطاقة النموذج بشاشة تفاصيل المشروع */
-  const spec = (MODELS && MODELS[maProjectId]) ? MODELS[maProjectId][m.model] : null;
   const rangeTxt=(lo,avg,hi)=> (lo&&hi) ? `${compact(lo)}–${compact(hi)} (متوسط ${compact(avg)})` : null;
   const bRange = spec ? rangeTxt(spec.bMin,spec.bAvg,spec.bMax) : null;
   const nRange = spec ? rangeTxt(spec.nMin,spec.nAvg,spec.nMax) : null;
@@ -4213,6 +4254,7 @@ function renderModelAnalyticsCard(m){
       <div class="stat"><b style="color:var(--rust)">${fmt(m.blocked_count||0)}</b><span>محجوب</span></div>
     </div>
     ${sellThroughPct!=null?`<div class="src">نسبة البيع الإجمالية (محجوز+متعاقَد ÷ الإجمالي الحي): <b style="color:var(--green)">${sellThroughPct}%</b></div>`:""}
+    ${d.avgMonthlyPct!=null?`<div class="src">متوسط السحب الشهري ${maYear}: <b style="color:var(--green)">${d.avgMonthlyPct}%</b> من إجمالي النموذج (${fmt(d.yearCnt)} عقد${d.yearValue?` — ${compact(d.yearValue)} ريال`:""})</div>`:""}
     ${valueLine}
     <div class="mbarsWrap" style="margin-top:10px"><div class="mbarsInner" style="width:${12*30}px">
       <div class="mbars withval" style="width:${12*30}px">${bars}</div>
