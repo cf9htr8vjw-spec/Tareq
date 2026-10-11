@@ -1590,6 +1590,27 @@ table.prods tr:last-child td{border:none}
 .tvFoot{margin-top:6px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#767368;flex:none;gap:16px}
 .tvFoot .stale{color:#C2491E;font-weight:800}
 .tvEmpty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-size:20px;color:#767368;line-height:1.8;padding:20px}
+.tvUpBtn{position:fixed;bottom:34px;left:26px;z-index:4100;background:#0B4332;color:#fff;border:none;border-radius:99px;padding:12px 22px;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(11,67,50,.25);opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;pointer-events:none;font-family:inherit}
+#tvView.mouse .tvUpBtn,.tvUpBtn.stale{opacity:1;transform:none;pointer-events:auto}
+.tvUpBtn.stale{background:#C2491E}
+.tvUpModal{position:fixed;inset:0;z-index:4200;background:rgba(11,67,50,.35);display:none;align-items:center;justify-content:center;padding:20px}
+.tvUpModal.on{display:flex}
+.tvUpCard{background:#fff;border-radius:20px;width:min(580px,100%);padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:12px;font-size:16px;color:#0B4332}
+.tvUpHead{display:flex;justify-content:space-between;align-items:center;font-size:21px}
+.tvUpHead button{border:none;background:#EEEAE0;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;color:#0B4332}
+.tvUpCard input[type=text],.tvUpCard input[type=password],.tvUpCard input[type=datetime-local]{width:100%;font-size:17px;padding:11px 13px;border:1.5px solid #E7E1D3;border-radius:12px;background:#FAF7F1;color:#0B4332;font-family:inherit}
+.tvUpAuth{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tvUpWho{font-size:15px;color:#5e5a4f}
+.tvUpWho button{border:none;background:none;color:#C97F2E;text-decoration:underline;cursor:pointer;font-family:inherit;font-size:15px}
+.tvUpDrop{border:2.5px dashed #9fdcbf;border-radius:16px;padding:24px;text-align:center;font-weight:700;background:#F2FAF6;cursor:pointer;font-size:17px;transition:background .15s,border-color .15s}
+.tvUpDrop.over{background:#DDF3E8;border-color:#009C6D}
+.tvUpRow{display:flex;align-items:center;gap:12px}
+.tvUpRow span{white-space:nowrap;color:#5e5a4f;font-weight:700}
+.tvUpMsg{font-size:15px;line-height:1.7;color:#5e5a4f;min-height:22px}
+.tvUpMsg.err{color:#C2491E;font-weight:700}
+.tvUpMsg.ok{color:#007a54;font-weight:800;font-size:17px}
+.tvUpGo{background:#009C6D;color:#fff;border:none;border-radius:14px;padding:14px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit}
+.tvUpGo:disabled{opacity:.45;cursor:default}
 @media(max-width:1300px){#tvPage1.on{grid-template-columns:1fr;overflow:auto}.tvGauges{grid-template-columns:repeat(2,1fr)}.tvBody{grid-template-columns:1fr}.tvCharts{grid-template-rows:240px 240px 200px}.tvSide{grid-template-rows:420px 600px}.tvSectorRow{grid-template-columns:1fr}.tvTile.main .num{font-size:60px}}
 
 /* print-only report header/footer — invisible on screen */
@@ -2950,6 +2971,21 @@ table.prods tr:last-child td{border:none}
   </div>
 
   <div class="tvFoot"><span id="tvUpdated"></span><span id="tvSource"></span></div>
+  <button type="button" id="tvUpBtn" class="tvUpBtn">⬆ رفع سحب جديد</button>
+  <div id="tvUpModal" class="tvUpModal">
+    <div class="tvUpCard">
+      <div class="tvUpHead"><b>رفع سحب جديد من داشبورد NHC</b><button type="button" id="tvUpClose" aria-label="إغلاق">✕</button></div>
+      <div class="tvUpAuth" id="tvUpAuth">
+        <input type="text" id="tvUpUser" placeholder="اسم المستخدم (أدمن)" autocomplete="username">
+        <input type="password" id="tvUpPass" placeholder="كلمة المرور" autocomplete="current-password">
+      </div>
+      <div class="tvUpWho" id="tvUpWho" style="display:none"></div>
+      <label class="tvUpDrop" id="tvUpDrop"><input type="file" id="tvUpFile" accept=".xlsx" hidden><span id="tvUpDropTxt">اسحب ملف Export هنا أو اضغط للاختيار</span></label>
+      <div class="tvUpRow"><span>وقت السحب</span><input type="datetime-local" id="tvUpAt"></div>
+      <div class="tvUpMsg" id="tvUpMsg"></div>
+      <button type="button" id="tvUpGo" class="tvUpGo" disabled>رفع اللقطة وتحديث الشاشة</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -8710,8 +8746,9 @@ async function loadTvDashboard(){
   const syncTxt=syncAt?` · آخر رفع لملف التخصيص: ${new Date(syncAt).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})} ${tvTime(syncAt)}`:"";
   if(live&&live.ok&&!live.empty){
     const ago=tvAgo(live.latest_at), stale=ago!=null&&ago>TV_STALE_MIN;
+    $("tvUpBtn").classList.toggle("stale",stale);
     upd.innerHTML=`<span class="${stale?"stale":""}">آخر سحب من داشبورد NHC: ${tvTime(live.latest_at)} (قبل ${fmt(ago)} دقيقة${stale?" — السحب متأخر، اطلب رفع ملف جديد":""})</span> · ${fmt(live.snapshots_today||0)} سحبات اليوم${syncTxt}`;
-  } else upd.textContent=syncTxt.replace(/^ · /,"");
+  } else { upd.textContent=syncTxt.replace(/^ · /,""); $("tvUpBtn").classList.toggle("stale",!!(live&&live.ok&&live.empty)); }
   $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+(errs.length?` · تعذّر: ${errs[0]}`:"");
 }
 
@@ -8760,7 +8797,7 @@ function renderTvPage1(R,ctx){
       <div class="sub">NHC <b>${fmt((L.nhc||{}).projects_with_contracts||0)}</b> · المطورون <b>${fmt((L.dev||{}).projects_with_contracts||0)}</b><br>متاح للبيع الآن <b>${fmt(A.available||0)}</b></div>`;
   } else {
     const msg = !live ? "تعذّر قراءة لقطات داشبورد NHC — شغّل live_board.sql على القاعدة"
-      : "لم يُرفع أي سحب من داشبورد NHC بعد — لوحة الإدارة ← تحديث المخزون اليومي ← سحب العقود الساعي";
+      : "لم يُرفع أي سحب من داشبورد NHC بعد — اضغط «⬆ رفع سحب جديد» أسفل الشاشة";
     $("tvKpiContracts").innerHTML=`<div class="lbl">عقود اليوم — المملكة</div><div class="tvEmpty" style="font-size:17px;padding:8px">${msg}</div>`;
     $("tvKpiBookings").innerHTML=`<div class="lbl">حجوزات قائمة</div><div class="num">—</div>`;
     $("tvKpiProjects").innerHTML=`<div class="lbl">مشاريع باعت اليوم</div><div class="num">—</div>`;
@@ -8925,7 +8962,7 @@ function startTvMode(){
 }
 if(isTvMode()) startTvMode();
 
-/* ---------- سحب العقود الساعي من داشبورد NHC (لوحة الإدارة) ----------
+/* ---------- سحب العقود الساعي من داشبورد NHC — قراءة ورفع مشتركان (لوحة الإدارة + شاشة التلفزيون) ----------
    ملف Export: أعمدته عربية ثابتة (اسم المشروع، اسم المطور، المدينة، المخزون، المعروض،
    عدد الحجوزات، عدد الوحدات المتوفرة، أنواع العقود الأربعة، عدد العقود...). صف الإجمالي
    الأول بلا اسم مشروع يُستبعد (يُعاد حسابه من المشاريع). كل رفعة = لقطة بوقتها. */
@@ -8935,35 +8972,21 @@ const LIVE_COLS={
   nonbene:["عدد عقود غير المستفيدين"], cash:["عدد عقود الشراء النقدي"], selfbuild:["عدد عقود البناء الذاتي"],
   financed:["عدد العقود التمويلية"], total:["عدد العقود"], open:["عدد الوحدات المفتوحة"], devh:["إسكان تنموي"],
 };
-let LIVE_ROWS=[];
-function liveSetStatus(msg,type){
-  $("liveStatus").innerHTML = msg ? `<div class="cwarn"${type==="err"?' style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)"':""}>${msg}</div>` : "";
-}
 function liveNowLocal(){
   const d=new Date(); const pad=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
-$("liveFile").onchange=()=>{ $("liveStart").disabled=!$("liveFile").files.length; if(!$("liveAt").value) $("liveAt").value=liveNowLocal(); };
-$("liveStart").onclick=processLiveFile;
-async function processLiveFile(){
-  const file=$("liveFile").files[0]; if(!file) return;
-  $("liveStart").disabled=true; $("liveSummary").style.display="none";
-  liveSetStatus("جارٍ قراءة الملف…");
+async function liveReadFile(file){
   let rows;
   try{
     await loadSheetJS();
-    const buf=await file.arrayBuffer();
-    const wb=XLSX.read(buf,{type:"array"});
+    const wb=XLSX.read(await file.arrayBuffer(),{type:"array"});
     rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:null});
-  }catch(e){ liveSetStatus("تعذّر قراءة الملف: "+e.message,"err"); $("liveStart").disabled=false; return; }
-
+  }catch(e){ throw new Error("تعذّر قراءة الملف: "+(e.message||e)); }
   const K={}; for(const [k,c] of Object.entries(LIVE_COLS)) K[k]=resolveHeaderKey(rows,c,null);
-  if(!K.project||!K.total){
-    liveSetStatus(`لم أتعرّف على عمود ${!K.project?"«اسم المشروع»":"«عدد العقود»"} بالملف. الأعمدة الموجودة: ${allFileHeaders(rows).join(" · ")}`,"err");
-    $("liveStart").disabled=false; return;
-  }
+  if(!K.project||!K.total) throw new Error(`لم أتعرّف على عمود ${!K.project?"«اسم المشروع»":"«عدد العقود»"} — تأكد أنه ملف Export من داشبورد NHC. الأعمدة الموجودة: ${allFileHeaders(rows).slice(0,25).join(" · ")}`);
   const num=(r,k)=>{ if(!K[k]) return 0; const v=Number(r[K[k]]); return isFinite(v)?Math.round(v):0; };
-  LIVE_ROWS=rows.filter(r=>r[K.project]!=null && String(r[K.project]).trim()!=="").map(r=>{
+  const list=rows.filter(r=>r[K.project]!=null && String(r[K.project]).trim()!=="").map(r=>{
     const dev=K.developer?String(r[K.developer]||"").trim():"";
     return {
       project_name:String(r[K.project]).trim(), developer_name:dev, city:K.city?String(r[K.city]||"").trim():"",
@@ -8973,24 +8996,65 @@ async function processLiveFile(){
       contracts_financed:num(r,"financed"), contracts_total:num(r,"total"), open_units:num(r,"open"), dev_housing:num(r,"devh"),
     };
   });
-  const sum=k=>LIVE_ROWS.reduce((s,r)=>s+(r[k]||0),0);
-  const nhc=LIVE_ROWS.filter(r=>r.is_nhc), dev=LIVE_ROWS.filter(r=>!r.is_nhc);
-  const top=[...LIVE_ROWS].filter(r=>r.contracts_total>0).sort((a,b)=>b.contracts_total-a.contracts_total).slice(0,8);
-  const missing=Object.entries(LIVE_COLS).filter(([k])=>!K[k]).map(([,c])=>c[0]);
+  if(!list.length) throw new Error("الملف لا يحوي أي مشروع");
+  return {list, missing:Object.entries(LIVE_COLS).filter(([k])=>!K[k]).map(([,c])=>c[0])};
+}
+function liveSummary(list){
+  const sum=(arr,k)=>arr.reduce((s,r)=>s+(r[k]||0),0);
+  const nhc=list.filter(r=>r.is_nhc), dev=list.filter(r=>!r.is_nhc);
+  return {
+    projects:list.length, contracts:sum(list,"contracts_total"), nhc:sum(nhc,"contracts_total"), dev:sum(dev,"contracts_total"),
+    bookings:sum(list,"bookings"), available:sum(list,"available"),
+    financed:sum(list,"contracts_financed"), cash:sum(list,"contracts_cash"), nonbene:sum(list,"contracts_nonbene"), selfbuild:sum(list,"contracts_selfbuild"),
+    withContracts:list.filter(r=>r.contracts_total>0).length,
+    top:[...list].filter(r=>r.contracts_total>0).sort((a,b)=>b.contracts_total-a.contracts_total).slice(0,8),
+  };
+}
+/* دفعة واحدة عادةً (الملف ~800 مشروع) — تجنّب لقطة نصفية لو فشلت دفعة لاحقة */
+async function liveUploadRows(list,atISO,user,pass,onProgress){
+  const batch=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{ const r=Math.random()*16|0; return (c==="x"?r:(r&3|8)).toString(16); });
+  const CHUNK=1500, tot=Math.ceil(list.length/CHUNK); let inserted=0;
+  for(let i=0;i<list.length;i+=CHUNK){
+    if(onProgress) onProgress(Math.floor(i/CHUNK)+1,tot);
+    let r;
+    try{ r=await sbCall("admin_insert_live_snapshot",{p_admin:user,p_pass:pass,p_snapshot_at:atISO,p_batch_id:batch,p_rows:list.slice(i,i+CHUNK)}); }
+    catch(e){ throw new Error("تعذّر الرفع: "+(e.message||e)+" — تأكد من الإنترنت ومن تشغيل live_board.sql على القاعدة"); }
+    if(!r||!r.ok) throw new Error("فشل الرفع: "+((r&&r.msg)||"خطأ غير معروف"));
+    inserted+=r.count||0;
+  }
+  return inserted;
+}
+
+/* ---- لوحة الإدارة ---- */
+let LIVE_ROWS=[];
+function liveSetStatus(msg,type){
+  $("liveStatus").innerHTML = msg ? `<div class="cwarn"${type==="err"?' style="background:var(--rust-soft);border-color:var(--rust-soft-border);color:var(--rust)"':""}>${msg}</div>` : "";
+}
+$("liveFile").onchange=()=>{ $("liveStart").disabled=!$("liveFile").files.length; if(!$("liveAt").value) $("liveAt").value=liveNowLocal(); };
+$("liveStart").onclick=processLiveFile;
+async function processLiveFile(){
+  const file=$("liveFile").files[0]; if(!file) return;
+  $("liveStart").disabled=true; $("liveSummary").style.display="none";
+  liveSetStatus("جارٍ قراءة الملف…");
+  let res;
+  try{ res=await liveReadFile(file); }
+  catch(e){ liveSetStatus(e.message,"err"); $("liveStart").disabled=false; return; }
+  LIVE_ROWS=res.list;
+  const s=liveSummary(LIVE_ROWS);
   $("liveSummary").style.display="block";
   $("liveSummary").innerHTML=`<div class="cresblock">
     <h4>ملخّص اللقطة</h4>
-    <div class="cresrow"><span class="cl">مشاريع بالملف</span><span class="cv">${fmt(LIVE_ROWS.length)}</span></div>
-    <div class="cresrow"><span class="cl">عدد العقود (المملكة)</span><span class="cv">${fmt(sum("contracts_total"))}</span></div>
-    <div class="cresrow"><span class="cl">منها NHC / المطورون</span><span class="cv">${fmt(nhc.reduce((s,r)=>s+r.contracts_total,0))} / ${fmt(dev.reduce((s,r)=>s+r.contracts_total,0))}</span></div>
-    <div class="cresrow"><span class="cl">تمويلي / نقدي / غير مستفيدين / بناء ذاتي</span><span class="cv">${fmt(sum("contracts_financed"))} / ${fmt(sum("contracts_cash"))} / ${fmt(sum("contracts_nonbene"))} / ${fmt(sum("contracts_selfbuild"))}</span></div>
-    <div class="cresrow"><span class="cl">الحجوزات</span><span class="cv">${fmt(sum("bookings"))}</span></div>
-    <div class="cresrow"><span class="cl">الوحدات المتوفرة</span><span class="cv">${fmt(sum("available"))}</span></div>
-    <div class="cresrow"><span class="cl">مشاريع فيها عقود</span><span class="cv">${fmt(LIVE_ROWS.filter(r=>r.contracts_total>0).length)}</span></div>
+    <div class="cresrow"><span class="cl">مشاريع بالملف</span><span class="cv">${fmt(s.projects)}</span></div>
+    <div class="cresrow"><span class="cl">عدد العقود (المملكة)</span><span class="cv">${fmt(s.contracts)}</span></div>
+    <div class="cresrow"><span class="cl">منها NHC / المطورون</span><span class="cv">${fmt(s.nhc)} / ${fmt(s.dev)}</span></div>
+    <div class="cresrow"><span class="cl">تمويلي / نقدي / غير مستفيدين / بناء ذاتي</span><span class="cv">${fmt(s.financed)} / ${fmt(s.cash)} / ${fmt(s.nonbene)} / ${fmt(s.selfbuild)}</span></div>
+    <div class="cresrow"><span class="cl">الحجوزات</span><span class="cv">${fmt(s.bookings)}</span></div>
+    <div class="cresrow"><span class="cl">الوحدات المتوفرة</span><span class="cv">${fmt(s.available)}</span></div>
+    <div class="cresrow"><span class="cl">مشاريع فيها عقود</span><span class="cv">${fmt(s.withContracts)}</span></div>
     <div class="cresrow"><span class="cl">وقت اللقطة</span><span class="cv">${$("liveAt").value?$("liveAt").value.replace("T"," "):"الآن"}</span></div>
   </div>
-  ${missing.length?`<div class="cwarn">أعمدة لم تُعثر بالملف (ستُسجَّل صفراً): ${missing.join(" · ")}</div>`:""}
-  ${top.length?`<div class="src" style="margin-top:8px">الأعلى عقوداً: ${top.map(r=>`${r.project_name} (${fmt(r.contracts_total)})`).join(" · ")}</div>`:""}
+  ${res.missing.length?`<div class="cwarn">أعمدة لم تُعثر بالملف (ستُسجَّل صفراً): ${res.missing.join(" · ")}</div>`:""}
+  ${s.top.length?`<div class="src" style="margin-top:8px">الأعلى عقوداً: ${s.top.map(r=>`${r.project_name} (${fmt(r.contracts_total)})`).join(" · ")}</div>`:""}
   <button class="btn" id="liveUpload" style="width:100%;margin-top:12px">رفع اللقطة إلى القاعدة</button>`;
   $("liveStart").disabled=false; liveSetStatus("");
   $("liveUpload").onclick=uploadLiveSnapshot;
@@ -8999,20 +9063,92 @@ async function uploadLiveSnapshot(){
   if(!LIVE_ROWS.length) return;
   $("liveUpload").disabled=true;
   const atLocal=$("liveAt").value;
-  const at = atLocal ? new Date(atLocal).toISOString() : new Date().toISOString();
-  const batch = (window.crypto&&crypto.randomUUID) ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{ const r=Math.random()*16|0; return (c==="x"?r:(r&3|8)).toString(16); });
-  const CHUNK=400; let inserted=0;
-  for(let i=0;i<LIVE_ROWS.length;i+=CHUNK){
-    liveSetStatus(`جارٍ رفع اللقطة — دفعة ${Math.floor(i/CHUNK)+1} من ${Math.ceil(LIVE_ROWS.length/CHUNK)}…`);
-    try{
-      const r=await adminCall("admin_insert_live_snapshot",{p_snapshot_at:at,p_batch_id:batch,p_rows:LIVE_ROWS.slice(i,i+CHUNK)});
-      if(!r||!r.ok){ liveSetStatus("فشل الرفع: "+((r&&r.msg)||"خطأ غير معروف")+" — تأكد من تشغيل live_board.sql على القاعدة","err"); $("liveUpload").disabled=false; return; }
-      inserted+=r.count||0;
-    }catch(e){ liveSetStatus("تعذّر الاتصال بالخادم أثناء الرفع: "+(e.message||e),"err"); $("liveUpload").disabled=false; return; }
-  }
-  liveSetStatus(`✓ حُفظت اللقطة (${fmt(inserted)} مشروعاً) بوقت ${atLocal?atLocal.replace("T"," "):"الآن"} — ستظهر على شاشة التلفزيون خلال دقيقتين`);
-  $("liveFile").value=""; $("liveAt").value=""; $("liveStart").disabled=true; LIVE_ROWS=[];
+  try{
+    const n=await liveUploadRows(LIVE_ROWS, atLocal?new Date(atLocal).toISOString():new Date().toISOString(), CURUSER, CURPASS,
+      (i,tot)=>liveSetStatus(`جارٍ رفع اللقطة — دفعة ${i} من ${tot}…`));
+    liveSetStatus(`✓ حُفظت اللقطة (${fmt(n)} مشروعاً) بوقت ${atLocal?atLocal.replace("T"," "):"الآن"} — ستظهر على شاشة التلفزيون خلال دقيقتين`);
+    $("liveFile").value=""; $("liveAt").value=""; $("liveStart").disabled=true; LIVE_ROWS=[];
+  }catch(e){ liveSetStatus(e.message,"err"); $("liveUpload").disabled=false; }
 }
+
+/* ---- شاشة التلفزيون: رفع سحب جديد من الشاشة نفسها ----
+   الرفع يتطلّب حساب أدمن (نفس فحص admin_insert_live_snapshot بالقاعدة): الشاشة بلا دخول للعرض فقط،
+   وبلا هذا الفحص يستطيع أي حامل للرابط دفع أرقام وهمية لشاشة رئيس المبيعات. بيانات الدخول تبقى
+   بذاكرة الصفحة فقط (لا تُخزَّن بالمتصفح) حتى إعادة تحميل الصفحة، فلا يُعاد إدخالها كل ساعة.
+   الزر يظهر عند تحريك الفأرة ويختفي بعد 5 ثوانٍ، ويبقى ظاهراً بالأحمر إن تأخر السحب. يمكن أيضاً
+   سحب الملف وإفلاته فوق أي مكان بالشاشة، أو ضغط حرف U. */
+let tvUpCreds=null, tvUpList=null, tvUpMouseT=null;
+function tvUpMsg(t,cls){ const m=$("tvUpMsg"); m.className="tvUpMsg"+(cls?" "+cls:""); m.innerHTML=t||""; }
+function tvUpUpdateGo(){ $("tvUpGo").disabled=!(tvUpList&&tvUpList.length&&(tvUpCreds||($("tvUpUser").value.trim()&&$("tvUpPass").value))); }
+function tvUpRefreshAuth(){
+  $("tvUpAuth").style.display=tvUpCreds?"none":"grid";
+  $("tvUpWho").style.display=tvUpCreds?"block":"none";
+  if(tvUpCreds){
+    $("tvUpWho").innerHTML=`الرفع باسم <b>${tvUpCreds.name}</b> · <button type="button" id="tvUpSwitch">تغيير الحساب</button>`;
+    $("tvUpSwitch").onclick=()=>{ tvUpCreds=null; tvUpRefreshAuth(); tvUpUpdateGo(); $("tvUpUser").focus(); };
+  }
+}
+function tvUpOpen(file){
+  $("tvUpModal").classList.add("on");
+  if(!$("tvUpAt").value) $("tvUpAt").value=liveNowLocal();
+  tvUpRefreshAuth(); tvUpUpdateGo();
+  if(file) tvUpHandleFile(file);
+  else setTimeout(()=>{ if(!tvUpCreds) $("tvUpUser").focus(); },60);
+}
+function tvUpClose(){ $("tvUpModal").classList.remove("on"); $("tvUpDrop").classList.remove("over"); }
+async function tvUpHandleFile(file){
+  tvUpList=null; tvUpUpdateGo();
+  $("tvUpDropTxt").textContent="📄 "+file.name;
+  tvUpMsg("جارٍ قراءة الملف…");
+  try{
+    const res=await liveReadFile(file);
+    tvUpList=res.list;
+    const s=liveSummary(res.list);
+    tvUpMsg(`<b>${fmt(s.projects)}</b> مشروعاً · عقود <b>${fmt(s.contracts)}</b> (NHC ${fmt(s.nhc)} · المطورون ${fmt(s.dev)}) · حجوزات <b>${fmt(s.bookings)}</b>${res.missing.length?`<br>أعمدة غير موجودة بالملف (ستُسجَّل صفراً): ${res.missing.join(" · ")}`:""}`);
+  }catch(e){ tvUpMsg(e.message||String(e),"err"); }
+  tvUpUpdateGo();
+}
+async function tvUpGo(){
+  if(!tvUpList||!tvUpList.length) return;
+  $("tvUpGo").disabled=true;
+  try{
+    if(!tvUpCreds){
+      const u=$("tvUpUser").value.trim(), p=$("tvUpPass").value;
+      tvUpMsg("جارٍ التحقق من الحساب…");
+      let r;
+      try{ r=await sbCall("login",{p_user:u,p_pass:p}); }catch(e){ throw new Error("تعذّر الاتصال بالخادم — تأكد من الإنترنت"); }
+      if(!r||!r.ok){ $("tvUpPass").value=""; throw new Error((r&&r.msg)||"بيانات دخول غير صحيحة"); }
+      if(!r.admin) throw new Error("هذا الحساب ليس أدمن — رفع السحب يتطلّب صلاحية أدمن");
+      tvUpCreds={u,p,name:r.name||u}; $("tvUpPass").value=""; tvUpRefreshAuth();
+    }
+    const atLocal=$("tvUpAt").value;
+    const n=await liveUploadRows(tvUpList, atLocal?new Date(atLocal).toISOString():new Date().toISOString(), tvUpCreds.u, tvUpCreds.p,
+      (i,tot)=>tvUpMsg(`جارٍ الرفع — دفعة ${i} من ${tot}…`));
+    tvUpMsg(`✓ حُفظت اللقطة (${fmt(n)} مشروعاً) — الشاشة تتحدّث الآن`,"ok");
+    tvUpList=null; $("tvUpFile").value=""; $("tvUpAt").value=""; $("tvUpDropTxt").textContent="اسحب ملف Export هنا أو اضغط للاختيار";
+    await loadTvDashboard();
+    setTimeout(tvUpClose,1600);
+  }catch(e){ tvUpMsg(e.message||String(e),"err"); tvUpUpdateGo(); }
+}
+function tvInitUpload(){
+  const view=$("tvView");
+  $("tvUpBtn").onclick=()=>tvUpOpen();
+  $("tvUpClose").onclick=tvUpClose;
+  $("tvUpModal").onclick=e=>{ if(e.target===$("tvUpModal")) tvUpClose(); };
+  $("tvUpFile").onchange=()=>{ const f=$("tvUpFile").files[0]; if(f) tvUpHandleFile(f); };
+  ["tvUpUser","tvUpPass"].forEach(id=>$(id).addEventListener("input",tvUpUpdateGo));
+  $("tvUpPass").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!$("tvUpGo").disabled) tvUpGo(); });
+  $("tvUpGo").onclick=tvUpGo;
+  view.addEventListener("mousemove",()=>{ view.classList.add("mouse"); clearTimeout(tvUpMouseT); tvUpMouseT=setTimeout(()=>view.classList.remove("mouse"),5000); });
+  view.addEventListener("dragover",e=>{ e.preventDefault(); if(!$("tvUpModal").classList.contains("on")) tvUpOpen(); $("tvUpDrop").classList.add("over"); });
+  view.addEventListener("dragleave",e=>{ if(e.target===$("tvUpDrop")) $("tvUpDrop").classList.remove("over"); });
+  view.addEventListener("drop",e=>{ e.preventDefault(); $("tvUpDrop").classList.remove("over"); const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) tvUpOpen(f); });
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Escape") tvUpClose();
+    else if((e.key==="u"||e.key==="U")&&!$("tvUpModal").classList.contains("on")&&!/input|textarea/i.test(document.activeElement.tagName)) tvUpOpen();
+  });
+}
+if(isTvMode()) tvInitUpload();
 </script>
 </body>
 </html>
