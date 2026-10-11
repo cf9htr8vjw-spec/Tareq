@@ -1470,6 +1470,36 @@ table.prods tr:last-child td{border:none}
 #lockPwLink,#lockPwBack{background:none;border:none;color:rgba(255,255,255,.6);font-size:12.5px;text-decoration:underline;padding:6px;margin-top:6px;cursor:pointer}
 #lockPwForm{display:none;width:100%;max-width:290px;margin-top:26px}
 #lockPwCancel{width:100%;margin-top:9px;background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:11px;font-size:13px}
+
+/* ===== TV dashboard (?tv=1) — بلا تسجيل دخول، داكن ثابت دائماً بصرف النظر عن وضع التطبيق العادي ===== */
+#tvView{display:none;position:fixed;inset:0;z-index:4000;background:#070b12;color:#eef3fa;overflow:hidden;padding:26px 34px;flex-direction:column;box-sizing:border-box}
+#tvView.on{display:flex}
+.tvHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex:none}
+.tvTitle{font-size:28px;font-weight:800;font-family:'Noto Kufi Arabic',sans-serif;color:#eef3fa}
+.tvTitle b{color:#26a878}
+.tvClock{font-size:20px;font-weight:700;color:#93a0b4;direction:ltr;font-variant-numeric:tabular-nums}
+.tvGrid{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,1fr);gap:16px;flex:1;min-height:0}
+.tvCard{background:#101827;border:1px solid #223049;border-radius:16px;padding:16px 20px;display:flex;flex-direction:column;min-height:0}
+.tvCardFull{grid-column:1/-1}
+.tvCardTitle{font-size:13.5px;color:#93a0b4;margin-bottom:6px;font-weight:600}
+.tvBig{font-size:40px;font-weight:800;color:#26a878;line-height:1;margin-bottom:8px;font-variant-numeric:tabular-nums}
+.tvBars{flex:1;display:flex;align-items:flex-end;gap:3px;min-height:50px}
+.tvBars i{flex:1;background:linear-gradient(180deg,#26a878,#15664a);border-radius:3px 3px 0 0;min-height:2px}
+.tvSectorRow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;flex:1;min-height:0}
+.tvSectorCol,.tvPriceCol{background:#0c1420;border:1px solid #1c2740;border-radius:12px;padding:13px 15px;min-width:0}
+.tvSectorName{font-size:15px;font-weight:700;color:#c99a5c;margin-bottom:4px}
+.tvSectorBig{font-size:28px;font-weight:800;color:#eef3fa;font-variant-numeric:tabular-nums}
+.tvSectorSpark{display:flex;align-items:flex-end;gap:2px;height:28px;margin:8px 0}
+.tvSectorSpark i{flex:1;background:#2a3b58;border-radius:2px 2px 0 0;min-height:1px}
+.tvSectorSub{display:flex;justify-content:space-between;font-size:12px;color:#93a0b4;margin-top:3px}
+.tvSectorSub b{color:#eef3fa;font-weight:600}
+.tvPriceRow{display:flex;justify-content:space-between;align-items:baseline;margin-top:7px}
+.tvPriceLbl{font-size:11.5px;color:#93a0b4}
+.tvPriceVal{font-size:18px;font-weight:700;color:#eef3fa;font-variant-numeric:tabular-nums}
+.tvPriceVal.mkt{color:#c99a5c}
+.tvFoot{margin-top:12px;text-align:center;font-size:10.5px;color:#5d6b82;flex:none}
+@media(max-width:900px){.tvGrid{grid-template-columns:1fr}.tvSectorRow{grid-template-columns:1fr}}
+
 /* print-only report header/footer — invisible on screen */
 #printHead{display:none}
 #printFoot{display:none}
@@ -2743,6 +2773,35 @@ table.prods tr:last-child td{border:none}
   </div>
   <div class="sheetbody" id="dBody"></div>
   <div id="printFoot">وثيقة داخلية لفريق مبيعات NHC — البيانات افتراضية وغير رسمية وعرضة للتحديث، ولا تُعد عرضاً تعاقدياً نهائياً.</div>
+</div>
+
+<!-- TV board (?tv=1) — بلا تسجيل دخول، بيانات مجمّعة حيّة فقط من دوال القراءة العامة -->
+<div id="tvView">
+  <div class="tvHead">
+    <div class="tvTitle"><b>NHC</b> · لوحة مبيعات 2026</div>
+    <div class="tvClock" id="tvClock"></div>
+  </div>
+  <div class="tvGrid">
+    <div class="tvCard">
+      <div class="tvCardTitle">إجمالي العقود الموقّعة — 2026</div>
+      <div class="tvBig" id="tvYearTotal">—</div>
+      <div class="tvBars" id="tvMonthlyBars"></div>
+    </div>
+    <div class="tvCard">
+      <div class="tvCardTitle" id="tvDailyTitle">المبيعات اليومية</div>
+      <div class="tvBig" id="tvMonthTotal">—</div>
+      <div class="tvBars" id="tvDailyBars"></div>
+    </div>
+    <div class="tvCard tvCardFull">
+      <div class="tvCardTitle" id="tvSectorTitle">المبيعات حسب المنطقة</div>
+      <div class="tvSectorRow" id="tvSectorSales"></div>
+    </div>
+    <div class="tvCard tvCardFull">
+      <div class="tvCardTitle">متوسط سعر الوحدة المتاحة مقابل متوسط سعر السوق — حسب المنطقة</div>
+      <div class="tvSectorRow" id="tvSectorPricing"></div>
+    </div>
+  </div>
+  <div class="tvFoot" id="tvUpdated"></div>
 </div>
 
 <script>
@@ -8299,6 +8358,132 @@ $("ihGo").onclick=async()=>{
   if(deferredPrompt){ deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; }
   $("installHint").classList.remove("on");
 };
+
+/* ---------- TV board (?tv=1): no-login, read-only, auto-refreshing dashboard ----------
+   يُفعَّل فقط لو الرابط فيه ?tv=1 — يتجاوز شاشة القفل كلياً ويعرض شاشة مستقلة لعرضها
+   على تلفزيون 24 ساعة. كل بياناته من دوال/جداول قراءة عامة لا تحتاج تسجيل دخول أصلاً
+   (get_sales_report، get_sector_type_sales، get_sector_avail_pricing، market_price_stats —
+   كلها مقروءة أصلاً بمفتاح anon المضمّن بالملف لأي زائر، نفس مستوى الكشف الحالي بالضبط،
+   بلا أي صلاحية إضافية)، ولا تلمس إطلاقاً بيانات الكتالوج المشفّرة (DATA/MODELS/GAL...)
+   التي تتطلب فك تشفير بعد دخول فعلي. انظر tv_dashboard.sql لمصدر الدوال/الجدول الجديدة. */
+const MARKET_REGION_SECTOR={'الرياض':'الأوسط','مكة المكرمة':'الغربي','المدينة المنورة':'الغربي','تبوك':'الغربي','الشرقية':'الشرقي'};
+const TV_SECTORS=['الأوسط','الغربي','الشرقي'];
+const TV_TYPES=['شقة','فيلا','تاون هاوس'];
+function isTvMode(){ try{ return new URLSearchParams(location.search).get('tv')==='1'; }catch(e){ return false; } }
+function tvTickClock(){
+  $("tvClock").textContent=new Date().toLocaleString('ar-SA-u-ca-gregory',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+async function loadTvDashboard(){
+  const now=new Date();
+  const curY=now.getFullYear(), curM=now.getMonth()+1;
+  let lastM=curM-1, lastMY=curY;
+  if(lastM<1){ lastM=12; lastMY=curY-1; }
+  const monthStart=`${curY}-${String(curM).padStart(2,"0")}-01`;
+  const monthEndDay=new Date(curY,curM,0).getDate();
+  const monthEndStr=`${curY}-${String(curM).padStart(2,"0")}-${String(monthEndDay).padStart(2,"0")}`;
+
+  let yearReport=[], dayReport=[], sectorData=null, pricingData=[], marketRows=[];
+  try{
+    [yearReport, dayReport, sectorData, pricingData, marketRows] = await Promise.all([
+      sbCall("get_sales_report",{p_granularity:"month",p_metric:"contract",p_from:"2026-01-01",p_to:"2026-12-31",p_sector:null,p_dev_kind:null}),
+      sbCall("get_sales_report",{p_granularity:"day",p_metric:"contract",p_from:monthStart,p_to:monthEndStr,p_sector:null,p_dev_kind:null}),
+      sbCall("get_sector_type_sales",{p_year:lastMY,p_month:lastM}),
+      sbCall("get_sector_avail_pricing",{}),
+      sbSelect("market_price_stats",{select:"*"}),
+    ]);
+  }catch(e){
+    $("tvUpdated").textContent="تعذّر تحميل البيانات: "+(e.message||e)+" — تأكد من تشغيل tv_dashboard.sql على القاعدة";
+    return;
+  }
+
+  /* لوحة 1: الإجمالي الشهري 2026 */
+  const yTotal=(yearReport||[]).reduce((s,r)=>s+Number(r.cnt),0);
+  $("tvYearTotal").textContent=fmt(yTotal)+" عقد";
+  const yMax=Math.max(1,...(yearReport||[]).map(r=>Number(r.cnt)));
+  $("tvMonthlyBars").innerHTML=(yearReport||[]).map(r=>{
+    const v=Number(r.cnt), h=v?Math.max(4,v/yMax*100):2;
+    const lbl=MNAMES[r.period.split("-")[1]]||r.period;
+    return `<i style="height:${h}%" title="${lbl}: ${fmt(v)}"></i>`;
+  }).join("");
+
+  /* لوحة 2: اليومي للشهر الحالي */
+  $("tvDailyTitle").textContent=`المبيعات اليومية — ${MNAMES[String(curM).padStart(2,"0")]} ${curY}`;
+  const mTotal=(dayReport||[]).reduce((s,r)=>s+Number(r.cnt),0);
+  $("tvMonthTotal").textContent=fmt(mTotal)+" عقد";
+  const dMax=Math.max(1,...(dayReport||[]).map(r=>Number(r.cnt)));
+  $("tvDailyBars").innerHTML=(dayReport||[]).map(r=>{
+    const v=Number(r.cnt), h=v?Math.max(4,v/dMax*100):2;
+    const day=r.period.split("-")[2];
+    return `<i style="height:${h}%" title="يوم ${+day}: ${fmt(v)}"></i>`;
+  }).join("");
+
+  /* لوحة 3: حسب المنطقة — الشهر الماضي (إجمالي + تفصيل يومي مجمّع + تفصيل حسب النوع) */
+  $("tvSectorTitle").textContent=`المبيعات حسب المنطقة — ${MNAMES[String(lastM).padStart(2,"0")]} ${lastMY}`;
+  const rows=(sectorData&&sectorData.ok)?(sectorData.rows||[]):[];
+  $("tvSectorSales").innerHTML=TV_SECTORS.map(sec=>{
+    const secRows=rows.filter(r=>r.sector===sec);
+    const total=secRows.reduce((s,r)=>s+Number(r.total_cnt),0);
+    const dayMap={};
+    secRows.forEach(r=>(r.daily||[]).forEach(d=>{ dayMap[d.day]=(dayMap[d.day]||0)+d.cnt; }));
+    const dim=new Date(lastMY,lastM,0).getDate();
+    const daily=Array.from({length:dim},(_,i)=>dayMap[i+1]||0);
+    const dmax=Math.max(1,...daily);
+    const spark=daily.map(v=>`<i style="height:${v?Math.max(8,v/dmax*100):2}%"></i>`).join("");
+    const byType=TV_TYPES.map(t=>{
+      const r=secRows.find(x=>x.unit_type===t);
+      return `<div>${t}: <b>${fmt(r?Number(r.total_cnt):0)}</b></div>`;
+    }).join("");
+    return `<div class="tvSectorCol">
+      <div class="tvSectorName">${sec}</div>
+      <div class="tvSectorBig">${fmt(total)} عقد</div>
+      <div class="tvSectorSpark">${spark}</div>
+      <div class="tvSectorSub">${byType}</div>
+    </div>`;
+  }).join("");
+
+  /* لوحة 4: سعر الوحدات المتاحة (NHC) مقابل سعر السوق — حسب المنطقة.
+     بيانات السوق (market_price_stats) مصدرها منصة سهيل، على مستوى منطقة/مدينة وليس
+     قطاع NHC الثلاثي مباشرة — تُرفَّع هنا لمستوى القطاع بمتوسط مرجَّح بعدد الصفقات
+     (deals_ytd)، عبر خريطة MARKET_REGION_SECTOR أعلى الملف (تصنيف جغرافي قياسي:
+     الرياض=الأوسط، مكة/المدينة/تبوك=الغربي، الشرقية=الشرقي — صحّحه إن اختلف تصنيف NHC) */
+  const marketBySector={};
+  (marketRows||[]).forEach(r=>{
+    const sec=MARKET_REGION_SECTOR[r.region]; if(!sec) return;
+    const b=marketBySector[sec]||(marketBySector[sec]={wp:0,w:0,wsqm:0,wsqmW:0});
+    const w=Number(r.deals_ytd)||1;
+    b.wp+=Number(r.avg_price||0)*w; b.w+=w;
+    if(r.avg_price_sqm){ b.wsqm+=Number(r.avg_price_sqm)*w; b.wsqmW+=w; }
+  });
+  const pricingBySector={};
+  (pricingData||[]).forEach(r=>{ pricingBySector[r.sector]=r; });
+  $("tvSectorPricing").innerHTML=TV_SECTORS.map(sec=>{
+    const p=pricingBySector[sec];
+    const m=marketBySector[sec];
+    const mktPrice=m&&m.w?Math.round(m.wp/m.w):null;
+    const mktSqm=m&&m.wsqmW?Math.round(m.wsqm/m.wsqmW):null;
+    return `<div class="tvPriceCol">
+      <div class="tvSectorName">${sec}</div>
+      <div class="tvPriceRow"><span class="tvPriceLbl">متوسط سعر الوحدة المتاحة (NHC)</span><span class="tvPriceVal">${p&&p.avg_price?compact(p.avg_price)+" ريال":"—"}</span></div>
+      <div class="tvPriceRow"><span class="tvPriceLbl">سعر المتر (NHC)</span><span class="tvPriceVal">${p&&p.avg_price_sqm?fmt(Math.round(p.avg_price_sqm))+" ريال":"—"}</span></div>
+      <div class="tvPriceRow"><span class="tvPriceLbl">متوسط سعر السوق</span><span class="tvPriceVal mkt">${mktPrice?compact(mktPrice)+" ريال":"—"}</span></div>
+      <div class="tvPriceRow"><span class="tvPriceLbl">سعر متر السوق</span><span class="tvPriceVal mkt">${mktSqm?fmt(mktSqm)+" ريال":"—"}</span></div>
+    </div>`;
+  }).join("");
+
+  $("tvUpdated").textContent="آخر تحديث: "+new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:'2-digit',minute:'2-digit'});
+}
+function startTvMode(){
+  splashDone=true;
+  $("splash").style.display="none";
+  $("lock").style.display="none";
+  $("app").style.display="none";
+  $("tvView").classList.add("on");
+  tvTickClock();
+  setInterval(tvTickClock,1000);
+  loadTvDashboard();
+  setInterval(loadTvDashboard,5*60*1000);
+}
+if(isTvMode()) startTvMode();
 </script>
 </body>
 </html>
