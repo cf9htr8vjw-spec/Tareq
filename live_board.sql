@@ -102,52 +102,77 @@ as $$
 $$;
 
 -- حزمة الشاشة كاملة في نداء واحد: الأوقات، الإجماليات (آخر لقطة / السابقة / أول لقطة اليوم)،
--- منحنى اليوم لقطةً لقطة، وأكثر المشاريع حركة. التجميع اليومي بتوقيت الرياض.
+-- منحنى اليوم لقطةً لقطة، المشاريع التي باعت، وسجل الإشعارات (كل زيادة عقود بين سحبتين اليوم).
+-- التجميع اليومي بتوقيت الرياض. "السابقة" محصورة باليوم نفسه — أول سحبة بالصباح لا تُقارَن بآخر
+-- سحبة أمس (عمود العقود بالملف يومي، فالمقارنة عبر منتصف الليل تعطي هبوطاً وهمياً).
 create or replace function get_live_board()
 returns jsonb
 language plpgsql
 stable
+security definer
+set search_path to 'public'
 as $$
 declare
   v_latest timestamptz; v_prev timestamptz; v_first timestamptz; v_day date;
-  v_timeline jsonb; v_movers jsonb;
+  v_timeline jsonb; v_movers jsonb; v_feed jsonb;
 begin
   select max(snapshot_at) into v_latest from live_project_snapshots;
   if v_latest is null then
     return jsonb_build_object('ok', true, 'empty', true);
   end if;
   v_day := (v_latest at time zone 'Asia/Riyadh')::date;
-  select max(snapshot_at) into v_prev from live_project_snapshots where snapshot_at < v_latest;
+  select max(snapshot_at) into v_prev from live_project_snapshots
+    where snapshot_at < v_latest and (snapshot_at at time zone 'Asia/Riyadh')::date = v_day;
   select min(snapshot_at) into v_first from live_project_snapshots
     where (snapshot_at at time zone 'Asia/Riyadh')::date = v_day;
 
   select coalesce(jsonb_agg(jsonb_build_object('at', snapshot_at, 'contracts', c, 'bookings', b, 'nhc', n) order by snapshot_at), '[]'::jsonb)
   into v_timeline
   from (
-    select snapshot_at, sum(contracts_total) c, sum(bookings) b, sum(contracts_total) filter (where is_nhc) n
+    select snapshot_at, sum(contracts_total) c, sum(bookings) b, coalesce(sum(contracts_total) filter (where is_nhc),0) n
     from live_project_snapshots
     where (snapshot_at at time zone 'Asia/Riyadh')::date = v_day
     group by snapshot_at
   ) t;
 
+  -- المشاريع التي باعت في آخر لقطة (عقود > 0)، الأعلى عقوداً أولاً
   with latest as (
-    select project_name, developer_name, city, is_nhc, contracts_total, bookings, available,
-           contracts_financed, contracts_cash, contracts_nonbene
-    from live_project_snapshots where snapshot_at = v_latest
+    select project_name, developer_name, city, is_nhc, contracts_total, bookings, available
+    from live_project_snapshots where snapshot_at = v_latest and contracts_total > 0
   ),
   prev as (select project_name, contracts_total, bookings from live_project_snapshots where snapshot_at = v_prev),
   first as (select project_name, contracts_total, bookings from live_project_snapshots where snapshot_at = v_first)
   select coalesce(jsonb_agg(jsonb_build_object(
       'project', l.project_name, 'developer', l.developer_name, 'city', l.city, 'is_nhc', l.is_nhc,
       'contracts', l.contracts_total, 'bookings', l.bookings, 'available', l.available,
-      'd_prev', l.contracts_total - coalesce(p.contracts_total, l.contracts_total),
-      'd_first', l.contracts_total - coalesce(f.contracts_total, l.contracts_total),
-      'b_prev', l.bookings - coalesce(p.bookings, l.bookings)
-    ) order by (l.contracts_total - coalesce(f.contracts_total, l.contracts_total)) desc, l.contracts_total desc, l.bookings desc), '[]'::jsonb)
+      'd_prev', case when v_prev is null then null else l.contracts_total - coalesce(p.contracts_total, 0) end,
+      'd_first', l.contracts_total - coalesce(f.contracts_total, 0),
+      'b_prev', case when v_prev is null then null else l.bookings - coalesce(p.bookings, l.bookings) end
+    ) order by l.contracts_total desc, (l.contracts_total - coalesce(f.contracts_total, 0)) desc, l.project_name), '[]'::jsonb)
   into v_movers
-  from (select * from latest where contracts_total > 0 or bookings > 0) l
+  from latest l
   left join prev p on p.project_name = l.project_name
   left join first f on f.project_name = l.project_name;
+
+  -- سجل الإشعارات: كل مشروع زادت عقوده بين سحبتين متتاليتين اليوم، الأحدث أولاً
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'at', snapshot_at, 'project', project_name, 'developer', developer_name, 'city', city,
+      'is_nhc', is_nhc, 'dc', dc, 'db', db, 'contracts', contracts_total
+    ) order by snapshot_at desc, dc desc), '[]'::jsonb)
+  into v_feed
+  from (
+    select * from (
+      select snapshot_at, project_name, developer_name, city, is_nhc, contracts_total,
+        contracts_total - lag(contracts_total) over w as dc,
+        bookings - lag(bookings) over w as db
+      from live_project_snapshots
+      where (snapshot_at at time zone 'Asia/Riyadh')::date = v_day
+      window w as (partition by project_name order by snapshot_at)
+    ) d
+    where dc > 0
+    order by snapshot_at desc, dc desc
+    limit 60
+  ) f;
 
   return jsonb_build_object(
     'ok', true, 'empty', false,
@@ -157,7 +182,23 @@ begin
     'prev', case when v_prev is null then '{}'::jsonb else live_totals_at(v_prev) end,
     'first', live_totals_at(v_first),
     'timeline', v_timeline,
-    'movers', v_movers
+    'movers', v_movers,
+    'feed', v_feed,
+    -- عقود آخر لقطة لكل قطاع: ملف داشبورد NHC فيه المدينة لا القطاع، فتُربط كل مدينة بقطاعها
+    -- الغالب في مرآة التخصيص (نفس النظام الوطني ونفس أسماء المدن). مدينة بلا مطابقة = غير محدد.
+    'today_by_sector', (
+      select coalesce(jsonb_object_agg(sector, c), '{}'::jsonb) from (
+        select coalesce(m.sector,'غير محدد') as sector, sum(s.contracts_total) as c
+        from live_project_snapshots s
+        left join (
+          select city, mode() within group (order by sector) as sector
+          from unit_allocation_mirror where sector is not null and city is not null
+          group by city
+        ) m on m.city = s.city
+        where s.snapshot_at = v_latest
+        group by 1
+      ) x
+    )
   );
 end;
 $$;

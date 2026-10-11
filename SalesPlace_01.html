@@ -1472,97 +1472,122 @@ table.prods tr:last-child td{border:none}
 #lockPwCancel{width:100%;margin-top:9px;background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:11px;font-size:13px}
 
 /* ===== TV board (?tv=1) — شاشة بورصة حيّة، بلا تسجيل دخول، فاتحة دائماً، خط كبير لقراءة من بُعد ===== */
-#tvView{display:none;position:fixed;inset:0;z-index:4000;background:#F4F1E9;color:#0B4332;overflow:hidden;padding:18px 28px 12px;flex-direction:column;box-sizing:border-box;font-variant-numeric:tabular-nums}
+#tvView{display:none;position:fixed;inset:0;z-index:4000;background:#F4F1E9;color:#0B4332;overflow:hidden;padding:14px 22px 8px;flex-direction:column;box-sizing:border-box;font-variant-numeric:tabular-nums}
 #tvView.on{display:flex}
-.tvHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex:none;gap:16px}
-.tvTitle{font-size:30px;font-weight:800;font-family:'Noto Kufi Arabic',sans-serif;color:#0B4332;white-space:nowrap}
+#tvView *{box-sizing:border-box}
+.tvHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex:none;gap:16px}
+.tvTitle{font-size:28px;font-weight:800;font-family:'Noto Kufi Arabic',sans-serif;color:#0B4332;white-space:nowrap}
 .tvTitle b{color:#009C6D}
+.tvLive{display:inline-flex;align-items:center;gap:7px;font-size:15px;font-weight:800;color:#C2491E;background:#FBE5DC;border-radius:99px;padding:3px 12px;margin-inline-start:10px;vertical-align:middle}
+.tvLive i{width:9px;height:9px;border-radius:50%;background:#E14A1E;animation:tvPulse 1.4s infinite}
+@keyframes tvPulse{0%{box-shadow:0 0 0 0 rgba(225,74,30,.6)}70%{box-shadow:0 0 0 10px rgba(225,74,30,0)}100%{box-shadow:0 0 0 0 rgba(225,74,30,0)}}
 .tvPageDots{display:flex;gap:8px;align-items:center}
 .tvPageDots i{width:38px;height:6px;border-radius:99px;background:#D8CFBB;display:block;transition:background .3s}
 .tvPageDots i.on{background:#009C6D}
-.tvClock{font-size:22px;font-weight:700;color:#5e5a4f;direction:ltr;white-space:nowrap}
-/* الشريط المتحرك — أكثر المشاريع حركة */
-.tvTape{flex:none;background:#0B4332;color:#fff;border-radius:12px;overflow:hidden;height:46px;display:flex;align-items:center;margin-bottom:12px;direction:ltr}
-.tvTapeInner{display:inline-flex;white-space:nowrap;direction:rtl;animation:tvTape 60s linear infinite;will-change:transform}
-.tvTape:hover .tvTapeInner{animation-play-state:paused}
-.tvTapeItem{display:inline-flex;align-items:center;gap:10px;padding:0 26px;font-size:20px;font-weight:700;border-inline-end:1px solid rgba(255,255,255,.18)}
-.tvTapeItem small{font-size:14px;font-weight:500;opacity:.7}
-.tvTapeItem .up{color:#5CE0A8}.tvTapeItem .down{color:#FF9B7A}.tvTapeItem .flat{color:#cfd6d2}
+.tvClock{font-size:22px;font-weight:700;color:#5e5a4f;white-space:nowrap}
+/* الشريط المتحرك */
+.tvTape{flex:none;background:#0B4332;color:#fff;border-radius:12px;overflow:hidden;height:62px;display:flex;align-items:center;margin-bottom:10px;direction:ltr;box-shadow:inset 0 0 0 2px #0d5a43}
+.tvTapeInner{display:inline-flex;white-space:nowrap;direction:rtl;animation:tvTape var(--tv-tape-dur,80s) linear infinite;will-change:transform}
+.tvTapeItem{display:inline-flex;align-items:center;gap:12px;padding:0 30px;font-size:27px;font-weight:800;border-inline-end:2px solid rgba(255,255,255,.22)}
+.tvTapeItem small{font-size:18px;font-weight:600;color:#cfe3da}
+.tvTapeItem .up{color:#6BF0B6}.tvTapeItem .down{color:#FFA584}.tvTapeItem .flat{color:#dfe6e2}
 @keyframes tvTape{from{transform:translateX(0)}to{transform:translateX(50%)}}
-.tvPage{display:none;flex:1;min-height:0;flex-direction:column;gap:12px}
+.tvPage{display:none;flex:1;min-height:0}
 .tvPage.on{display:flex}
-/* الصفحة ١ — اللحظة */
-.tvHero{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:12px;flex:none}
-.tvTile{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:14px 18px 12px;box-shadow:0 2px 10px rgba(11,67,50,.05);display:flex;flex-direction:column;min-width:0}
-.tvTile .lbl{font-size:18px;font-weight:700;color:#5e5a4f}
-.tvTile .num{font-size:66px;font-weight:800;line-height:1.05;color:#0B4332;margin:4px 0 2px;letter-spacing:-1px}
-.tvTile.main .num{color:#009C6D;font-size:84px}
-.tvTile .sub{font-size:15px;color:#767368;margin-top:auto;padding-top:6px;line-height:1.5}
-.tvDelta{display:inline-flex;align-items:center;gap:6px;font-size:22px;font-weight:800;padding:3px 12px;border-radius:99px;margin-inline-start:8px;vertical-align:middle}
+/* الصفحة ١ — هيكل: (عدادات + مؤشرات + منحنيات) يمين، (إشعارات + مشاريع باعت) يسار */
+#tvPage1{display:none;gap:10px}
+#tvPage1.on{display:grid;grid-template-columns:2.25fr 1.1fr}
+.tvMain{display:flex;flex-direction:column;gap:10px;min-height:0;min-width:0}
+.tvGauges{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;flex:none}
+.tvGauge{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:8px 12px 10px;display:flex;flex-direction:column;align-items:center;box-shadow:0 2px 10px rgba(11,67,50,.05);min-width:0;position:relative}
+.tvGauge .gName{font-size:21px;font-weight:800;color:#C97F2E;font-family:'Noto Kufi Arabic',sans-serif;align-self:stretch;display:flex;justify-content:space-between;align-items:center}
+.tvGauge .gName small{font-size:13px;font-weight:600;color:#767368;font-family:inherit}
+.tvGauge svg{width:100%;max-width:212px;height:auto;display:block;margin-top:-4px}
+.tvGauge .gPct{font-size:38px;font-weight:800;line-height:1;margin-top:0}
+.tvGauge .gSub{font-size:15px;color:#5e5a4f;margin-top:3px;font-weight:600;text-align:center;white-space:nowrap}
+.tvGauge .gSub b{color:#0B4332;font-weight:800}
+.tvStatus{display:inline-block;font-size:14px;font-weight:800;padding:2px 11px;border-radius:99px;margin-top:5px}
+.tvStatus.good{background:#E1F5EC;color:#007a54}.tvStatus.warn{background:#FBEFD9;color:#9a5c12}.tvStatus.bad{background:#FBE5DC;color:#C2491E}.tvStatus.none{background:#EEEAE0;color:#767368}
+.tvBody{display:grid;grid-template-columns:1fr 1.45fr;gap:10px;flex:1;min-height:0}
+.tvKpis{display:flex;flex-direction:column;gap:8px;min-height:0}
+.tvKpis .tvTile.main{flex:1;justify-content:center}
+.tvCharts{display:grid;grid-template-rows:1fr 1fr .85fr;gap:10px;min-height:0}
+.tvTile{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:10px 16px;box-shadow:0 2px 10px rgba(11,67,50,.05);display:flex;flex-direction:column;min-width:0;min-height:0}
+.tvTile .lbl{font-size:19px;font-weight:800;color:#5e5a4f;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tvTile .num{font-size:46px;font-weight:800;line-height:1.05;color:#0B4332;letter-spacing:-1px}
+.tvTile.main .num{color:#009C6D;font-size:76px}
+.tvTile .sub{font-size:13.5px;color:#767368;line-height:1.45;margin-top:2px}
+.tvTile .sub b{color:#0B4332}
+.tvKpiPair{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:none}
+.tvDelta{display:inline-flex;align-items:center;gap:5px;font-size:19px;font-weight:800;padding:2px 11px;border-radius:99px;white-space:nowrap}
 .tvDelta.up{background:#E1F5EC;color:#007a54}.tvDelta.down{background:#FBE5DC;color:#C2491E}.tvDelta.flat{background:#EEEAE0;color:#767368}
-.tvProg{height:14px;background:#EEEAE0;border-radius:99px;overflow:hidden;margin:8px 0 4px}
-.tvProg i{display:block;height:100%;background:linear-gradient(90deg,#009C6D,#2EC98F);border-radius:99px}
-.tvProg i.warn{background:linear-gradient(90deg,#C97F2E,#E0A75A)}
-.tvProg i.bad{background:linear-gradient(90deg,#C2491E,#E17141)}
-.tvSplit{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:none}
-.tvScope{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:12px 18px;display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:6px 18px;align-items:center;box-shadow:0 2px 10px rgba(11,67,50,.05)}
-.tvScope .name{grid-row:1/3;font-size:26px;font-weight:800;color:#C97F2E;font-family:'Noto Kufi Arabic',sans-serif;padding-inline-end:14px;border-inline-end:2px solid #EEEAE0}
-.tvScope .k{font-size:14px;color:#767368;font-weight:600;align-self:end}
-.tvScope .v{font-size:34px;font-weight:800;color:#0B4332;line-height:1;align-self:start}
-.tvScope .v .tvDelta{font-size:16px;padding:2px 9px}
-.tvMix{grid-column:2/-1;display:flex;height:16px;border-radius:99px;overflow:hidden;background:#EEEAE0;margin-top:4px}
+.tvScope{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:7px 14px;box-shadow:0 2px 10px rgba(11,67,50,.05);flex:none;display:flex;flex-direction:column;justify-content:center}
+.tvScopeTop{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.tvScope .name{font-size:24px;font-weight:800;color:#C97F2E;font-family:'Noto Kufi Arabic',sans-serif;min-width:118px}
+.tvScope .v{font-size:32px;font-weight:800;color:#0B4332;line-height:1}
+.tvScope .k{font-size:14px;color:#767368;font-weight:600}
+.tvMix{display:flex;height:10px;border-radius:99px;overflow:hidden;background:#EEEAE0;margin-top:5px}
 .tvMix i{display:block;height:100%}
-.tvMixLbl{grid-column:2/-1;display:flex;gap:16px;font-size:13px;color:#5e5a4f;flex-wrap:wrap}
+.tvMixLbl{display:flex;gap:12px;font-size:12.5px;color:#5e5a4f;flex-wrap:wrap;margin-top:3px}
 .tvMixLbl b{color:#0B4332}
-.tvLower{display:grid;grid-template-columns:1.1fr 1fr;gap:12px;flex:1;min-height:0}
-.tvCard{background:#FFFFFF;border:1px solid #E7E1D3;border-radius:16px;padding:14px 18px;display:flex;flex-direction:column;min-height:0;overflow:hidden;box-shadow:0 2px 10px rgba(11,67,50,.05)}
-.tvCardFull{grid-column:1/-1}
-.tvCardTitle{font-size:19px;color:#0B4332;margin-bottom:6px;font-weight:800}
-.tvCardTitle small{font-size:13px;color:#767368;font-weight:500;margin-inline-start:8px}
-.tvBig{font-size:54px;font-weight:800;color:#009C6D;line-height:1;margin-bottom:8px}
-.tvBars{flex:1;display:flex;align-items:flex-end;gap:4px;min-height:70px}
-.tvBarCol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
-.tvBarVal{font-size:15px;font-weight:800;color:#0B4332;margin-bottom:3px;white-space:nowrap}
-.tvBarCol i{width:100%;background:linear-gradient(180deg,#009C6D,#007a54);border-radius:4px 4px 0 0;min-height:3px;display:block}
-.tvBarCol i.nhc{background:linear-gradient(180deg,#C97F2E,#a3651f)}
-.tvBarCol span{font-size:13px;color:#767368;margin-top:4px;white-space:nowrap}
-.tvLead{flex:1;overflow:hidden;display:flex;flex-direction:column}
-.tvLeadRow{display:grid;grid-template-columns:34px 1fr auto auto auto;gap:12px;align-items:center;padding:4px 4px;border-bottom:1px solid #EEEAE0;font-size:16px}
-.tvLeadRow.hd{font-size:13px;color:#767368;font-weight:700;border-bottom:2px solid #E7E1D3;padding-bottom:4px}
-.tvLeadRow .rk{font-weight:800;color:#C97F2E;font-size:18px}
-.tvLeadRow .pj{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;color:#0B4332}
-.tvLeadRow .pj small{display:block;font-size:12px;color:#767368;font-weight:500}
-.tvLeadRow .n{font-weight:800;font-size:22px;color:#0B4332;min-width:44px;text-align:center}
-.tvLeadRow .b{font-size:15px;color:#767368;min-width:52px;text-align:center}
-.tvTag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:#E1F5EC;color:#007a54;margin-inline-start:6px;vertical-align:middle}
+.tvCard{background:#FFFFFF;border:1px solid #E7E1D3;border-radius:16px;padding:9px 14px;display:flex;flex-direction:column;min-height:0;overflow:hidden;box-shadow:0 2px 10px rgba(11,67,50,.05)}
+.tvCardTitle{font-size:18px;color:#0B4332;font-weight:800;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;flex:none}
+.tvCardTitle small{font-size:13px;color:#767368;font-weight:500}
+.tvCardTitle .tot{margin-inline-start:auto;font-size:26px;color:#009C6D;font-weight:800}
+.tvChart{flex:1;min-height:0;position:relative}
+.tvChart svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.tvChart .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:17px;color:#767368;text-align:center}
+/* العمود الأيسر: إشعارات + المشاريع التي باعت */
+.tvSide{display:grid;grid-template-rows:.82fr 1.18fr;gap:10px;min-height:0;min-width:0}
+.tvFeed{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.tvFeedRow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:7px 10px;border-radius:12px;background:#FAF7F1;border:1px solid #EEEAE0}
+.tvFeedRow.new{background:#E9F8F0;border-color:#9fdcbf;animation:tvFlash 2.2s ease-out 1}
+@keyframes tvFlash{0%{background:#9fe7c3}100%{background:#E9F8F0}}
+.tvFeedRow .t{font-size:14px;font-weight:700;color:#767368;min-width:58px}
+.tvFeedRow.new .t{color:#007a54}
+.tvFeedRow .p{min-width:0;font-size:18px;font-weight:800;color:#0B4332;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvFeedRow .p small{display:block;font-size:12.5px;font-weight:500;color:#767368;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvFeedRow .d{font-size:24px;font-weight:800;color:#007a54;white-space:nowrap}
+.tvFeedNote{font-size:14px;color:#767368;padding:2px 2px 0}
+.tvLeadWrap{flex:1;min-height:0;overflow:hidden;position:relative;margin-top:4px}
+.tvLeadScroll.run{animation:tvLeadScroll var(--tv-lead-dur,60s) linear infinite}
+@keyframes tvLeadScroll{0%,6%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+.tvLeadRow{display:grid;grid-template-columns:30px 1fr 52px 74px 52px;gap:8px;align-items:center;padding:5px 2px;border-bottom:1px solid #EEEAE0;font-size:16px}
+.tvLeadRow.hd{font-size:13px;color:#767368;font-weight:700;border-bottom:2px solid #E7E1D3;padding-bottom:4px;flex:none}
+.tvLeadRow .rk{font-weight:800;color:#C97F2E;font-size:17px;text-align:center}
+.tvLeadRow .pj{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:#0B4332;font-size:17px}
+.tvLeadRow .pj small{display:block;font-size:12px;color:#767368;font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.tvLeadRow .n{font-weight:800;font-size:24px;color:#0B4332;text-align:center}
+.tvLeadRow .c{text-align:center}
+.tvLeadRow .c .tvDelta{font-size:15px;padding:1px 8px}
+.tvLeadRow .b{font-size:15px;color:#767368;text-align:center}
+.tvTag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:#E1F5EC;color:#007a54;margin-inline-start:6px;vertical-align:middle}
 .tvTag.dev{background:#F5E9D9;color:#8a5516}
-/* الصفحة ٢ — الشهر والمناطق والأسعار */
-.tvGrid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1.1fr) auto minmax(0,.85fr) minmax(0,1.25fr);gap:12px;flex:1;min-height:0}
-.tvSectorRow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:1;min-height:0}
-.tvSectorCol,.tvPriceCol{background:#FAF7F1;border:1px solid #E7E1D3;border-radius:12px;padding:12px 15px;min-width:0}
-.tvSectorName{font-size:20px;font-weight:800;color:#C97F2E;margin-bottom:4px;font-family:'Noto Kufi Arabic',sans-serif}
-.tvSectorBig{font-size:32px;font-weight:800;color:#0B4332;line-height:1.1}
-.tvSectorSpark{display:flex;align-items:flex-end;gap:2px;height:30px;margin:8px 0}
-.tvSectorSpark i{flex:1;background:#D8CFBB;border-radius:2px 2px 0 0;min-height:1px}
-.tvSectorSub{display:flex;justify-content:space-between;font-size:16px;color:#767368;margin-top:3px}
+/* الصفحة ٢ — المناطق والأسعار */
+#tvPage2{flex-direction:column;gap:10px}
+.tvGrid{display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1.35fr) minmax(0,1fr);gap:10px;flex:1;min-height:0}
+.tvSectorRow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;flex:1;min-height:0;margin-top:6px}
+.tvSectorCol,.tvPriceCol{background:#FAF7F1;border:1px solid #E7E1D3;border-radius:12px;padding:9px 14px;min-width:0;display:flex;flex-direction:column;min-height:0}
+.tvSectorName{font-size:21px;font-weight:800;color:#C97F2E;font-family:'Noto Kufi Arabic',sans-serif;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.tvSectorName small{font-size:13px;color:#767368;font-weight:500;font-family:inherit}
+.tvSectorBig{font-size:34px;font-weight:800;color:#0B4332;line-height:1.1}
+.tvSectorSub{display:flex;justify-content:space-between;font-size:16px;color:#767368;margin-top:3px;flex:none}
 .tvSectorSub b{color:#0B4332;font-weight:800}
 .tvPriceRow{display:flex;justify-content:space-between;align-items:baseline;margin-top:3px}
 .tvPriceLbl{font-size:15px;color:#767368}
 .tvPriceVal{font-size:22px;font-weight:800;color:#0B4332}
 .tvPriceVal.mkt{color:#C97F2E}
 .tvPriceVal.sm{font-size:18px}
-.tvKingdomRow{display:flex;gap:12px;margin-bottom:10px}
-.tvKingdomStat{flex:1;background:#FAF7F1;border:1px solid #E7E1D3;border-radius:12px;padding:10px 15px;text-align:center}
-.tvKingdomStat > b{display:block;font-size:38px;font-weight:800;color:#009C6D}
+.tvKingdomRow{display:flex;gap:10px;margin-top:6px}
+.tvKingdomStat{flex:1;background:#FAF7F1;border:1px solid #E7E1D3;border-radius:12px;padding:8px 14px;text-align:center}
+.tvKingdomStat > b{display:block;font-size:36px;font-weight:800;color:#009C6D}
 .tvKingdomStat span{font-size:15px;color:#767368;font-weight:600}
-.tvKingdomStat small{display:block;font-size:14px;color:#5e5a4f;margin-top:5px;font-weight:600}
+.tvKingdomStat small{display:block;font-size:14px;color:#5e5a4f;margin-top:4px;font-weight:600}
 .tvKingdomStat small b{display:inline;font-size:16px;color:#0B4332;font-weight:800}
-.tvTodayRow{display:flex;justify-content:space-between;font-size:16px;color:#767368;margin-top:4px}
-.tvTodayRow b{color:#0B4332;font-weight:800;font-size:19px}
-.tvFoot{margin-top:8px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#767368;flex:none;gap:16px}
+.tvFoot{margin-top:6px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#767368;flex:none;gap:16px}
 .tvFoot .stale{color:#C2491E;font-weight:800}
-.tvEmpty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-size:22px;color:#767368;line-height:1.8;padding:30px}
-@media(max-width:1100px){.tvHero{grid-template-columns:1fr 1fr}.tvSplit,.tvLower,.tvGrid{grid-template-columns:1fr}.tvSectorRow{grid-template-columns:1fr}.tvTile .num{font-size:48px}.tvTile.main .num{font-size:60px}}
+.tvEmpty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-size:20px;color:#767368;line-height:1.8;padding:20px}
+@media(max-width:1300px){#tvPage1.on{grid-template-columns:1fr;overflow:auto}.tvGauges{grid-template-columns:repeat(2,1fr)}.tvBody{grid-template-columns:1fr}.tvCharts{grid-template-rows:240px 240px 200px}.tvSide{grid-template-rows:420px 600px}.tvSectorRow{grid-template-columns:1fr}.tvTile.main .num{font-size:60px}}
 
 /* print-only report header/footer — invisible on screen */
 #printHead{display:none}
@@ -2853,26 +2878,53 @@ table.prods tr:last-child td{border:none}
   <div id="printFoot">وثيقة داخلية لفريق مبيعات NHC — البيانات افتراضية وغير رسمية وعرضة للتحديث، ولا تُعد عرضاً تعاقدياً نهائياً.</div>
 </div>
 
-<!-- TV board (?tv=1) — شاشة بورصة حيّة بلا تسجيل دخول: صفحتان تتناوبان (اللحظة / الشهر والمناطق)، بيانات مجمّعة من دوال القراءة العامة فقط -->
+<!-- TV board (?tv=1) — شاشة بورصة حيّة بلا تسجيل دخول: صفحة رئيسية (اللحظة + المستهدف + المنحنيات + الإشعارات + المشاريع التي باعت) وصفحة ثانوية (المناطق والأسعار)، بيانات مجمّعة من دوال القراءة العامة فقط -->
 <div id="tvView">
   <div class="tvHead">
-    <div class="tvTitle"><b>NHC</b> · شاشة المبيعات الحيّة</div>
+    <div class="tvTitle"><b>NHC</b> · شاشة المبيعات الحيّة <span class="tvLive"><i></i>مباشر</span></div>
     <div class="tvPageDots" id="tvPageDots"><i class="on"></i><i></i></div>
     <div class="tvClock" id="tvClock"></div>
   </div>
   <div class="tvTape"><div class="tvTapeInner" id="tvTape"></div></div>
 
   <div class="tvPage on" id="tvPage1">
-    <div class="tvHero" id="tvHero"></div>
-    <div class="tvSplit" id="tvSplit"></div>
-    <div class="tvLower">
+    <div class="tvMain">
+      <div class="tvGauges" id="tvGauges"></div>
+      <div class="tvBody">
+        <div class="tvKpis">
+          <div class="tvTile main" id="tvKpiContracts"></div>
+          <div class="tvKpiPair">
+            <div class="tvTile" id="tvKpiBookings"></div>
+            <div class="tvTile" id="tvKpiProjects"></div>
+          </div>
+          <div class="tvScope" id="tvScopeNhc"></div>
+          <div class="tvScope" id="tvScopeDev"></div>
+        </div>
+        <div class="tvCharts">
+          <div class="tvCard">
+            <div class="tvCardTitle" id="tvMonthlyTitle">العقود الموقّعة شهرياً</div>
+            <div class="tvChart" id="tvMonthlyChart"></div>
+          </div>
+          <div class="tvCard">
+            <div class="tvCardTitle" id="tvDailyTitle">العقود يومياً</div>
+            <div class="tvChart" id="tvDailyChart"></div>
+          </div>
+          <div class="tvCard">
+            <div class="tvCardTitle" id="tvTimelineTitle">حركة العقود اليوم — سحبةً بسحبة</div>
+            <div class="tvChart" id="tvTimelineChart"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tvSide">
       <div class="tvCard">
-        <div class="tvCardTitle" id="tvTimelineTitle">حركة العقود اليوم — سحبةً بسحبة</div>
-        <div class="tvBars" id="tvTimeline"></div>
+        <div class="tvCardTitle" id="tvFeedTitle">🔔 عقود أُضيفت في آخر تحديث</div>
+        <div class="tvFeed" id="tvFeed"></div>
       </div>
       <div class="tvCard">
-        <div class="tvCardTitle">أكثر المشاريع حركة اليوم <small>عقود · التغيّر منذ الصباح · حجوزات</small></div>
-        <div class="tvLead" id="tvLeaders"></div>
+        <div class="tvCardTitle" id="tvLeadTitle">المشاريع التي باعت اليوم</div>
+        <div class="tvLeadRow hd"><span>#</span><span>المشروع</span><span style="text-align:center">عقود</span><span style="text-align:center">منذ الصباح</span><span style="text-align:center">حجوزات</span></div>
+        <div class="tvLeadWrap"><div class="tvLeadScroll" id="tvLeaders"></div></div>
       </div>
     </div>
   </div>
@@ -2880,24 +2932,14 @@ table.prods tr:last-child td{border:none}
   <div class="tvPage" id="tvPage2">
     <div class="tvGrid">
       <div class="tvCard">
-        <div class="tvCardTitle">العقود الموقّعة شهرياً — 2026 <small>المصدر: ملف التخصيص اليومي</small></div>
-        <div class="tvBig" id="tvYearTotal">—</div>
-        <div class="tvBars" id="tvMonthlyBars"></div>
-      </div>
-      <div class="tvCard">
-        <div class="tvCardTitle" id="tvDailyTitle">المبيعات اليومية</div>
-        <div class="tvBig" id="tvMonthTotal">—</div>
-        <div class="tvBars" id="tvDailyBars"></div>
-      </div>
-      <div class="tvCard tvCardFull">
         <div class="tvCardTitle">بتاريخ اليوم من ملف التخصيص — حجوزات · استصناع · عقود <small>يتحدّث مرة يومياً مع رفع ملف التخصيص، لا لحظياً</small></div>
         <div class="tvKingdomRow" id="tvTodayKingdom"></div>
       </div>
-      <div class="tvCard tvCardFull">
-        <div class="tvCardTitle" id="tvSectorTitle">المبيعات حسب المنطقة</div>
+      <div class="tvCard">
+        <div class="tvCardTitle" id="tvSectorTitle">العقود حسب المنطقة</div>
         <div class="tvSectorRow" id="tvSectorSales"></div>
       </div>
-      <div class="tvCard tvCardFull">
+      <div class="tvCard">
         <div class="tvCardTitle">سعر الوحدة المتاحة عندنا مقابل سعر السوق — حسب المنطقة <small>السوق: منصة سهيل · تصنيف المدن على القطاعات تقديري</small></div>
         <div class="tvSectorRow" id="tvSectorPricing"></div>
       </div>
@@ -8472,17 +8514,16 @@ $("ihGo").onclick=async()=>{
 };
 
 /* ---------- TV board (?tv=1): no-login, read-only, self-refreshing live sales board ----------
-   يُفعَّل فقط لو الرابط فيه ?tv=1 — يتجاوز شاشة القفل كلياً ويعرض شاشة مستقلة لتلفزيون يعمل
-   24 ساعة. صفحتان تتناوبان كل 20 ثانية: (١) اللحظة: لقطات داشبورد NHC الساعية (live_board.sql)
-   بالحركة منذ آخر سحب ومنذ أول سحب اليوم + مستهدف الشهر + NHC مقابل المطورين + أكثر المشاريع
-   حركة، (٢) الشهر والمناطق والأسعار (tv_dashboard.sql). كل البيانات من دوال/جداول قراءة عامة لا
-   تحتاج تسجيل دخول أصلاً — نفس مستوى الكشف الحالي بمفتاح anon المضمّن بالملف، ولا تلمس
-   إطلاقاً الكتالوج المشفّر (DATA/MODELS/GAL...) الذي يتطلب فك تشفير بعد دخول فعلي.
-   &page=1 أو &page=2 بالرابط يثبّت صفحة واحدة بلا تناوب (للاختبار). الأسهم ← → تقلّب يدوياً. */
+   يُفعَّل فقط لو الرابط فيه ?tv=1 — يتجاوز شاشة القفل ويعرض شاشة مستقلة لتلفزيون يعمل 24 ساعة.
+   الصفحة ١ (45 ث): عدّادات المستهدف للمملكة وكل منطقة، عقود اليوم والحجوزات، NHC مقابل المطورين،
+   منحنيات الشهري واليومي وحركة اليوم، إشعارات آخر تحديث، والمشاريع التي باعت. الصفحة ٢ (15 ث):
+   المناطق حسب النوع والأسعار مقابل السوق. كل البيانات من دوال/جداول قراءة عامة لا تحتاج دخولاً
+   (نفس مستوى الكشف الحالي بمفتاح anon المضمّن بالملف)، ولا تلمس الكتالوج المشفّر إطلاقاً.
+   &page=1 أو &page=2 يثبّت صفحة واحدة. الأسهم ← → تقلّب يدوياً، و R يعيد التحميل. */
 const MARKET_REGION_SECTOR={'الرياض':'الأوسط','مكة المكرمة':'الغربي','المدينة المنورة':'الغربي','تبوك':'الغربي','الشرقية':'الشرقي'};
 const TV_SECTORS=['الأوسط','الغربي','الشرقي'];
 const TV_TYPES=['شقة','فيلا','تاون هاوس'];
-const TV_PAGE_MS=20000, TV_REFRESH_MS=2*60*1000, TV_STALE_MIN=120;
+const TV_PAGE_MS={1:45000,2:15000}, TV_REFRESH_MS=2*60*1000, TV_STALE_MIN=120;
 let tvPage=1, tvPinnedPage=null, tvRotateTimer=null;
 function tvParam(k){ try{ return new URLSearchParams(location.search).get(k); }catch(e){ return null; } }
 function isTvMode(){ return tvParam('tv')==='1'; }
@@ -8491,22 +8532,134 @@ function tvTickClock(){
 }
 function tvTime(ts){ if(!ts) return "—"; return new Date(ts).toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"}); }
 function tvAgo(ts){ if(!ts) return null; return Math.max(0,Math.round((Date.now()-new Date(ts).getTime())/60000)); }
+function tvSameTs(a,b){ return a&&b&&new Date(a).getTime()===new Date(b).getTime(); }
+function tvLocalDate(d){ d=d||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function tvShort(s,n){ s=String(s||""); return s.length>n? s.slice(0,n-1)+"…" : s; }
 function tvDelta(d,unit){
   if(d==null||isNaN(d)) return "";
   const cls=d>0?"up":d<0?"down":"flat", arrow=d>0?"▲":d<0?"▼":"◆";
   return `<span class="tvDelta ${cls}">${arrow} ${d>0?"+":""}${fmt(d)}${unit?" "+unit:""}</span>`;
 }
+
+/* ---------- رسم منحنى SVG بمقاس الحاوية الفعلي (يُعاد رسمه عند ظهور الصفحة أو تغيّر المقاس) ----------
+   الزمن يجري من اليمين لليسار (أول نقطة يميناً) بما يتّسق مع اتجاه الصفحة. */
+function tvDrawChart(el, labels, series, opts){
+  if(!el) return;
+  opts=opts||{};
+  el.__tvChart=[labels,series,opts];
+  const W=el.clientWidth, H=el.clientHeight;
+  if(!W||!H) return;
+  const n=labels.length;
+  if(!n||!series.some(s=>s.values.some(v=>v))){ el.innerHTML=`<div class="empty">${opts.empty||"لا بيانات بعد"}</div>`; return; }
+  const padX=opts.padX||22, padT=28, padB=24;
+  const max=Math.max(1,...series.flatMap(s=>s.values.map(v=>Number(v)||0)));
+  const step= n>1 ? (W-2*padX)/(n-1) : 0;
+  const X=i=> n>1 ? W-padX-i*step : W/2;
+  const Y=v=> padT+(1-(Number(v)||0)/max)*(H-padT-padB);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  svg+=`<line x1="${padX}" x2="${W-padX}" y1="${Y(0)}" y2="${Y(0)}" stroke="#E2DBCB" stroke-width="1.5"/>`;
+  svg+=`<line x1="${padX}" x2="${W-padX}" y1="${Y(max/2)}" y2="${Y(max/2)}" stroke="#EEEAE0" stroke-dasharray="4 6"/>`;
+  series.forEach(s=>{
+    const pts=s.values.map((v,i)=>[+X(i).toFixed(1),+Y(v).toFixed(1)]);
+    const gid="tvg"+Math.random().toString(36).slice(2,8);
+    if(s.area && pts.length>1){
+      svg+=`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.color}" stop-opacity=".30"/><stop offset="1" stop-color="${s.color}" stop-opacity=".02"/></linearGradient></defs>`;
+      svg+=`<path d="M${pts[0][0]},${Y(0)} L${pts.map(p=>p.join(",")).join(" L")} L${pts[pts.length-1][0]},${Y(0)} Z" fill="url(#${gid})"/>`;
+    }
+    if(pts.length>1) svg+=`<polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="${s.color}" stroke-width="${s.width||3.5}" stroke-linejoin="round" stroke-linecap="round"/>`;
+    pts.forEach(([x,y],i)=>{
+      const last=i===pts.length-1, v=Number(s.values[i])||0;
+      svg+=`<circle cx="${x}" cy="${y}" r="${last?6:(n>20?2.6:4)}" fill="${last?s.color:"#fff"}" stroke="${s.color}" stroke-width="2.5"/>`;
+      if(last && opts.pulseLast) svg+=`<circle cx="${x}" cy="${y}" r="6" fill="none" stroke="${s.color}" stroke-width="2"><animate attributeName="r" from="6" to="20" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" from=".85" to="0" dur="1.6s" repeatCount="indefinite"/></circle>`;
+      if(s.labels!==false && v){
+        const ly = s.labelBelow ? y+20 : y-10;
+        svg+=`<text x="${x}" y="${ly}" text-anchor="middle" font-size="${s.valFont||opts.valFont||15}" font-weight="800" fill="${s.labelColor||"#0B4332"}">${fmt(v)}</text>`;
+      }
+    });
+  });
+  const every=opts.labelEvery||1;
+  labels.forEach((l,i)=>{ if(i%every===0||i===n-1) svg+=`<text x="${X(i)}" y="${H-5}" text-anchor="middle" font-size="${opts.xFont||13}" fill="#767368">${l}</text>`; });
+  el.innerHTML=svg+`</svg>`;
+}
+function tvRedrawCharts(root){
+  (root||document).querySelectorAll("#tvView .tvChart").forEach(el=>{ if(el.__tvChart) tvDrawChart(el,...el.__tvChart); });
+}
+
+/* ---------- عدّاد المستهدف (مثل عدّاد السيارة) ----------
+   الحلقة الخارجية الرفيعة تُظهر مناطق الأداء نسبةً لوتيرة الشهر حتى اليوم: أحمر تحت 85% من
+   الوتيرة، برتقالي حتى الوتيرة، أخضر فوقها. الشَّرطة الداكنة = المتوقع حتى اليوم. */
+function tvPaceStatus(pct,expected){ if(pct==null) return "none"; if(pct>=100||pct>=expected) return "good"; if(pct>=expected*0.85) return "warn"; return "bad"; }
+function tvGaugeSvg(pct,pace,status){
+  const W=240,H=138,cx=120,cy=118,r=92,sw=20;
+  const col={good:"#009C6D",warn:"#D4912F",bad:"#D9532A",none:"#B9B1A0"}[status];
+  const P=(f,rr)=>{ const a=Math.PI*(1-f); return [+(cx+rr*Math.cos(a)).toFixed(1), +(cy-rr*Math.sin(a)).toFixed(1)]; };
+  const arc=(f0,f1,color,w,rr,cap)=>{ if(f1-f0<0.002) return ""; const [x0,y0]=P(f0,rr),[x1,y1]=P(f1,rr); return `<path d="M${x0},${y0} A${rr},${rr} 0 0 1 ${x1},${y1}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="${cap||"butt"}"/>`; };
+  const f=Math.max(0,Math.min(1,(pct||0)/100));
+  let s=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  if(pace!=null){
+    const p=Math.max(0,Math.min(1,pace/100));
+    s+=arc(0,p*0.85,"#EDA58C",6,r+17)+arc(p*0.85,p,"#EBC47E",6,r+17)+arc(p,1,"#7FD1AC",6,r+17);
+  }
+  s+=arc(0,1,"#EEEAE0",sw,r,"round");
+  if(pct) s+=arc(0,f,col,sw,r,"round");
+  if(pace!=null){
+    const p=Math.max(0,Math.min(1,pace/100)); const [ax,ay]=P(p,r-sw/2-4),[bx,by]=P(p,r+sw/2+20);
+    s+=`<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="#0B4332" stroke-width="3"/>`;
+  }
+  const [nx,ny]=P(f,r-26);
+  s+=`<line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="#0B4332" stroke-width="5" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="10" fill="#0B4332"/><circle cx="${cx}" cy="${cy}" r="4" fill="#fff"/>`;
+  s+=`<text x="${cx-r}" y="${H-1}" text-anchor="middle" font-size="12" fill="#767368">0</text><text x="${cx+r}" y="${H-1}" text-anchor="middle" font-size="12" fill="#767368">100%</text>`;
+  return s+`</svg>`;
+}
+function tvGaugeHtml(name,prog,srcNote){
+  const st=prog.status;
+  const stTxt={good:prog.pct>=100?"حقّق المستهدف ✓":"على المسار ✓",warn:"قريب من المسار",bad:"متأخر عن المسار",none:"لا مستهدف مسجّل"}[st];
+  const col={good:"#009C6D",warn:"#B87516",bad:"#C2491E",none:"#767368"}[st];
+  return `<div class="tvGauge">
+    <div class="gName">${name}<small>${srcNote||""}</small></div>
+    ${tvGaugeSvg(prog.pct,prog.tgt?prog.expected:null,st)}
+    <div class="gPct" style="color:${col}">${prog.pct!=null?prog.pct+"%":"—"}</div>
+    <div class="gSub">${prog.tgt?`<b>${fmt(prog.mtd)}</b> / ${fmt(prog.tgt)} عقد · المتوقع ${prog.expected}%`:`<b>${fmt(prog.mtd)}</b> عقد هذا الشهر`}</div>
+    <span class="tvStatus ${st}">${stTxt}${prog.tgt&&prog.pct<100&&prog.need!=null?` · المطلوب يومياً ${fmt(prog.need)}`:""}</span>
+  </div>`;
+}
+
 function tvShowPage(n){
   tvPage=n;
   $("tvPage1").classList.toggle("on",n===1);
   $("tvPage2").classList.toggle("on",n===2);
   $("tvPageDots").querySelectorAll("i").forEach((el,i)=>el.classList.toggle("on",i===n-1));
+  requestAnimationFrame(()=>{ tvRedrawCharts($("tvPage"+n)); if(n===1) tvSetupLeadScroll(); });
 }
 function tvStartRotation(){
-  if(tvRotateTimer){ clearInterval(tvRotateTimer); tvRotateTimer=null; }
+  if(tvRotateTimer){ clearTimeout(tvRotateTimer); tvRotateTimer=null; }
   if(tvPinnedPage){ tvShowPage(tvPinnedPage); return; }
-  tvShowPage(1);
-  tvRotateTimer=setInterval(()=>tvShowPage(tvPage===1?2:1),TV_PAGE_MS);
+  const step=()=>{ tvRotateTimer=setTimeout(()=>{ tvShowPage(tvPage===1?2:1); step(); }, TV_PAGE_MS[tvPage]); };
+  tvShowPage(1); step();
+}
+/* قائمة المشاريع التي باعت: تتحرّك عمودياً ببطء فقط إن لم تتسع لكل الصفوف */
+function tvSetupLeadScroll(){
+  const inner=$("tvLeaders"), wrap=inner&&inner.parentElement; if(!wrap) return;
+  inner.classList.remove("run");
+  if(inner.dataset.base) inner.innerHTML=inner.dataset.base;
+  if(!wrap.clientHeight) return;
+  if(inner.scrollHeight>wrap.clientHeight+4){
+    const rows=inner.children.length;
+    inner.dataset.base=inner.innerHTML;
+    inner.innerHTML=inner.innerHTML+inner.innerHTML;
+    inner.style.setProperty("--tv-lead-dur",Math.max(20,rows*2.4)+"s");
+    inner.classList.add("run");
+  }
+}
+
+/* تقدّم الشهر لنطاق معيّن. الوتيرة المتوقعة حتى نهاية أمس (اليوم الجاري ما زال مفتوحاً). */
+function tvMonthProg(mtd,target,ctx){
+  const tgt=(target&&Number(target.total)>0)?Number(target.total):null;
+  const pct=tgt?Math.round(mtd/tgt*100):null;
+  const expected=Math.round((ctx.dayOfMonth-1)/ctx.monthEndDay*100);
+  const remaining=Math.max(1,ctx.monthEndDay-ctx.dayOfMonth+1);
+  const need=tgt?Math.ceil(Math.max(0,tgt-mtd)/remaining):null;
+  return {mtd,tgt,pct,expected,need,status:tvPaceStatus(pct,expected)};
 }
 
 async function loadTvDashboard(){
@@ -8514,165 +8667,184 @@ async function loadTvDashboard(){
   const curY=now.getFullYear(), curM=now.getMonth()+1;
   let lastM=curM-1, lastMY=curY;
   if(lastM<1){ lastM=12; lastMY=curY-1; }
-  const monthStart=`${curY}-${String(curM).padStart(2,"0")}-01`;
+  const mm=String(curM).padStart(2,"0");
+  const monthStart=`${curY}-${mm}-01`;
   const monthEndDay=new Date(curY,curM,0).getDate();
-  const monthEndStr=`${curY}-${String(curM).padStart(2,"0")}-${String(monthEndDay).padStart(2,"0")}`;
+  const monthEndStr=`${curY}-${mm}-${String(monthEndDay).padStart(2,"0")}`;
+  const dayRep=sec=>sbCall("get_sales_report",{p_granularity:"day",p_metric:"contract",p_from:monthStart,p_to:monthEndStr,p_sector:sec,p_dev_kind:null});
+  const tgtRep=sec=>sbCall("get_target_summary",{p_year:curY,p_from_month:curM,p_to_month:curM,p_sector:sec,p_dev_kind:null});
 
   /* كل نداء مستقل — فشل أحدها (مثلاً ملف SQL لم يُشغَّل بعد) لا يُسقط بقية الشاشة */
   const calls={
     live:   sbCall("get_live_board",{}),
     year:   sbCall("get_sales_report",{p_granularity:"month",p_metric:"contract",p_from:`${curY}-01-01`,p_to:`${curY}-12-31`,p_sector:null,p_dev_kind:null}),
-    day:    sbCall("get_sales_report",{p_granularity:"day",p_metric:"contract",p_from:monthStart,p_to:monthEndStr,p_sector:null,p_dev_kind:null}),
-    target: sbCall("get_target_summary",{p_year:curY,p_from_month:curM,p_to_month:curM,p_sector:null,p_dev_kind:null}),
+    day:    dayRep(null), target: tgtRep(null),
+    day_0: dayRep(TV_SECTORS[0]), tgt_0: tgtRep(TV_SECTORS[0]),
+    day_1: dayRep(TV_SECTORS[1]), tgt_1: tgtRep(TV_SECTORS[1]),
+    day_2: dayRep(TV_SECTORS[2]), tgt_2: tgtRep(TV_SECTORS[2]),
     sector: sbCall("get_sector_type_sales",{p_year:lastMY,p_month:lastM}),
     pricing:sbCall("get_sector_avail_pricing",{}),
     market: sbSelect("market_price_stats",{select:"*"}),
     today:  sbCall("get_today_activity",{}),
+    sync:   sbSelect("sync_status",{select:"last_synced_at",limit:"1"}),
   };
   const keys=Object.keys(calls);
   const settled=await Promise.allSettled(keys.map(k=>calls[k]));
   const R={}, errs=[];
   settled.forEach((s,i)=>{ if(s.status==="fulfilled") R[keys[i]]=s.value; else { R[keys[i]]=null; errs.push(keys[i]+": "+((s.reason&&s.reason.message)||s.reason)); } });
 
-  const ctx={curY,curM,lastM,lastMY,monthEndDay,dayOfMonth:now.getDate()};
+  const ctx={curY,curM,lastM,lastMY,monthEndDay,dayOfMonth:now.getDate(),todayStr:tvLocalDate(now)};
   renderTvPage1(R,ctx);
   renderTvPage2(R,ctx);
+  requestAnimationFrame(()=>{ tvRedrawCharts($("tvPage"+tvPage)); if(tvPage===1) tvSetupLeadScroll(); });
 
-  const live=R.live;
-  const upd=$("tvUpdated");
+  const live=R.live, upd=$("tvUpdated");
+  const syncAt=R.sync&&R.sync[0]&&R.sync[0].last_synced_at;
+  const syncTxt=syncAt?` · آخر رفع لملف التخصيص: ${new Date(syncAt).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})} ${tvTime(syncAt)}`:"";
   if(live&&live.ok&&!live.empty){
-    const ago=tvAgo(live.latest_at);
-    const stale=ago!=null&&ago>TV_STALE_MIN;
-    upd.innerHTML=`<span class="${stale?"stale":""}">آخر سحب من داشبورد NHC: ${tvTime(live.latest_at)} (قبل ${fmt(ago)} دقيقة${stale?" — السحب متأخر، اطلب رفع ملف جديد":""})</span> · ${fmt(live.snapshots_today||0)} سحبات اليوم`;
-  } else {
-    upd.textContent="";
-  }
+    const ago=tvAgo(live.latest_at), stale=ago!=null&&ago>TV_STALE_MIN;
+    upd.innerHTML=`<span class="${stale?"stale":""}">آخر سحب من داشبورد NHC: ${tvTime(live.latest_at)} (قبل ${fmt(ago)} دقيقة${stale?" — السحب متأخر، اطلب رفع ملف جديد":""})</span> · ${fmt(live.snapshots_today||0)} سحبات اليوم${syncTxt}`;
+  } else upd.textContent=syncTxt.replace(/^ · /,"");
   $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+(errs.length?` · تعذّر: ${errs[0]}`:"");
 }
 
-/* ---------- الصفحة ١: اللحظة — من لقطات داشبورد NHC ---------- */
+/* ---------- الصفحة ١ ---------- */
 function renderTvPage1(R,ctx){
   const live=R.live;
-  if(!live||!live.ok||live.empty){
-    const msg = !live
-      ? "تعذّر قراءة لقطات داشبورد NHC — تأكد من تشغيل live_board.sql على القاعدة"
-      : "لم تُرفع أي لقطة من داشبورد NHC بعد.<br>لوحة الإدارة ← تحديث المخزون اليومي ← «سحب العقود الساعي من داشبورد NHC»";
-    $("tvHero").innerHTML=`<div class="tvTile tvEmpty" style="grid-column:1/-1">${msg}</div>`;
-    $("tvSplit").innerHTML=""; $("tvTimeline").innerHTML=""; $("tvLeaders").innerHTML="";
-    $("tvTape").innerHTML=`<span class="tvTapeItem"><small>بانتظار أول سحب من داشبورد NHC</small></span>`;
-    return;
-  }
-  const L=live.latest||{}, P=live.prev||{}, F=live.first||{};
+  const hasLive=!!(live&&live.ok&&!live.empty);
+  const liveToday=hasLive && String(live.day)===ctx.todayStr;
+  const L=hasLive?(live.latest||{}):{}, P=hasLive?(live.prev||{}):{}, F=hasLive?(live.first||{}):{};
   const A=L.all||{}, Ap=P.all||null, Af=F.all||{};
-  const dPrev = Ap? (A.contracts||0)-(Ap.contracts||0) : null;
-  const dFirst = (A.contracts||0)-(Af.contracts||0);
-  const bPrev = Ap? (A.bookings||0)-(Ap.bookings||0) : null;
+  const singlePull=!hasLive||!live.prev_at;
 
-  /* مستهدف الشهر: عقود الشهر حتى اليوم (ملف التخصيص) مقابل مستهدف الشهر (sales_targets) */
-  const mtd=(R.day||[]).reduce((s,r)=>s+Number(r.cnt),0);
-  const tgt=(R.target&&Number(R.target.total)>0)?Number(R.target.total):null;
-  const pct= tgt? Math.round(mtd/tgt*100) : null;
-  const expectedPct= Math.round(ctx.dayOfMonth/ctx.monthEndDay*100);
-  const remaining=Math.max(0,ctx.monthEndDay-ctx.dayOfMonth);
-  const needPerDay= tgt? (remaining>0? Math.ceil(Math.max(0,tgt-mtd)/remaining) : Math.max(0,tgt-mtd)) : null;
-  const progCls= pct==null?"" : pct>=expectedPct?"" : pct>=expectedPct*0.8?"warn":"bad";
+  /* عقود الشهر حتى الآن: حتى نهاية أمس من ملف التخصيص + اليوم لحظياً من داشبورد NHC (إن وُجد
+     سحب اليوم)، فلا يتكرّر اليوم مرتين. بلا سحب اليوم: ملف التخصيص وحده بما فيه اليوم. */
+  const before=rows=>(rows||[]).filter(r=>r.period<ctx.todayStr).reduce((s,r)=>s+Number(r.cnt||0),0);
+  const onDay=rows=>(rows||[]).filter(r=>r.period===ctx.todayStr).reduce((s,r)=>s+Number(r.cnt||0),0);
+  const tbs=(hasLive&&live.today_by_sector)||{};
+  const todayAll = liveToday ? Number(A.contracts||0) : onDay(R.day);
+  const progAll=tvMonthProg(before(R.day)+todayAll, R.target, ctx);
+  const srcNote = liveToday ? "حتى أمس: التخصيص · اليوم: لحظي" : "المصدر: ملف التخصيص";
+  let gauges=tvGaugeHtml("المملكة",progAll,srcNote);
+  TV_SECTORS.forEach((sec,i)=>{
+    const tdy = liveToday ? Number(tbs[sec]||0) : onDay(R["day_"+i]);
+    gauges+=tvGaugeHtml(sec,tvMonthProg(before(R["day_"+i])+tdy, R["tgt_"+i], ctx),"");
+  });
+  $("tvGauges").innerHTML=gauges;
 
-  $("tvHero").innerHTML=`
-    <div class="tvTile main">
-      <div class="lbl">عقود اليوم — المملكة ${tvDelta(dPrev)}</div>
+  /* عقود اليوم */
+  if(hasLive){
+    const dPrev=Ap?(A.contracts||0)-(Ap.contracts||0):null, dFirst=(A.contracts||0)-(Af.contracts||0);
+    $("tvKpiContracts").innerHTML=`
+      <div class="lbl">عقود اليوم — المملكة ${tvDelta(dPrev)}${singlePull?"":`<small style="font-size:14px;font-weight:600;color:#767368">منذ آخر سحب</small>`}</div>
       <div class="num">${fmt(A.contracts||0)}</div>
-      <div class="sub">منذ أول سحب اليوم: <b>${dFirst>0?"+":""}${fmt(dFirst)}</b> · آخر سحب ${tvTime(live.latest_at)}${live.prev_at?` · السابق ${tvTime(live.prev_at)}`:""}<br>المصدر: داشبورد NHC</div>
-    </div>
-    <div class="tvTile">
-      <div class="lbl">حجوزات ${tvDelta(bPrev)}</div>
+      <div class="sub">منذ أول سحب (${tvTime(live.first_at)}): <b>${dFirst>0?"+":""}${fmt(dFirst)}</b> · آخر سحب <b>${tvTime(live.latest_at)}</b>${liveToday?"":` · <b style="color:#C2491E">آخر سحب ليس من اليوم</b>`} · المصدر: داشبورد NHC</div>`;
+    const bPrev=Ap?(A.bookings||0)-(Ap.bookings||0):null, bFirst=(A.bookings||0)-(Af.bookings||0);
+    $("tvKpiBookings").innerHTML=`
+      <div class="lbl">حجوزات قائمة ${tvDelta(bPrev)}</div>
       <div class="num">${fmt(A.bookings||0)}</div>
-      <div class="sub">متاح للبيع الآن: <b>${fmt(A.available||0)}</b> · المعروض: <b>${fmt(A.supply||0)}</b></div>
-    </div>
-    <div class="tvTile">
+      <div class="sub">منذ الصباح: <b>${bFirst>0?"+":""}${fmt(bFirst)}</b> · رصيد قائم، لا حجوزات اليوم<br>المصدر: داشبورد NHC «عدد الحجوزات»</div>`;
+    $("tvKpiProjects").innerHTML=`
       <div class="lbl">مشاريع باعت اليوم</div>
       <div class="num">${fmt(A.projects_with_contracts||0)}</div>
-      <div class="sub">NHC: <b>${fmt((L.nhc||{}).projects_with_contracts||0)}</b> · المطورون: <b>${fmt((L.dev||{}).projects_with_contracts||0)}</b></div>
-    </div>
-    <div class="tvTile">
-      <div class="lbl">مستهدف شهر ${MNAMES[String(ctx.curM).padStart(2,"0")]}</div>
-      <div class="num">${pct!=null?pct+"%":"—"}</div>
-      <div class="tvProg"><i class="${progCls}" style="width:${pct!=null?Math.min(100,pct):0}%"></i></div>
-      <div class="sub">${tgt?`<b>${fmt(mtd)}</b> من <b>${fmt(tgt)}</b> عقد · المتوقع لليوم ${expectedPct}% · المطلوب يومياً لإغلاق الشهر: <b>${fmt(needPerDay)}</b>`:`<b>${fmt(mtd)}</b> عقد هذا الشهر · لا مستهدف مسجّل لهذا الشهر`}<br>المصدر: ملف التخصيص اليومي</div>
-    </div>`;
+      <div class="sub">NHC <b>${fmt((L.nhc||{}).projects_with_contracts||0)}</b> · المطورون <b>${fmt((L.dev||{}).projects_with_contracts||0)}</b><br>متاح للبيع الآن <b>${fmt(A.available||0)}</b></div>`;
+  } else {
+    const msg = !live ? "تعذّر قراءة لقطات داشبورد NHC — شغّل live_board.sql على القاعدة"
+      : "لم يُرفع أي سحب من داشبورد NHC بعد — لوحة الإدارة ← تحديث المخزون اليومي ← سحب العقود الساعي";
+    $("tvKpiContracts").innerHTML=`<div class="lbl">عقود اليوم — المملكة</div><div class="tvEmpty" style="font-size:17px;padding:8px">${msg}</div>`;
+    $("tvKpiBookings").innerHTML=`<div class="lbl">حجوزات قائمة</div><div class="num">—</div>`;
+    $("tvKpiProjects").innerHTML=`<div class="lbl">مشاريع باعت اليوم</div><div class="num">—</div>`;
+  }
 
-  const scopeHtml=(key,name,tag)=>{
-    const s=L[key]||{}, p=P[key]||null;
-    const d= p? (s.contracts||0)-(p.contracts||0) : null;
-    const c=s.contracts||0;
+  const scopeHtml=(key,name)=>{
+    const s=L[key]||{}, p=P[key]||null, c=s.contracts||0;
+    const d=p?(s.contracts||0)-(p.contracts||0):null;
     const seg=(n,color,lbl)=> c? `<i style="width:${(n||0)/c*100}%;background:${color}" title="${lbl}: ${fmt(n||0)}"></i>` : "";
-    return `<div class="tvScope">
-      <div class="name">${name}</div>
-      <div class="k">عقود اليوم</div><div class="k">حجوزات</div><div class="k">متاح للبيع</div>
-      <div class="v">${fmt(c)} ${tvDelta(d)}</div><div class="v">${fmt(s.bookings||0)}</div><div class="v">${fmt(s.available||0)}</div>
+    return `<div class="tvScopeTop">
+        <span class="name">${name}</span>
+        <span><span class="v">${hasLive?fmt(c):"—"}</span> <span class="k">عقد اليوم</span> ${tvDelta(d)}</span>
+        <span style="margin-inline-start:auto"><span class="v" style="font-size:26px">${hasLive?fmt(s.bookings||0):"—"}</span> <span class="k">حجز قائم</span></span>
+      </div>
       <div class="tvMix">${seg(s.financed,"#009C6D","تمويلي")}${seg(s.cash,"#C97F2E","نقدي")}${seg(s.nonbene,"#A484D8","غير مستفيدين")}${seg(s.selfbuild,"#767368","بناء ذاتي")}</div>
-      <div class="tvMixLbl"><span>تمويلي <b>${fmt(s.financed||0)}</b></span><span>نقدي <b>${fmt(s.cash||0)}</b></span><span>غير مستفيدين <b>${fmt(s.nonbene||0)}</b></span>${s.selfbuild?`<span>بناء ذاتي <b>${fmt(s.selfbuild)}</b></span>`:""}<span>مشاريع باعت <b>${fmt(s.projects_with_contracts||0)}</b></span></div>
-    </div>`;
+      <div class="tvMixLbl"><span>تمويلي <b>${fmt(s.financed||0)}</b></span><span>نقدي <b>${fmt(s.cash||0)}</b></span><span>غير مستفيدين <b>${fmt(s.nonbene||0)}</b></span>${s.selfbuild?`<span>بناء ذاتي <b>${fmt(s.selfbuild)}</b></span>`:""}<span>مشاريع باعت <b>${fmt(s.projects_with_contracts||0)}</b></span></div>`;
   };
-  $("tvSplit").innerHTML=scopeHtml("nhc","NHC")+scopeHtml("dev","المطورون");
+  $("tvScopeNhc").innerHTML=scopeHtml("nhc","NHC");
+  $("tvScopeDev").innerHTML=scopeHtml("dev","المطورون");
 
-  /* منحنى اليوم — سحبةً بسحبة */
-  const tl=live.timeline||[];
-  $("tvTimelineTitle").innerHTML=`حركة العقود اليوم — سحبةً بسحبة <small>${fmt(tl.length)} سحبات · الأخضر إجمالي المملكة، البرتقالي NHC</small>`;
-  const tmax=Math.max(1,...tl.map(x=>Number(x.contracts)||0));
-  $("tvTimeline").innerHTML= tl.length ? tl.map(x=>{
-    const v=Number(x.contracts)||0, n=Number(x.nhc)||0;
-    const h=v?Math.max(4,v/tmax*100):2, hn=n?Math.max(3,n/tmax*100):0;
-    return `<div class="tvBarCol" title="${tvTime(x.at)}: ${fmt(v)} عقد (NHC ${fmt(n)})">
-      <span class="tvBarVal">${fmt(v)}</span>
-      <div style="width:100%;position:relative;height:${h}%;min-height:3px"><i style="height:100%"></i><i class="nhc" style="position:absolute;bottom:0;left:25%;width:50%;height:${v?hn/h*100:0}%"></i></div>
-      <span>${tvTime(x.at)}</span></div>`;
-  }).join("") : `<div class="tvEmpty">سحبة واحدة فقط اليوم — المنحنى يظهر مع السحبات التالية</div>`;
+  /* المنحنى الشهري — الشهر الجاري بقيمته الحيّة نفسها التي في عدّاد المملكة */
+  const yr={}; (R.year||[]).forEach(r=>{ yr[+r.period.split("-")[1]]=Number(r.cnt||0); });
+  const months=Array.from({length:ctx.curM},(_,i)=>i+1);
+  const mVals=months.map(m=> m===ctx.curM ? progAll.mtd : (yr[m]||0));
+  const ytd=mVals.reduce((a,b)=>a+b,0);
+  $("tvMonthlyTitle").innerHTML=`العقود الموقّعة شهرياً — ${ctx.curY} <small>${MNAMES[String(ctx.curM).padStart(2,"0")]} حتى الآن مع عقود اليوم</small><span class="tot">${fmt(ytd)} عقد</span>`;
+  tvDrawChart($("tvMonthlyChart"), months.map(m=>MNAMES[String(m).padStart(2,"0")]), [{values:mVals,color:"#009C6D",area:true}], {pulseLast:true,empty:"لا بيانات — ارفع ملف التخصيص اليومي"});
 
-  /* قائمة الصدارة */
-  const movers=(live.movers||[]).slice(0,10);
-  $("tvLeaders").innerHTML=`<div class="tvLeadRow hd"><span>#</span><span>المشروع</span><span>عقود</span><span>منذ الصباح</span><span>حجوزات</span></div>`+
-    (movers.length? movers.map((m,i)=>`<div class="tvLeadRow">
+  /* المنحنى اليومي — اليوم الجاري بقيمته الحيّة */
+  const dy={}; (R.day||[]).forEach(r=>{ dy[+r.period.split("-")[2]]=Number(r.cnt||0); });
+  const days=Array.from({length:ctx.dayOfMonth},(_,i)=>i+1);
+  const dVals=days.map(d=> d===ctx.dayOfMonth ? todayAll : (dy[d]||0));
+  $("tvDailyTitle").innerHTML=`العقود يومياً — ${MNAMES[String(ctx.curM).padStart(2,"0")]} ${ctx.curY} <small>اليوم لحظياً، وما قبله من ملف التخصيص</small><span class="tot">${fmt(progAll.mtd)} عقد</span>`;
+  tvDrawChart($("tvDailyChart"), days.map(String), [{values:dVals,color:"#0B7A5A",area:true,valFont:14}], {pulseLast:true,xFont:12,empty:"لا عقود هذا الشهر بعد"});
+
+  /* حركة اليوم سحبةً بسحبة — المملكة والـNHC */
+  const tl=(hasLive&&live.timeline)||[];
+  $("tvTimelineTitle").innerHTML=`حركة العقود اليوم — سحبةً بسحبة <small><span style="color:#009C6D">●</span> المملكة <span style="color:#C97F2E">●</span> NHC · ${fmt(tl.length)} سحبات</small>`;
+  tvDrawChart($("tvTimelineChart"), tl.map(x=>tvTime(x.at)), [
+    {values:tl.map(x=>Number(x.contracts)||0),color:"#009C6D",area:true},
+    {values:tl.map(x=>Number(x.nhc)||0),color:"#C97F2E",width:3,labelColor:"#9a5c12",valFont:13},
+  ], {pulseLast:true,padX:38,empty:tl.length===1?"سحبة واحدة اليوم — المنحنى يكتمل مع السحبات التالية":"لا سحبات اليوم بعد"});
+
+  /* إشعارات آخر تحديث */
+  const feed=(hasLive&&live.feed)||[];
+  const fresh=feed.filter(f=>tvSameTs(f.at,live.latest_at)), older=feed.filter(f=>!tvSameTs(f.at,live.latest_at));
+  const freshSum=fresh.reduce((s,f)=>s+Number(f.dc||0),0);
+  $("tvFeedTitle").innerHTML=`🔔 عقود أُضيفت في آخر تحديث ${hasLive&&live.prev_at?`<small>${tvTime(live.prev_at)} ← ${tvTime(live.latest_at)}</small>`:""}${freshSum?`<span class="tot">+${fmt(freshSum)}</span>`:""}`;
+  const feedRow=(f,isNew)=>`<div class="tvFeedRow${isNew?" new":""}">
+      <span class="t">${tvTime(f.at)}</span>
+      <span class="p">${f.project}<span class="tvTag ${f.is_nhc?"":"dev"}">${f.is_nhc?"NHC":"مطوّر"}</span><small>${f.is_nhc?(f.city||""):[tvShort(f.developer,34),f.city].filter(Boolean).join(" · ")} · ${fmt(f.contracts)} عقد اليوم</small></span>
+      <span class="d">+${fmt(f.dc)}</span>
+    </div>`;
+  let fh="";
+  if(!hasLive) fh=`<div class="tvFeedNote">بانتظار أول سحب من داشبورد NHC</div>`;
+  else if(!live.prev_at) fh=`<div class="tvFeedNote">أول سحب اليوم (${tvTime(live.latest_at)}) — الإشعارات تبدأ من السحب الثاني بمقارنته بهذا</div>`;
+  else {
+    fh=fresh.map(f=>feedRow(f,true)).join("");
+    if(!fresh.length) fh=`<div class="tvFeedNote">لا عقود جديدة في آخر سحب (${tvTime(live.latest_at)})</div>`;
+    if(older.length) fh+=`<div class="tvFeedNote">سابقاً اليوم</div>`+older.slice(0,10).map(f=>feedRow(f,false)).join("");
+  }
+  $("tvFeed").innerHTML=fh;
+
+  /* المشاريع التي باعت اليوم — كلها، تتحرّك ببطء إن لم تتسع */
+  const movers=(hasLive&&live.movers)||[];
+  $("tvLeadTitle").innerHTML=`المشاريع التي باعت اليوم <span class="tot">${fmt(movers.length)} مشروعاً</span>`;
+  const leadInner=$("tvLeaders"); delete leadInner.dataset.base;
+  leadInner.innerHTML= movers.length ? movers.map((m,i)=>`<div class="tvLeadRow">
       <span class="rk">${i+1}</span>
-      <span class="pj">${m.project}<span class="tvTag ${m.is_nhc?"":"dev"}">${m.is_nhc?"NHC":"مطوّر"}</span><small>${m.is_nhc?(m.city||""):[m.developer,m.city].filter(Boolean).join(" · ")}</small></span>
+      <span class="pj">${m.project}<span class="tvTag ${m.is_nhc?"":"dev"}">${m.is_nhc?"NHC":"مطوّر"}</span><small>${m.is_nhc?(m.city||""):[tvShort(m.developer,30),m.city].filter(Boolean).join(" · ")}</small></span>
       <span class="n">${fmt(m.contracts)}</span>
-      <span class="b">${tvDelta(m.d_first)}</span>
+      <span class="c">${singlePull?"—":tvDelta(m.d_first)}</span>
       <span class="b">${fmt(m.bookings||0)}</span>
-    </div>`).join("") : `<div class="tvEmpty">لا عقود بعد في لقطة اليوم</div>`);
+    </div>`).join("") : `<div class="tvEmpty" style="font-size:17px">${hasLive?"لا عقود بعد في سحب اليوم":"بانتظار أول سحب"}</div>`;
 
-  /* الشريط المتحرك: ما تغيّر منذ آخر سحب، وإلا الأعلى منذ الصباح، وإلا الأعلى عقوداً */
-  let items=(live.movers||[]).filter(m=>m.d_prev!==0 && m.d_prev!=null).sort((a,b)=>Math.abs(b.d_prev)-Math.abs(a.d_prev)).map(m=>({m,d:m.d_prev,lbl:"منذ آخر سحب"}));
-  if(!items.length) items=(live.movers||[]).filter(m=>m.d_first>0).map(m=>({m,d:m.d_first,lbl:"منذ الصباح"}));
-  if(!items.length) items=(live.movers||[]).slice(0,12).map(m=>({m,d:null,lbl:"عقود اليوم"}));
-  items=items.slice(0,14);
-  const tapeHtml=items.length ? items.map(({m,d,lbl})=>`<span class="tvTapeItem">${m.project} <span class="${d>0?"up":d<0?"down":"flat"}">${d==null?fmt(m.contracts)+" عقد":(d>0?"▲ +":d<0?"▼ ":"◆ ")+fmt(d)}</span><small>${m.is_nhc?"NHC":(m.developer||"")}${d==null?"":" · "+lbl}</small></span>`).join("")
-    : `<span class="tvTapeItem"><small>لا حركة مسجّلة بعد اليوم</small></span>`;
-  let rep=tapeHtml; while(items.length && rep.length<tapeHtml.length*Math.max(2,Math.ceil(12/Math.max(1,items.length)))) rep+=tapeHtml;
-  $("tvTape").innerHTML=rep+rep; /* نسختان متطابقتان ليدور الشريط بلا فجوة */
+  /* الشريط: ملخّص ثم ما تحرّك في آخر سحب، وإلا الأعلى عقوداً */
+  const items=[];
+  if(hasLive){
+    const dA=Ap?(A.contracts||0)-(Ap.contracts||0):null;
+    items.push(`<span class="tvTapeItem">المملكة ${fmt(A.contracts||0)} عقد ${dA!=null?`<span class="${dA>0?"up":dA<0?"down":"flat"}">${dA>0?"▲ +":dA<0?"▼ ":"◆ "}${fmt(dA)}</span>`:""}<small>NHC ${fmt((L.nhc||{}).contracts||0)} · المطورون ${fmt((L.dev||{}).contracts||0)}</small></span>`);
+    const tickerRows = fresh.length ? fresh.map(f=>({name:f.project,d:Number(f.dc),tot:f.contracts,who:f.is_nhc?"NHC":f.developer}))
+      : movers.slice(0,14).map(m=>({name:m.project,d:null,tot:m.contracts,who:m.is_nhc?"NHC":m.developer}));
+    tickerRows.forEach(t=>items.push(`<span class="tvTapeItem">${t.name} ${t.d!=null?`<span class="up">▲ +${fmt(t.d)}</span>`:""}<small>${fmt(t.tot)} عقد اليوم · ${tvShort(t.who,26)}</small></span>`));
+  } else items.push(`<span class="tvTapeItem"><small>بانتظار أول سحب من داشبورد NHC</small></span>`);
+  const tapeHtml=items.join("");
+  let rep=tapeHtml; while(rep.length<4000 && items.length) rep+=tapeHtml;
+  const tape=$("tvTape"); tape.innerHTML=rep+rep;
+  requestAnimationFrame(()=>{ const w=tape.scrollWidth/2; tape.style.setProperty("--tv-tape-dur",Math.max(30,Math.round(w/95))+"s"); });
 }
 
-/* ---------- الصفحة ٢: الشهر والمناطق والأسعار ---------- */
+/* ---------- الصفحة ٢: المناطق والأسعار ---------- */
 function renderTvPage2(R,ctx){
-  const {curY,curM,lastM,lastMY}=ctx;
-  const yearReport=R.year||[], dayReport=R.day||[], sectorData=R.sector, pricingData=R.pricing||[], marketRows=R.market||[], todayData=R.today;
-
-  const yTotal=yearReport.reduce((s,r)=>s+Number(r.cnt),0);
-  $("tvYearTotal").textContent=fmt(yTotal)+" عقد";
-  const yMax=Math.max(1,...yearReport.map(r=>Number(r.cnt)));
-  $("tvMonthlyBars").innerHTML=yearReport.map(r=>{
-    const v=Number(r.cnt), h=v?Math.max(4,v/yMax*100):2;
-    const lbl=MNAMES[r.period.split("-")[1]]||r.period;
-    return `<div class="tvBarCol" title="${lbl}: ${fmt(v)}"><span class="tvBarVal">${v?fmt(v):""}</span><i style="height:${h}%"></i><span>${lbl}</span></div>`;
-  }).join("")||`<div class="tvEmpty">لا بيانات — ارفع ملف التخصيص اليومي</div>`;
-
-  $("tvDailyTitle").innerHTML=`العقود يومياً — ${MNAMES[String(curM).padStart(2,"0")]} ${curY} <small>المصدر: ملف التخصيص اليومي</small>`;
-  const mTotal=dayReport.reduce((s,r)=>s+Number(r.cnt),0);
-  $("tvMonthTotal").textContent=fmt(mTotal)+" عقد";
-  const dMax=Math.max(1,...dayReport.map(r=>Number(r.cnt)));
-  $("tvDailyBars").innerHTML=dayReport.map(r=>{
-    const v=Number(r.cnt), h=v?Math.max(4,v/dMax*100):2;
-    const day=+r.period.split("-")[2];
-    return `<div class="tvBarCol" title="يوم ${day}: ${fmt(v)}"><span class="tvBarVal">${v?fmt(v):""}</span><i style="height:${h}%"></i><span>${day}</span></div>`;
-  }).join("")||`<div class="tvEmpty">لا عقود مسجّلة هذا الشهر بعد</div>`;
+  const {lastM,lastMY}=ctx;
+  const sectorData=R.sector, pricingData=R.pricing||[], marketRows=R.market||[], todayData=R.today;
 
   const td=(todayData&&todayData.ok)?todayData:{kingdom:{bookings:0,istisna:0,contracts:0},by_sector:[]};
   const todayBySector={}; (td.by_sector||[]).forEach(r=>{ todayBySector[r.sector]=r; });
@@ -8682,23 +8854,26 @@ function renderTvPage2(R,ctx){
     <div class="tvKingdomStat"><b>${fmt(td.kingdom.istisna||0)}</b><span>استصناع بتاريخ اليوم — المملكة</span><small>${bySec("istisna")}</small></div>
     <div class="tvKingdomStat"><b>${fmt(td.kingdom.contracts||0)}</b><span>عقود بتاريخ اليوم — المملكة</span><small>${bySec("contracts")}</small></div>`;
 
-  $("tvSectorTitle").innerHTML=`العقود حسب المنطقة — ${MNAMES[String(lastM).padStart(2,"0")]} ${lastMY} <small>الشهر الماضي كاملاً · شقة / فيلا / تاون هاوس</small>`;
+  $("tvSectorTitle").innerHTML=`العقود حسب المنطقة — ${MNAMES[String(lastM).padStart(2,"0")]} ${lastMY} <small>الشهر الماضي كاملاً · الإجمالي والمنحنى اليومي وتفصيل شقة / فيلا / تاون هاوس</small>`;
   const rows=(sectorData&&sectorData.ok)?(sectorData.rows||[]):[];
-  $("tvSectorSales").innerHTML=TV_SECTORS.map(sec=>{
+  const dim=new Date(lastMY,lastM,0).getDate();
+  const charts=[];
+  $("tvSectorSales").innerHTML=TV_SECTORS.map((sec,si)=>{
     const secRows=rows.filter(r=>r.sector===sec);
     const total=secRows.reduce((s,r)=>s+Number(r.total_cnt),0);
     const dayMap={};
     secRows.forEach(r=>(r.daily||[]).forEach(d=>{ dayMap[d.day]=(dayMap[d.day]||0)+d.cnt; }));
-    const dim=new Date(lastMY,lastM,0).getDate();
     const daily=Array.from({length:dim},(_,i)=>dayMap[i+1]||0);
-    const dmax=Math.max(1,...daily);
-    const peakDay=daily.indexOf(dmax)+1;
+    const dmax=Math.max(0,...daily), peakDay=daily.indexOf(dmax)+1;
+    charts.push([si,daily]);
     const byType=TV_TYPES.map(t=>{ const r=secRows.find(x=>x.unit_type===t); return `<div>${t}: <b>${fmt(r?Number(r.total_cnt):0)}</b></div>`; }).join("");
-    return `<div class="tvSectorCol"><div class="tvSectorName">${sec} <small style="font-size:13px;color:#767368;font-weight:500">${total?`أعلى يوم: ${peakDay} (${fmt(dmax)})`:""}</small></div><div class="tvSectorBig">${fmt(total)} عقد</div><div class="tvSectorSub">${byType}</div></div>`;
+    return `<div class="tvSectorCol"><div class="tvSectorName">${sec}<small>${dmax?`أعلى يوم: ${peakDay} (${fmt(dmax)})`:""}</small></div>
+      <div class="tvSectorBig">${fmt(total)} عقد</div>
+      <div class="tvChart" id="tvSecChart${si}" style="min-height:90px"></div>
+      <div class="tvSectorSub">${byType}</div></div>`;
   }).join("");
+  charts.forEach(([si,daily])=>tvDrawChart($("tvSecChart"+si), daily.map((_,i)=>String(i+1)), [{values:daily,color:"#C97F2E",area:true,width:2.5,valFont:11}], {labelEvery:5,xFont:11,padX:12,empty:"لا عقود"}));
 
-  /* السوق (منصة سهيل) على مستوى منطقة/مدينة — تُرفَّع للقطاع بمتوسط مرجَّح بعدد الصفقات عبر
-     MARKET_REGION_SECTOR (تصنيف جغرافي تقديري: الرياض=الأوسط، مكة/المدينة/تبوك=الغربي، الشرقية=الشرقي) */
   const marketBySector={};
   marketRows.forEach(r=>{
     const sec=MARKET_REGION_SECTOR[r.region]; if(!sec) return;
@@ -8732,6 +8907,7 @@ function startTvMode(){
   tvStartRotation();
   loadTvDashboard();
   setInterval(loadTvDashboard,TV_REFRESH_MS);
+  let rz=null; window.addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(()=>{ tvRedrawCharts($("tvPage"+tvPage)); if(tvPage===1) tvSetupLeadScroll(); },200); });
   document.addEventListener("keydown",e=>{
     if(e.key==="ArrowLeft"||e.key==="ArrowRight"){ tvPinnedPage=tvPage===1?2:1; tvStartRotation(); }
     else if(e.key==="r"||e.key==="R") loadTvDashboard();
