@@ -1472,7 +1472,9 @@ table.prods tr:last-child td{border:none}
 #lockPwCancel{width:100%;margin-top:9px;background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:11px;font-size:13px}
 
 /* ===== TV board (?tv=1) — شاشة بورصة حيّة، بلا تسجيل دخول، فاتحة دائماً، خط كبير لقراءة من بُعد ===== */
-#tvView{display:none;position:fixed;inset:0;z-index:4000;background:#F4F1E9;color:#0B4332;overflow:hidden;padding:14px 22px 8px;flex-direction:column;box-sizing:border-box;font-variant-numeric:tabular-nums}
+/* لوحة ثابتة 1920×1080 تُكبَّر/تُصغَّر لتملأ أي شاشة (تلفزيون 1080p أو 4K، لابتوب...) فيبقى التصميم متطابقاً */
+html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
+#tvView{display:none;position:fixed;top:0;left:0;width:1920px;height:1080px;transform-origin:0 0;z-index:4000;background:#F4F1E9;color:#0B4332;overflow:hidden;padding:14px 22px 8px;flex-direction:column;box-sizing:border-box;font-variant-numeric:tabular-nums}
 #tvView.on{display:flex}
 #tvView *{box-sizing:border-box}
 .tvHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex:none;gap:16px}
@@ -1503,9 +1505,10 @@ table.prods tr:last-child td{border:none}
 .tvGauge{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:8px 12px 10px;display:flex;flex-direction:column;align-items:center;box-shadow:0 2px 10px rgba(11,67,50,.05);min-width:0;position:relative}
 .tvGauge .gName{font-size:20px;font-weight:800;color:#C97F2E;font-family:'Noto Kufi Arabic',sans-serif;align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:6px;white-space:nowrap}
 .tvGauge .gName small{font-size:13px;font-weight:600;color:#767368;font-family:inherit}
-.tvGauge svg{width:100%;max-width:196px;height:auto;display:block;margin-top:-4px}
-.tvGauge .gPct{font-size:38px;font-weight:800;line-height:1;margin-top:0}
-.tvGauge .gSub{font-size:16px;color:#5e5a4f;margin-top:3px;font-weight:600;text-align:center;white-space:nowrap}
+.tvGauge svg{width:100%;max-width:168px;height:auto;display:block;margin-top:-4px}
+.tvGauge .gPct{font-size:36px;font-weight:800;line-height:1;margin-top:0;white-space:nowrap;text-align:center}
+.tvGauge .gPct small{font-size:14px;font-weight:700;color:#767368;margin-inline-start:6px}
+.tvGauge .gSub{font-size:14px;color:#5e5a4f;margin-top:3px;font-weight:600;text-align:center;white-space:nowrap}
 .tvGauge .gNeed{font-size:14px;color:#5e5a4f;margin-top:4px;font-weight:600;white-space:nowrap}
 .tvGauge .gNeed b{color:#0B4332;font-weight:800}
 .tvGauge .gSrc{font-size:11.5px;color:#9c9484;margin-top:2px;white-space:nowrap}
@@ -1513,24 +1516,24 @@ table.prods tr:last-child td{border:none}
 .tvStatus{display:inline-block;font-size:14px;font-weight:800;padding:2px 11px;border-radius:99px;margin-top:5px;white-space:nowrap}
 .tvStatus.good{background:#E1F5EC;color:#007a54}.tvStatus.warn{background:#FBEFD9;color:#9a5c12}.tvStatus.bad{background:#FBE5DC;color:#C2491E}.tvStatus.none{background:#EEEAE0;color:#767368}
 .tvBody{display:grid;grid-template-columns:1fr 1.45fr;gap:10px;flex:1;min-height:0}
-.tvKpis{display:flex;flex-direction:column;gap:8px;min-height:0}
+.tvKpis{display:flex;flex-direction:column;gap:6px;min-height:0}
 .tvKpis .tvTile.main{flex:1;justify-content:center}
 .tvCharts{display:grid;grid-template-rows:1fr 1fr .85fr;gap:10px;min-height:0}
 .tvTile{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:10px 16px;box-shadow:0 2px 10px rgba(11,67,50,.05);display:flex;flex-direction:column;min-width:0;min-height:0}
 .tvTile .lbl{font-size:19px;font-weight:800;color:#5e5a4f;display:flex;align-items:center;gap:8px;flex-wrap:wrap;white-space:nowrap}
 .tvTile .num{font-size:44px;font-weight:800;line-height:1.05;color:#0B4332;letter-spacing:-1px}
-.tvTile.main .num{color:#009C6D;font-size:72px}
+.tvTile.main .num{color:#009C6D;font-size:60px}
 .tvTile .sub{font-size:13.5px;color:#767368;line-height:1.45;margin-top:2px}
 .tvTile .sub b{color:#0B4332}
 .tvKpiPair{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:none}
 .tvDelta{display:inline-flex;align-items:center;gap:5px;font-size:19px;font-weight:800;padding:2px 11px;border-radius:99px;white-space:nowrap}
 .tvDelta.up{background:#E1F5EC;color:#007a54}.tvDelta.down{background:#FBE5DC;color:#C2491E}.tvDelta.flat{background:#EEEAE0;color:#767368}
-.tvScope{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:7px 14px;box-shadow:0 2px 10px rgba(11,67,50,.05);flex:none;display:flex;flex-direction:column;justify-content:center}
+.tvScope{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:4px 14px;box-shadow:0 2px 10px rgba(11,67,50,.05);flex:none;display:flex;flex-direction:column;justify-content:center}
 .tvScopeTop{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 .tvScope .name{font-size:24px;font-weight:800;color:#C97F2E;font-family:'Noto Kufi Arabic',sans-serif;min-width:118px}
 .tvScope .v{font-size:32px;font-weight:800;color:#0B4332;line-height:1}
 .tvScope .k{font-size:14px;color:#767368;font-weight:600}
-.tvMix{display:flex;height:10px;border-radius:99px;overflow:hidden;background:#EEEAE0;margin-top:5px}
+.tvMix{display:flex;height:9px;border-radius:99px;overflow:hidden;background:#EEEAE0;margin-top:3px}
 .tvMix i{display:block;height:100%}
 .tvMixLbl{display:flex;gap:12px;font-size:12.5px;color:#5e5a4f;flex-wrap:wrap;margin-top:3px}
 .tvMixLbl b{color:#0B4332}
@@ -1612,7 +1615,6 @@ table.prods tr:last-child td{border:none}
 .tvUpMsg.ok{color:#007a54;font-weight:800;font-size:17px}
 .tvUpGo{background:#009C6D;color:#fff;border:none;border-radius:14px;padding:14px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit}
 .tvUpGo:disabled{opacity:.45;cursor:default}
-@media(max-width:1300px){#tvPage1.on{grid-template-columns:1fr;overflow:auto}.tvGauges{grid-template-columns:repeat(2,1fr)}.tvBody{grid-template-columns:1fr}.tvCharts{grid-template-rows:240px 240px 200px}.tvSide{grid-template-rows:420px 600px}.tvSectorRow{grid-template-columns:1fr}.tvTile.main .num{font-size:60px}}
 
 /* print-only report header/footer — invisible on screen */
 #printHead{display:none}
@@ -8626,42 +8628,40 @@ function tvRedrawCharts(root){
 }
 
 /* ---------- عدّاد المستهدف (مثل عدّاد السيارة) ----------
-   الحلقة الخارجية الرفيعة تُظهر مناطق الأداء نسبةً لوتيرة الشهر حتى اليوم: أحمر تحت 85% من
-   الوتيرة، برتقالي حتى الوتيرة، أخضر فوقها. الشَّرطة الداكنة = المتوقع حتى اليوم. */
-function tvPaceStatus(pct,expected){ if(pct==null) return "none"; if(pct>=100||pct>=expected) return "good"; if(pct>=expected*0.85) return "warn"; return "bad"; }
-function tvGaugeSvg(pct,pace,status){
+   الرقم الرئيسي = الإنجاز مقابل المستهدف حتى اليوم (نفس مقياس عرض «الإنجاز مقابل مستهدف الأرباع»):
+   100% = على المسار تماماً. مقياس العدّاد 0–120%، والحلقة الخارجية: أحمر تحت 85%، برتقالي حتى
+   100%، أخضر فوقها. الشَّرطة الداكنة عند 100% (المستهدف حتى اليوم). */
+function tvPaceStatus(pct){ if(pct==null) return "none"; if(pct>=100) return "good"; if(pct>=85) return "warn"; return "bad"; }
+const TV_GAUGE_MAX=120;
+function tvGaugeSvg(pct,status,hasTarget){
   const W=240,H=138,cx=120,cy=118,r=92,sw=20;
   const col={good:"#009C6D",warn:"#D4912F",bad:"#D9532A",none:"#B9B1A0"}[status];
   const P=(f,rr)=>{ const a=Math.PI*(1-f); return [+(cx+rr*Math.cos(a)).toFixed(1), +(cy-rr*Math.sin(a)).toFixed(1)]; };
   const arc=(f0,f1,color,w,rr,cap)=>{ if(f1-f0<0.002) return ""; const [x0,y0]=P(f0,rr),[x1,y1]=P(f1,rr); return `<path d="M${x0},${y0} A${rr},${rr} 0 0 1 ${x1},${y1}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="${cap||"butt"}"/>`; };
-  const f=Math.max(0,Math.min(1,(pct||0)/100));
+  const sc=v=>Math.max(0,Math.min(1,v/TV_GAUGE_MAX));
+  const f=sc(pct||0), t85=sc(85), t100=sc(100);
   let s=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  if(pace!=null){
-    const p=Math.max(0,Math.min(1,pace/100));
-    s+=arc(0,p*0.85,"#EDA58C",6,r+17)+arc(p*0.85,p,"#EBC47E",6,r+17)+arc(p,1,"#7FD1AC",6,r+17);
-  }
+  if(hasTarget) s+=arc(0,t85,"#EDA58C",6,r+17)+arc(t85,t100,"#EBC47E",6,r+17)+arc(t100,1,"#7FD1AC",6,r+17);
   s+=arc(0,1,"#EEEAE0",sw,r,"round");
   if(pct) s+=arc(0,f,col,sw,r,"round");
-  if(pace!=null){
-    const p=Math.max(0,Math.min(1,pace/100)); const [ax,ay]=P(p,r-sw/2-4),[bx,by]=P(p,r+sw/2+20);
-    s+=`<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="#0B4332" stroke-width="3"/>`;
-  }
+  if(hasTarget){ const [ax,ay]=P(t100,r-sw/2-4),[bx,by]=P(t100,r+sw/2+20); s+=`<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="#0B4332" stroke-width="3"/>`; }
   const [nx,ny]=P(f,r-26);
   s+=`<line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="#0B4332" stroke-width="5" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="10" fill="#0B4332"/><circle cx="${cx}" cy="${cy}" r="4" fill="#fff"/>`;
-  s+=`<text x="${cx-r}" y="${H-1}" text-anchor="middle" font-size="12" fill="#767368">0</text><text x="${cx+r}" y="${H-1}" text-anchor="middle" font-size="12" fill="#767368">100%</text>`;
+  s+=`<text x="${cx-r}" y="${H-1}" text-anchor="middle" font-size="12" fill="#767368">0</text><text x="${cx+r}" y="${H-1}" text-anchor="middle" font-size="12" fill="#767368">${TV_GAUGE_MAX}%</text>`;
   return s+`</svg>`;
 }
 function tvGaugeHtml(name,prog,srcNote){
   const st=prog.status;
-  const stTxt={good:prog.pct>=100?"حقّق المستهدف ✓":"على المسار ✓",warn:"قريب من المسار",bad:"متأخر",none:"لا مستهدف مسجّل"}[st];
+  const stTxt={good:prog.yearPct>=100?"حقّق مستهدف السنة ✓":"على المسار ✓",warn:"قريب من المسار",bad:"متأخر عن المسار",none:"لا مستهدف مسجّل"}[st];
   const col={good:"#009C6D",warn:"#B87516",bad:"#C2491E",none:"#767368"}[st];
   return `<div class="tvGauge">
     <div class="gName">${name}</div>
-    ${tvGaugeSvg(prog.pct,prog.tgt?prog.expected:null,st)}
-    <div class="gPct" style="color:${col}">${prog.pct!=null?prog.pct+"%":"—"}</div>
-    <div class="gSub">${prog.tgt?`<b>${fmt(prog.mtd)}</b> / ${fmt(prog.tgt)} ${prog.unit||"عقد"}`:`<b>${fmt(prog.mtd)}</b> ${prog.unit||"عقد"} ${prog.periodLbl||"هذا الشهر"}`}</div>
-    <span class="tvStatus ${st}">${stTxt}${prog.tgt?` · المتوقع ${prog.expected}%`:""}</span>
-    ${prog.tgt&&prog.pct<100&&prog.need!=null?`<div class="gNeed">المطلوب ${prog.needLbl||"يومياً"} <b>${fmt(prog.need)}</b></div>`:""}
+    ${tvGaugeSvg(prog.pct,st,!!prog.tgt)}
+    <div class="gPct" style="color:${col}">${prog.pct!=null?prog.pct+"%":"—"}<small>${prog.tgt?"حتى اليوم":""}</small></div>
+    <div class="gSub">${prog.tgt?`<b>${fmt(prog.ytd)}</b> / ${fmt(prog.tgt)} · السنة ${prog.yearPct}%`:`<b>${fmt(prog.ytd)}</b> وحدة منذ بداية السنة`}</div>
+    <span class="tvStatus ${st}">${stTxt}</span>
+    ${prog.qPct!=null?`<div class="gNeed">${prog.qLbl}: <b>${prog.qPct.toFixed(1)}%</b></div>`:""}
+    ${prog.tgt&&prog.yearPct<100&&prog.need!=null?`<div class="gNeed">المطلوب شهرياً <b>${fmt(prog.need)}</b></div>`:""}
     ${srcNote?`<div class="gSrc">${srcNote}</div>`:""}
   </div>`;
 }
@@ -8694,17 +8694,32 @@ function tvSetupLeadScroll(){
   }
 }
 
-/* تقدّم السنة لنطاق معيّن مقابل مستهدف سنوي (dashboard_targets: مذكرات الاستثمار لـNHC، خطة
-   المبيعات مؤقتاً للمطورين). المستهدف بالمذكرات سنوي بلا توزيع شهري، فالوتيرة المتوقعة خطّية:
-   الأيام المنقضية حتى نهاية أمس ÷ أيام السنة. المطلوب = الباقي ÷ الأشهر الباقية مع الشهر الجاري. */
-function tvYearProg(ytd,target,ctx){
+/* تقدّم السنة لنطاق معيّن مقابل مستهدف سنوي (dashboard_targets: نطاق عرض «المستهدف والمحقق حسب
+   مذكرات الاستثمار» لـNHC، خطة المبيعات مؤقتاً للمطورين). المستهدف سنوي، يُوزَّع خطّياً بالتساوي
+   (نفس منطق العرض: مستهدف 3 أرباع = 75% من السنة):
+   • pct     = المحقق منذ بداية السنة ÷ (المستهدف السنوي × الأيام المنقضية حتى نهاية أمس ÷ أيام السنة)
+   • qPct    = المحقق حتى نهاية آخر ربع مكتمل ÷ (المستهدف السنوي × عدد الأرباع المكتملة ÷ 4) — يطابق عمود
+               «الإنجاز مقابل مستهدف الأرباع» بالعرض
+   • yearPct = المحقق ÷ المستهدف السنوي كاملاً
+   rows = صفوف شهرية من get_sales_report (period بصيغة YYYY-MM). */
+function tvYearProg(rows,target,ctx){
   const tgt=Number(target)>0?Number(target):null;
-  const pct=tgt?Math.round(ytd/tgt*100):null;
+  const byM={}; (rows||[]).forEach(r=>{ const m=+String(r.period).split("-")[1]; byM[m]=(byM[m]||0)+Number(r.cnt||0); });
+  const ytd=Object.values(byM).reduce((a,b)=>a+b,0);
   const y0=new Date(ctx.curY,0,1), today=new Date(ctx.curY,ctx.curM-1,ctx.dayOfMonth);
   const daysInYear=Math.round((new Date(ctx.curY+1,0,1)-y0)/864e5);
-  const expected=Math.round(Math.round((today-y0)/864e5)/daysInYear*100);
+  const frac=Math.max(1,Math.round((today-y0)/864e5))/daysInYear;
+  const pct=tgt?Math.round(ytd/(tgt*frac)*100):null;
+  const yearPct=tgt?Math.round(ytd/tgt*100):null;
+  const lq=Math.floor((ctx.curM-1)/3);
+  let qPct=null, qLbl="";
+  if(tgt&&lq>=1){
+    let qAch=0; for(let m=1;m<=lq*3;m++) qAch+=byM[m]||0;
+    qPct=Math.round(qAch/(tgt*lq/4)*1000)/10;
+    qLbl=`حتى نهاية الربع ${["","الأول","الثاني","الثالث"][lq]}`;
+  }
   const need=tgt?Math.ceil(Math.max(0,tgt-ytd)/(12-ctx.curM+1)):null;
-  return {mtd:ytd,tgt,pct,expected,need,needLbl:"شهرياً",unit:"وحدة",periodLbl:`منذ بداية ${ctx.curY}`,status:tvPaceStatus(pct,expected)};
+  return {ytd,tgt,pct,yearPct,qPct,qLbl,need,status:tvPaceStatus(pct)};
 }
 
 async function loadTvDashboard(){
@@ -8770,14 +8785,13 @@ function renderTvPage1(R,ctx){
   const mtdAll = before(R.day)+todayAll;
 
   /* العدّادات: الفعلي منذ بداية السنة (ملف التخصيص) مقابل المستهدف السنوي من dashboard_targets */
-  const sumRows=rows=>(rows||[]).reduce((s,r)=>s+Number(r.cnt||0),0);
   const T=(R.targets&&R.targets.ok&&R.targets.scopes)||{};
   const tN=T.nhc||{}, tD=T.dev||{};
-  let gauges=tvGaugeHtml("NHC — المملكة",tvYearProg(sumRows(R.ytd_nhc),tN.total,ctx),`المستهدف: مذكرات الاستثمار${tN.projects?` · ${fmt(tN.projects)} مشروعاً`:""}`);
+  let gauges=tvGaugeHtml("NHC — المملكة",tvYearProg(R.ytd_nhc,tN.total,ctx),`المستهدف: مذكرات الاستثمار${tN.projects?` · ${fmt(tN.projects)} مشروعاً`:""}`);
   TV_SECTORS.forEach((sec,i)=>{
-    gauges+=tvGaugeHtml(`NHC ${sec}`,tvYearProg(sumRows(R["ytd_nhc_"+i]),(tN.by_sector||{})[sec],ctx),"");
+    gauges+=tvGaugeHtml(`NHC ${sec}`,tvYearProg(R["ytd_nhc_"+i],(tN.by_sector||{})[sec],ctx),"");
   });
-  gauges+=tvGaugeHtml("المطورون",tvYearProg(sumRows(R.ytd_dev),tD.total,ctx),"المستهدف مؤقتاً: خطة المبيعات");
+  gauges+=tvGaugeHtml("المطورون",tvYearProg(R.ytd_dev,tD.total,ctx),"المستهدف مؤقتاً: خطة المبيعات");
   $("tvGauges").innerHTML=gauges;
 
   /* عقود اليوم */
@@ -8786,7 +8800,7 @@ function renderTvPage1(R,ctx){
     $("tvKpiContracts").innerHTML=`
       <div class="lbl">عقود اليوم — المملكة ${tvDelta(dPrev)}${singlePull?"":`<small style="font-size:14px;font-weight:600;color:#767368">منذ آخر سحب</small>`}</div>
       <div class="num">${fmt(A.contracts||0)}</div>
-      <div class="sub">منذ أول سحب (${tvTime(live.first_at)}): <b>${dFirst>0?"+":""}${fmt(dFirst)}</b> · آخر سحب <b>${tvTime(live.latest_at)}</b>${liveToday?"":` · <b style="color:#C2491E">آخر سحب ليس من اليوم</b>`} · المصدر: داشبورد NHC</div>`;
+      <div class="sub">منذ الصباح <b>${dFirst>0?"+":""}${fmt(dFirst)}</b> · آخر سحب <b>${tvTime(live.latest_at)}</b>${liveToday?"":` · <b style="color:#C2491E">ليس من اليوم</b>`}</div>`;
     const bPrev=Ap?(A.bookings||0)-(Ap.bookings||0):null, bFirst=(A.bookings||0)-(Af.bookings||0);
     $("tvKpiBookings").innerHTML=`
       <div class="lbl">حجوزات قائمة ${tvDelta(bPrev)}</div>
@@ -8944,12 +8958,18 @@ function renderTvPage2(R,ctx){
   }).join("");
 }
 
+function tvFit(){
+  const sc=Math.min(innerWidth/1920, innerHeight/1080);
+  $("tvView").style.transform=`translate(${Math.max(0,(innerWidth-1920*sc)/2)}px,${Math.max(0,(innerHeight-1080*sc)/2)}px) scale(${sc})`;
+}
 function startTvMode(){
   splashDone=true;
   $("splash").style.display="none";
   $("lock").style.display="none";
   $("app").style.display="none";
   $("tvView").classList.add("on");
+  document.documentElement.classList.add("tvMode");
+  tvFit(); window.addEventListener("resize",tvFit);
   const pp=+tvParam('page'); tvPinnedPage=(pp===1||pp===2)?pp:null;
   tvTickClock(); setInterval(tvTickClock,15000);
   tvStartRotation();
