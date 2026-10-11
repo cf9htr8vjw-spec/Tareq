@@ -8772,7 +8772,7 @@ function renderTvPage1(R,ctx){
   const sumRows=rows=>(rows||[]).reduce((s,r)=>s+Number(r.cnt||0),0);
   const T=(R.targets&&R.targets.ok&&R.targets.scopes)||{};
   const tN=T.nhc||{}, tD=T.dev||{};
-  let gauges=tvGaugeHtml("NHC — المملكة",tvYearProg(sumRows(R.ytd_nhc),tN.total,ctx),"المستهدف: مذكرات الاستثمار");
+  let gauges=tvGaugeHtml("NHC — المملكة",tvYearProg(sumRows(R.ytd_nhc),tN.total,ctx),`المستهدف: مذكرات الاستثمار${tN.projects?` · ${fmt(tN.projects)} مشروعاً`:""}`);
   TV_SECTORS.forEach((sec,i)=>{
     gauges+=tvGaugeHtml(`NHC ${sec}`,tvYearProg(sumRows(R["ytd_nhc_"+i]),(tN.by_sector||{})[sec],ctx),"");
   });
