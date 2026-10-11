@@ -573,7 +573,10 @@ async function loadTvDashboard(){
   const R={}, errs=[];
   settled.forEach((s,i)=>{ if(s.status==="fulfilled") R[keys[i]]=s.value; else { R[keys[i]]=null; errs.push(keys[i]+": "+((s.reason&&s.reason.message)||s.reason)); } });
 
-  const ctx={curY,curM,lastM,lastMY,monthEndDay,dayOfMonth:now.getDate(),todayStr:tvLocalDate(now)};
+  /* كل النداءات فشلت = لا اتصال بالقاعدة أصلاً (لا مشكلة بيانات): غالباً الملف مفتوح من ذاكرة الجوال
+     (edge://external-file أو content://) فيمنع المتصفح اتصاله بالإنترنت، أو لا يوجد إنترنت */
+  const offline=errs.length===keys.length;
+  const ctx={curY,curM,lastM,lastMY,monthEndDay,dayOfMonth:now.getDate(),todayStr:tvLocalDate(now),offline};
   renderTvPage1(R,ctx);
   renderTvPage2(R,ctx);
   requestAnimationFrame(()=>{ tvRedrawCharts($("tvPage"+tvPage)); if(tvPage===1) tvSetupLeadScroll(); });
@@ -589,6 +592,11 @@ async function loadTvDashboard(){
   $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+(errs.length?` · تعذّر: ${errs[0]}`:"");
 }
 
+function tvOfflineMsg(){
+  return /^https?:$/.test(location.protocol)
+    ? "⚠ تعذّر الاتصال بقاعدة البيانات — تأكد من الإنترنت، والشاشة تعيد المحاولة تلقائياً كل دقيقتين"
+    : "⚠ الشاشة مفتوحة كملف من الجهاز، والمتصفح يمنعها من الاتصال بقاعدة البيانات — افتحها من رابطها (https://…netlify.app)";
+}
 /* ---------- الصفحة ١ ---------- */
 function renderTvPage1(R,ctx){
   const live=R.live;
@@ -632,7 +640,8 @@ function renderTvPage1(R,ctx){
       <div class="num">${fmt(A.projects_with_contracts||0)}</div>
       <div class="sub">NHC <b>${fmt((L.nhc||{}).projects_with_contracts||0)}</b> · المطورون <b>${fmt((L.dev||{}).projects_with_contracts||0)}</b><br>متاح للبيع الآن <b>${fmt(A.available||0)}</b></div>`;
   } else {
-    const msg = !live ? "تعذّر قراءة لقطات داشبورد NHC — شغّل live_board.sql على القاعدة"
+    const msg = ctx.offline ? tvOfflineMsg()
+      : !live ? "تعذّر قراءة لقطات داشبورد NHC — شغّل live_board.sql على القاعدة"
       : "لم يُرفع أي سحب من داشبورد NHC بعد — اضغط «⬆ رفع سحب جديد» أسفل الشاشة";
     $("tvKpiContracts").innerHTML=`<div class="lbl">عقود اليوم — المملكة</div><div class="tvEmpty" style="font-size:17px;padding:8px">${msg}</div>`;
     $("tvKpiBookings").innerHTML=`<div class="lbl">حجوزات قائمة</div><div class="num">—</div>`;
@@ -688,7 +697,7 @@ function renderTvPage1(R,ctx){
       <span class="d">+${fmt(f.dc)}</span>
     </div>`;
   let fh="";
-  if(!hasLive) fh=`<div class="tvFeedNote">بانتظار أول سحب من داشبورد NHC</div>`;
+  if(!hasLive) fh=`<div class="tvFeedNote">${ctx.offline?"لا اتصال بقاعدة البيانات":"بانتظار أول سحب من داشبورد NHC"}</div>`;
   else if(!live.prev_at) fh=`<div class="tvFeedNote">أول سحب اليوم (${tvTime(live.latest_at)}) — الإشعارات تبدأ من السحب الثاني بمقارنته بهذا</div>`;
   else {
     fh=fresh.map(f=>feedRow(f,true)).join("");
@@ -717,7 +726,7 @@ function renderTvPage1(R,ctx){
     const tickerRows = fresh.length ? fresh.map(f=>({name:f.project,d:Number(f.dc),tot:f.contracts,who:f.is_nhc?"NHC":f.developer}))
       : movers.slice(0,14).map(m=>({name:m.project,d:null,tot:m.contracts,who:m.is_nhc?"NHC":m.developer}));
     tickerRows.forEach(t=>items.push(`<span class="tvTapeItem">${t.name} ${t.d!=null?`<span class="up">▲ +${fmt(t.d)}</span>`:""}<small>${fmt(t.tot)} عقد اليوم · ${tvShort(t.who,26)}</small></span>`));
-  } else items.push(`<span class="tvTapeItem"><small>بانتظار أول سحب من داشبورد NHC</small></span>`);
+  } else items.push(`<span class="tvTapeItem"><small>${ctx.offline?"⚠ لا اتصال بقاعدة البيانات — الأرقام لا تظهر":"بانتظار أول سحب من داشبورد NHC"}</small></span>`);
   const tapeHtml=items.join("");
   let rep=tapeHtml; while(rep.length<4000 && items.length) rep+=tapeHtml;
   const tape=$("tvTape"); tape.innerHTML=rep+rep;
