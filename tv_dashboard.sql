@@ -125,6 +125,41 @@ begin
 end;
 $$;
 
+-- ---------- get_today_activity ----------
+-- نشاط اليوم: حجوزات/استصناع/عقود — على مستوى المملكة وتفصيل لكل قطاع.
+-- حجوزات = booking_date اليوم (بصرف النظر عن الحالة الحالية — تاريخ حدث، لا لقطة حالة).
+-- استصناع = نفس تعريف project_istisna_stats الأصلية: حالة "حجز" ولها istisna_date فعلي،
+-- بهذا التاريخ تحديداً اليوم. عقود = status='contracted' وcontract_date اليوم.
+create or replace function get_today_activity()
+returns jsonb
+language sql
+stable
+as $$
+  select jsonb_build_object(
+    'date', current_date,
+    'kingdom', jsonb_build_object(
+      'bookings', (select count(*) from unit_allocation_mirror where booking_date = current_date),
+      'istisna', (select count(*) from unit_allocation_mirror where status='reserved' and istisna_date = current_date),
+      'contracts', (select count(*) from unit_allocation_mirror where status='contracted' and contract_date = current_date)
+    ),
+    'by_sector', coalesce((
+      select jsonb_agg(jsonb_build_object('sector', sector, 'bookings', bookings, 'istisna', istisna, 'contracts', contracts) order by sector)
+      from (
+        select coalesce(sector,'غير محدد') as sector,
+          count(*) filter (where booking_date = current_date) as bookings,
+          count(*) filter (where status='reserved' and istisna_date = current_date) as istisna,
+          count(*) filter (where status='contracted' and contract_date = current_date) as contracts
+        from unit_allocation_mirror
+        where booking_date = current_date
+           or (status='reserved' and istisna_date = current_date)
+           or (status='contracted' and contract_date = current_date)
+        group by coalesce(sector,'غير محدد')
+      ) s
+    ), '[]'::jsonb),
+    'ok', true
+  );
+$$;
+
 -- ---------- get_sector_avail_pricing ----------
 -- متوسط سعر الوحدات المتاحة الآن وسعر المتر (sum(price)/sum(unit_size)) لكل قطاع —
 -- نفس أسلوب get_supply_buildings تماماً، على مستوى القطاع بدل المبنى.

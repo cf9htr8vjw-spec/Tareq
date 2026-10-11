@@ -1471,33 +1471,41 @@ table.prods tr:last-child td{border:none}
 #lockPwForm{display:none;width:100%;max-width:290px;margin-top:26px}
 #lockPwCancel{width:100%;margin-top:9px;background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:11px;font-size:13px}
 
-/* ===== TV dashboard (?tv=1) — بلا تسجيل دخول، داكن ثابت دائماً بصرف النظر عن وضع التطبيق العادي ===== */
-#tvView{display:none;position:fixed;inset:0;z-index:4000;background:#070b12;color:#eef3fa;overflow:hidden;padding:26px 34px;flex-direction:column;box-sizing:border-box}
+/* ===== TV dashboard (?tv=1) — بلا تسجيل دخول، فاتح دائماً (وضوح على شاشة تلفزيون) بصرف النظر عن وضع التطبيق العادي ===== */
+#tvView{display:none;position:fixed;inset:0;z-index:4000;background:#FAF7F1;color:#0B4332;overflow:hidden;padding:26px 34px;flex-direction:column;box-sizing:border-box}
 #tvView.on{display:flex}
 .tvHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex:none}
-.tvTitle{font-size:28px;font-weight:800;font-family:'Noto Kufi Arabic',sans-serif;color:#eef3fa}
-.tvTitle b{color:#26a878}
-.tvClock{font-size:20px;font-weight:700;color:#93a0b4;direction:ltr;font-variant-numeric:tabular-nums}
+.tvTitle{font-size:28px;font-weight:800;font-family:'Noto Kufi Arabic',sans-serif;color:#0B4332}
+.tvTitle b{color:#009C6D}
+.tvClock{font-size:20px;font-weight:700;color:#767368;direction:ltr;font-variant-numeric:tabular-nums}
 .tvGrid{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,1fr);gap:16px;flex:1;min-height:0}
-.tvCard{background:#101827;border:1px solid #223049;border-radius:16px;padding:16px 20px;display:flex;flex-direction:column;min-height:0}
+.tvCard{background:#FFFFFF;border:1px solid #E7E1D3;border-radius:16px;padding:16px 20px;display:flex;flex-direction:column;min-height:0;box-shadow:0 2px 10px rgba(11,67,50,.05)}
 .tvCardFull{grid-column:1/-1}
-.tvCardTitle{font-size:13.5px;color:#93a0b4;margin-bottom:6px;font-weight:600}
-.tvBig{font-size:40px;font-weight:800;color:#26a878;line-height:1;margin-bottom:8px;font-variant-numeric:tabular-nums}
-.tvBars{flex:1;display:flex;align-items:flex-end;gap:3px;min-height:50px}
-.tvBars i{flex:1;background:linear-gradient(180deg,#26a878,#15664a);border-radius:3px 3px 0 0;min-height:2px}
+.tvCardTitle{font-size:13.5px;color:#767368;margin-bottom:6px;font-weight:700}
+.tvBig{font-size:40px;font-weight:800;color:#009C6D;line-height:1;margin-bottom:8px;font-variant-numeric:tabular-nums}
+.tvBars{flex:1;display:flex;align-items:flex-end;gap:3px;min-height:60px}
+.tvBarCol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.tvBarVal{font-size:10.5px;font-weight:700;color:#0B4332;margin-bottom:2px;white-space:nowrap}
+.tvBarCol i{width:100%;background:linear-gradient(180deg,#009C6D,#007a54);border-radius:3px 3px 0 0;min-height:2px;display:block}
 .tvSectorRow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;flex:1;min-height:0}
-.tvSectorCol,.tvPriceCol{background:#0c1420;border:1px solid #1c2740;border-radius:12px;padding:13px 15px;min-width:0}
-.tvSectorName{font-size:15px;font-weight:700;color:#c99a5c;margin-bottom:4px}
-.tvSectorBig{font-size:28px;font-weight:800;color:#eef3fa;font-variant-numeric:tabular-nums}
+.tvSectorCol,.tvPriceCol{background:#FAF7F1;border:1px solid #E7E1D3;border-radius:12px;padding:13px 15px;min-width:0}
+.tvSectorName{font-size:15px;font-weight:700;color:#C97F2E;margin-bottom:4px}
+.tvSectorBig{font-size:28px;font-weight:800;color:#0B4332;font-variant-numeric:tabular-nums}
 .tvSectorSpark{display:flex;align-items:flex-end;gap:2px;height:28px;margin:8px 0}
-.tvSectorSpark i{flex:1;background:#2a3b58;border-radius:2px 2px 0 0;min-height:1px}
-.tvSectorSub{display:flex;justify-content:space-between;font-size:12px;color:#93a0b4;margin-top:3px}
-.tvSectorSub b{color:#eef3fa;font-weight:600}
+.tvSectorSpark i{flex:1;background:#D8CFBB;border-radius:2px 2px 0 0;min-height:1px}
+.tvSectorSub{display:flex;justify-content:space-between;font-size:12px;color:#767368;margin-top:3px}
+.tvSectorSub b{color:#0B4332;font-weight:700}
 .tvPriceRow{display:flex;justify-content:space-between;align-items:baseline;margin-top:7px}
-.tvPriceLbl{font-size:11.5px;color:#93a0b4}
-.tvPriceVal{font-size:18px;font-weight:700;color:#eef3fa;font-variant-numeric:tabular-nums}
-.tvPriceVal.mkt{color:#c99a5c}
-.tvFoot{margin-top:12px;text-align:center;font-size:10.5px;color:#5d6b82;flex:none}
+.tvPriceLbl{font-size:11.5px;color:#767368}
+.tvPriceVal{font-size:18px;font-weight:700;color:#0B4332;font-variant-numeric:tabular-nums}
+.tvPriceVal.mkt{color:#C97F2E}
+.tvKingdomRow{display:flex;gap:14px;margin-bottom:12px}
+.tvKingdomStat{flex:1;background:#FAF7F1;border:1px solid #E7E1D3;border-radius:12px;padding:12px 15px;text-align:center}
+.tvKingdomStat b{display:block;font-size:30px;font-weight:800;color:#009C6D;font-variant-numeric:tabular-nums}
+.tvKingdomStat span{font-size:12px;color:#767368;font-weight:600}
+.tvTodayRow{display:flex;justify-content:space-between;font-size:12.5px;color:#767368;margin-top:4px}
+.tvTodayRow b{color:#0B4332;font-weight:700}
+.tvFoot{margin-top:12px;text-align:center;font-size:10.5px;color:#9c9484;flex:none}
 @media(max-width:900px){.tvGrid{grid-template-columns:1fr}.tvSectorRow{grid-template-columns:1fr}}
 
 /* print-only report header/footer — invisible on screen */
@@ -2793,6 +2801,11 @@ table.prods tr:last-child td{border:none}
       <div class="tvBars" id="tvDailyBars"></div>
     </div>
     <div class="tvCard tvCardFull">
+      <div class="tvCardTitle">نشاط اليوم — حجوزات · استصناع · عقود</div>
+      <div class="tvKingdomRow" id="tvTodayKingdom"></div>
+      <div class="tvSectorRow" id="tvTodaySectors"></div>
+    </div>
+    <div class="tvCard tvCardFull">
       <div class="tvCardTitle" id="tvSectorTitle">المبيعات حسب المنطقة</div>
       <div class="tvSectorRow" id="tvSectorSales"></div>
     </div>
@@ -2918,7 +2931,16 @@ const $=id=>document.getElementById(id);
 /* ---------- format ---------- */
 const nf=new Intl.NumberFormat("en-US");
 const fmt=n=>nf.format(Math.round(n));
-const compact=n=> n>=1e6 ? (n/1e6).toFixed(2).replace(/\.?0+$/,"")+" م" : n>=1e3 ? Math.round(n/1e3)+" ألف" : String(Math.round(n));
+/* يتحقق من الناتج بعد التقريب لا من n الخام — رقم مثل 999,700 كان يطبع "1000 ألف"
+   بدل "1 م" لأن التقريب لأقرب ألف يتجاوز حد المليون بعد الشرط، لا قبله */
+const compact=n=>{
+  if(n>=1e6) return (n/1e6).toFixed(2).replace(/\.?0+$/,"")+" م";
+  if(n>=1e3){
+    const k=Math.round(n/1e3);
+    return k>=1000 ? (n/1e6).toFixed(2).replace(/\.?0+$/,"")+" م" : k+" ألف";
+  }
+  return String(Math.round(n));
+};
 const priceLbl=()=> S.seg==="b" ? "سعر الوزارة" : "السعر الكامل";
 
 /* ---------- filtering ---------- */
@@ -8382,28 +8404,29 @@ async function loadTvDashboard(){
   const monthEndDay=new Date(curY,curM,0).getDate();
   const monthEndStr=`${curY}-${String(curM).padStart(2,"0")}-${String(monthEndDay).padStart(2,"0")}`;
 
-  let yearReport=[], dayReport=[], sectorData=null, pricingData=[], marketRows=[];
+  let yearReport=[], dayReport=[], sectorData=null, pricingData=[], marketRows=[], todayData=null;
   try{
-    [yearReport, dayReport, sectorData, pricingData, marketRows] = await Promise.all([
+    [yearReport, dayReport, sectorData, pricingData, marketRows, todayData] = await Promise.all([
       sbCall("get_sales_report",{p_granularity:"month",p_metric:"contract",p_from:"2026-01-01",p_to:"2026-12-31",p_sector:null,p_dev_kind:null}),
       sbCall("get_sales_report",{p_granularity:"day",p_metric:"contract",p_from:monthStart,p_to:monthEndStr,p_sector:null,p_dev_kind:null}),
       sbCall("get_sector_type_sales",{p_year:lastMY,p_month:lastM}),
       sbCall("get_sector_avail_pricing",{}),
       sbSelect("market_price_stats",{select:"*"}),
+      sbCall("get_today_activity",{}),
     ]);
   }catch(e){
     $("tvUpdated").textContent="تعذّر تحميل البيانات: "+(e.message||e)+" — تأكد من تشغيل tv_dashboard.sql على القاعدة";
     return;
   }
 
-  /* لوحة 1: الإجمالي الشهري 2026 */
+  /* لوحة 1: الإجمالي الشهري 2026 — أرقام ظاهرة فوق كل عمود (بلا hover، الشاشة تُعرض على تلفزيون) */
   const yTotal=(yearReport||[]).reduce((s,r)=>s+Number(r.cnt),0);
   $("tvYearTotal").textContent=fmt(yTotal)+" عقد";
   const yMax=Math.max(1,...(yearReport||[]).map(r=>Number(r.cnt)));
   $("tvMonthlyBars").innerHTML=(yearReport||[]).map(r=>{
     const v=Number(r.cnt), h=v?Math.max(4,v/yMax*100):2;
     const lbl=MNAMES[r.period.split("-")[1]]||r.period;
-    return `<i style="height:${h}%" title="${lbl}: ${fmt(v)}"></i>`;
+    return `<div class="tvBarCol" title="${lbl}: ${fmt(v)}"><span class="tvBarVal">${v?fmt(v):""}</span><i style="height:${h}%"></i></div>`;
   }).join("");
 
   /* لوحة 2: اليومي للشهر الحالي */
@@ -8414,7 +8437,24 @@ async function loadTvDashboard(){
   $("tvDailyBars").innerHTML=(dayReport||[]).map(r=>{
     const v=Number(r.cnt), h=v?Math.max(4,v/dMax*100):2;
     const day=r.period.split("-")[2];
-    return `<i style="height:${h}%" title="يوم ${+day}: ${fmt(v)}"></i>`;
+    return `<div class="tvBarCol" title="يوم ${+day}: ${fmt(v)}"><span class="tvBarVal">${v?fmt(v):""}</span><i style="height:${h}%"></i></div>`;
+  }).join("");
+
+  /* لوحة: نشاط اليوم — حجوزات/استصناع/عقود على مستوى المملكة ولكل منطقة */
+  const td=(todayData&&todayData.ok)?todayData:{kingdom:{bookings:0,istisna:0,contracts:0},by_sector:[]};
+  $("tvTodayKingdom").innerHTML=`
+    <div class="tvKingdomStat"><b>${fmt(td.kingdom.bookings||0)}</b><span>حجوزات اليوم — المملكة</span></div>
+    <div class="tvKingdomStat"><b>${fmt(td.kingdom.istisna||0)}</b><span>استصناع اليوم — المملكة</span></div>
+    <div class="tvKingdomStat"><b>${fmt(td.kingdom.contracts||0)}</b><span>عقود اليوم — المملكة</span></div>`;
+  const todayBySector={}; (td.by_sector||[]).forEach(r=>{ todayBySector[r.sector]=r; });
+  $("tvTodaySectors").innerHTML=TV_SECTORS.map(sec=>{
+    const r=todayBySector[sec]||{bookings:0,istisna:0,contracts:0};
+    return `<div class="tvSectorCol">
+      <div class="tvSectorName">${sec}</div>
+      <div class="tvTodayRow"><span>حجوزات اليوم</span><b>${fmt(r.bookings||0)}</b></div>
+      <div class="tvTodayRow"><span>استصناع اليوم</span><b>${fmt(r.istisna||0)}</b></div>
+      <div class="tvTodayRow"><span>عقود اليوم</span><b>${fmt(r.contracts||0)}</b></div>
+    </div>`;
   }).join("");
 
   /* لوحة 3: حسب المنطقة — الشهر الماضي (إجمالي + تفصيل يومي مجمّع + تفصيل حسب النوع) */
