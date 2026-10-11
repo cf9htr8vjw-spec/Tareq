@@ -1491,7 +1491,8 @@ table.prods tr:last-child td{border:none}
 .tvTapeItem{display:inline-flex;align-items:center;gap:12px;padding:0 30px;font-size:27px;font-weight:800;border-inline-end:2px solid rgba(255,255,255,.22)}
 .tvTapeItem small{font-size:18px;font-weight:600;color:#cfe3da}
 .tvTapeItem .up{color:#6BF0B6}.tvTapeItem .down{color:#FFA584}.tvTapeItem .flat{color:#dfe6e2}
-@keyframes tvTape{from{transform:translateX(0)}to{transform:translateX(50%)}}
+/* نسختان متطابقتان من المحتوى: البداية عند -50% تعرض أول النسخة الثانية = أول الأولى، فتدور بلا فراغ */
+@keyframes tvTape{from{transform:translateX(-50%)}to{transform:translateX(0)}}
 .tvPage{display:none;flex:1;min-height:0}
 .tvPage.on{display:flex}
 /* الصفحة ١ — هيكل: (عدادات + مؤشرات + منحنيات) يمين، (إشعارات + مشاريع باعت) يسار */
