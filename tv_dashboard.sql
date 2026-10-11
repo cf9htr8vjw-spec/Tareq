@@ -93,29 +93,33 @@ declare
   v_to date := (make_date(p_year, p_month, 1) + interval '1 month' - interval '1 day')::date;
   v_result jsonb;
 begin
-  select coalesce(jsonb_agg(t order by t->>'sector', t->>'unit_type'), '[]'::jsonb)
+  /* نسخة مُعاد هيكلتها — النسخة الأولى كانت subquery مرتبط (correlated) بداخله GROUP BY
+     خاص به يرجع لعمود من الاستعلام الخارجي، فيرفضها Postgres بخطأ "subquery uses
+     ungrouped column ... from outer query". الحل: تجميع واحد فقط (base) بمفتاح
+     القطاع+النوع+اليوم، ثم تجميع ثانٍ (grouped) فوقه — بلا أي ارتباط متداخل إطلاقاً. */
+  with base as (
+    select
+      coalesce(sector,'غير محدد') as sector,
+      coalesce(unit_type,'غير محدد') as unit_type,
+      contract_date,
+      count(*) as dcnt
+    from unit_allocation_mirror
+    where status='contracted' and contract_date between v_from and v_to
+    group by coalesce(sector,'غير محدد'), coalesce(unit_type,'غير محدد'), contract_date
+  ),
+  grouped as (
+    select
+      sector, unit_type,
+      sum(dcnt) as total_cnt,
+      jsonb_agg(jsonb_build_object('day', extract(day from contract_date)::int, 'cnt', dcnt) order by contract_date) as daily
+    from base
+    group by sector, unit_type
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'sector', sector, 'unit_type', unit_type, 'total_cnt', total_cnt, 'daily', daily
+  ) order by sector, unit_type), '[]'::jsonb)
   into v_result
-  from (
-    select jsonb_build_object(
-      'sector', coalesce(u.sector,'غير محدد'),
-      'unit_type', coalesce(u.unit_type,'غير محدد'),
-      'total_cnt', count(*),
-      'daily', (
-        select coalesce(jsonb_agg(jsonb_build_object('day', extract(day from u2.contract_date)::int, 'cnt', dcnt) order by extract(day from u2.contract_date)), '[]'::jsonb)
-        from (
-          select contract_date, count(*) as dcnt
-          from unit_allocation_mirror u2
-          where u2.status='contracted' and u2.contract_date between v_from and v_to
-            and coalesce(u2.sector,'غير محدد') = coalesce(u.sector,'غير محدد')
-            and coalesce(u2.unit_type,'غير محدد') = coalesce(u.unit_type,'غير محدد')
-          group by contract_date
-        ) u2(contract_date, dcnt)
-      )
-    ) as t
-    from unit_allocation_mirror u
-    where u.status='contracted' and u.contract_date between v_from and v_to
-    group by coalesce(u.sector,'غير محدد'), coalesce(u.unit_type,'غير محدد')
-  ) t;
+  from grouped;
 
   return jsonb_build_object('ok', true, 'from', v_from, 'to', v_to, 'rows', v_result);
 end;
