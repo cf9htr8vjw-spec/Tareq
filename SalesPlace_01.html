@@ -8958,18 +8958,35 @@ function renderTvPage2(R,ctx){
   }).join("");
 }
 
+/* جوال ممسوك بالطول (والقفل التلقائي للدوران شغّال غالباً): اللوحة تُدار 90° لتملأ الشاشة، فيُقلب
+   الجوال بالعرض ويُقرأ. الاتجاه من screen.orientation لا من أبعاد النافذة — لوحة المفاتيح عند كتابة
+   كلمة المرور تقصّر النافذة فتبدو "عرضية" وتقلب اللوحة وهو يكتب. ولا إعادة ضبط أثناء الكتابة أصلاً. */
+function tvPhonePortrait(){
+  if(!matchMedia("(pointer:coarse)").matches) return false;
+  if(screen.orientation&&screen.orientation.type) return screen.orientation.type.indexOf("portrait")===0;
+  if(typeof window.orientation==="number") return window.orientation%180===0;
+  return innerHeight>innerWidth;
+}
 function tvFit(){
+  const a=document.activeElement;
+  if(a&&/input/i.test(a.tagName)&&$("tvUpModal").classList.contains("on")) return;
+  const v=$("tvView");
+  if(tvPhonePortrait()){
+    const sc=Math.min(innerWidth/1080, innerHeight/1920);
+    v.style.transform=`translate(${1080*sc+Math.max(0,(innerWidth-1080*sc)/2)}px,${Math.max(0,(innerHeight-1920*sc)/2)}px) rotate(90deg) scale(${sc})`;
+    return;
+  }
   const sc=Math.min(innerWidth/1920, innerHeight/1080);
-  $("tvView").style.transform=`translate(${Math.max(0,(innerWidth-1920*sc)/2)}px,${Math.max(0,(innerHeight-1080*sc)/2)}px) scale(${sc})`;
+  v.style.transform=`translate(${Math.max(0,(innerWidth-1920*sc)/2)}px,${Math.max(0,(innerHeight-1080*sc)/2)}px) scale(${sc})`;
 }
 function startTvMode(){
   splashDone=true;
-  $("splash").style.display="none";
-  $("lock").style.display="none";
-  $("app").style.display="none";
+  /* null-safe: نفس الكود يُستخرج لملف الشاشة المستقل (NHC_Live_Board.html) الذي لا يحوي هذه العناصر */
+  ["splash","lock","app"].forEach(id=>{ const e=$(id); if(e) e.style.display="none"; });
   $("tvView").classList.add("on");
   document.documentElement.classList.add("tvMode");
   tvFit(); window.addEventListener("resize",tvFit);
+  if(screen.orientation&&screen.orientation.addEventListener) screen.orientation.addEventListener("change",()=>setTimeout(tvFit,150));
   const pp=+tvParam('page'); tvPinnedPage=(pp===1||pp===2)?pp:null;
   tvTickClock(); setInterval(tvTickClock,15000);
   tvStartRotation();
@@ -9160,7 +9177,10 @@ function tvInitUpload(){
   ["tvUpUser","tvUpPass"].forEach(id=>$(id).addEventListener("input",tvUpUpdateGo));
   $("tvUpPass").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!$("tvUpGo").disabled) tvUpGo(); });
   $("tvUpGo").onclick=tvUpGo;
-  view.addEventListener("mousemove",()=>{ view.classList.add("mouse"); clearTimeout(tvUpMouseT); tvUpMouseT=setTimeout(()=>view.classList.remove("mouse"),5000); });
+  /* لمسة على الجوال/التابلت تُظهر الزر مثل تحريك الفأرة */
+  const showBtn=()=>{ view.classList.add("mouse"); clearTimeout(tvUpMouseT); tvUpMouseT=setTimeout(()=>view.classList.remove("mouse"),5000); };
+  view.addEventListener("mousemove",showBtn);
+  view.addEventListener("touchstart",showBtn,{passive:true});
   view.addEventListener("dragover",e=>{ e.preventDefault(); if(!$("tvUpModal").classList.contains("on")) tvUpOpen(); $("tvUpDrop").classList.add("over"); });
   view.addEventListener("dragleave",e=>{ if(e.target===$("tvUpDrop")) $("tvUpDrop").classList.remove("over"); });
   view.addEventListener("drop",e=>{ e.preventDefault(); $("tvUpDrop").classList.remove("over"); const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) tvUpOpen(f); });
