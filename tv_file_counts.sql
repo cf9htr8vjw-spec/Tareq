@@ -8,11 +8,41 @@
 --
 -- شغّل هذا الملف كاملاً مرة واحدة في Supabase SQL editor، ثم ارفع ملف التخصيص من جديد
 -- (حتى تتعبأ الأعمدة الجديدة). قبل إعادة الرفع: الشاشة تستخدم القطاع القديم احتياطاً.
+-- آمن لإعادة التشغيل (كل الأوامر if not exists / create or replace).
+-- الإصدار 2: توحيد تهجئة القطاع (tv_region)، وفهارس، وget_live_board بلا تجاوز مهلة التنفيذ.
 -- ============================================================
 
 alter table unit_allocation_mirror add column if not exists file_sector text;
 alter table unit_allocation_mirror add column if not exists file_dev_kind text;
 alter table unit_allocation_mirror add column if not exists file_project_name text;
+
+-- فهارس لقراءات الشاشة السريعة (ربط مشروع/مدينة بقطاعها، وعقود السنة) — بلا تغيير بأي بيانات
+create index if not exists uam_file_project_idx on unit_allocation_mirror(file_project_name);
+create index if not exists uam_city_idx on unit_allocation_mirror(city);
+create index if not exists uam_contract_date_idx on unit_allocation_mirror(contract_date) where contract_date is not null;
+
+-- ---------- القطاع الموحّد للشاشة ----------
+-- قطاع ملف التخصيص بأي تهجئة (الأوسط/الاوسط/الوسطى/قطاع الأوسط/Central...) يُوحَّد لأحد القطاعات
+-- الثلاثة؛ قيمة لا تُعرف بالملف (فارغة أو اسم آخر) → قطاع التطبيق لنفس الوحدة → وإلا "غير محدد".
+create or replace function tv_norm_sector(p text)
+returns text
+language sql
+immutable
+as $$
+  select case
+    when p is null then null
+    when p like '%وسط%' or lower(p) like '%central%' then 'الأوسط'
+    when p like '%غرب%' or lower(p) like '%west%' then 'الغربي'
+    when p like '%شرق%' or lower(p) like '%east%' then 'الشرقي'
+    else null end
+$$;
+create or replace function tv_region(p_file text, p_app text)
+returns text
+language sql
+immutable
+as $$
+  select coalesce(tv_norm_sector(p_file), tv_norm_sector(p_app), 'غير محدد')
+$$;
 
 -- ---------- admin_upsert_allocation_mirror — نفس تعريف supply_building_details.sql + أعمدة الملف الثلاثة فقط ----------
 CREATE OR REPLACE FUNCTION public.admin_upsert_allocation_mirror(p_admin text, p_pass text, p_rows jsonb)
@@ -65,9 +95,9 @@ security definer
 set search_path to 'public'
 as $$
   with m as (
-    select coalesce(file_sector, sector, 'غير محدد') as sec,
+    select tv_region(file_sector, sector) as sec,
            coalesce(file_dev_kind, dev_kind, 'other') as kind,
-           contract_date
+           contract_date, file_sector
     from unit_allocation_mirror
     where contract_date >= make_date(p_year, 1, 1) and contract_date < make_date(p_year + 1, 1, 1)
   )
@@ -84,6 +114,13 @@ as $$
     ), '[]'::jsonb),
     -- كم صف عليه قطاع الملف — صفر يعني أن ملف التخصيص لم يُرفع بعد تشغيل هذا الملف
     'file_sector_rows', (select count(*) from unit_allocation_mirror where file_sector is not null),
+    -- قيم عمود القطاع بالملف التي لم تُعرف (عقود السنة) — تظهر بأسفل الشاشة للتشخيص
+    'unmapped', coalesce((
+      select jsonb_agg(jsonb_build_object('v', v, 'cnt', c) order by c desc)
+      from (select file_sector as v, count(*) as c from m
+            where file_sector is not null and tv_norm_sector(file_sector) is null
+            group by 1 order by 2 desc limit 8) u
+    ), '[]'::jsonb),
     'rows', (select count(*) from unit_allocation_mirror)
   );
 $$;
@@ -110,13 +147,13 @@ begin
      القطاع+النوع+اليوم، ثم تجميع ثانٍ (grouped) فوقه — بلا أي ارتباط متداخل إطلاقاً. */
   with base as (
     select
-      coalesce(file_sector,sector,'غير محدد') as sector,
+      tv_region(file_sector, sector) as sector,
       coalesce(unit_type,'غير محدد') as unit_type,
       contract_date,
       count(*) as dcnt
     from unit_allocation_mirror
     where status='contracted' and contract_date between v_from and v_to
-    group by coalesce(file_sector,sector,'غير محدد'), coalesce(unit_type,'غير محدد'), contract_date
+    group by tv_region(file_sector, sector), coalesce(unit_type,'غير محدد'), contract_date
   ),
   grouped as (
     select
@@ -156,7 +193,7 @@ as $$
     'by_sector', coalesce((
       select jsonb_agg(jsonb_build_object('sector', sector, 'bookings', bookings, 'istisna', istisna, 'contracts', contracts) order by sector)
       from (
-        select coalesce(file_sector,sector,'غير محدد') as sector,
+        select tv_region(file_sector, sector) as sector,
           count(*) filter (where booking_date = current_date) as bookings,
           count(*) filter (where status='reserved' and istisna_date = current_date) as istisna,
           count(*) filter (where status='contracted' and contract_date = current_date) as contracts
@@ -164,7 +201,7 @@ as $$
         where booking_date = current_date
            or (status='reserved' and istisna_date = current_date)
            or (status='contracted' and contract_date = current_date)
-        group by coalesce(file_sector,sector,'غير محدد')
+        group by tv_region(file_sector, sector)
       ) s
     ), '[]'::jsonb),
     'ok', true
@@ -183,7 +220,7 @@ as $$
     'sector', sector, 'avail_count', avail_count, 'avg_price', avg_price, 'avg_price_sqm', avg_price_sqm
   ) order by sector), '[]'::jsonb)
   from (
-    select coalesce(file_sector,sector,'غير محدد') as sector,
+    select tv_region(file_sector, sector) as sector,
            count(*) as avail_count,
            round(avg(price)) as avg_price,
            case when sum(unit_size) filter (where unit_size>0)>0
@@ -191,7 +228,7 @@ as $$
                 else null end as avg_price_sqm
     from unit_allocation_mirror
     where status='avail'
-    group by coalesce(file_sector,sector,'غير محدد')
+    group by tv_region(file_sector, sector)
   ) t;
 $$;
 
@@ -212,7 +249,7 @@ set search_path to 'public'
 as $$
 declare
   v_latest timestamptz; v_prev timestamptz; v_first timestamptz; v_day date;
-  v_timeline jsonb; v_movers jsonb; v_feed jsonb; v_psec jsonb; v_csec jsonb;
+  v_timeline jsonb; v_movers jsonb; v_feed jsonb; v_psec jsonb;
 begin
   select max(snapshot_at) into v_latest from live_project_snapshots;
   if v_latest is null then
@@ -224,21 +261,23 @@ begin
   select min(snapshot_at) into v_first from live_project_snapshots
     where (snapshot_at at time zone 'Asia/Riyadh')::date = v_day;
 
-  -- قطاع كل مشروع بملف داشبورد NHC (فيه المدينة لا القطاع): قطاع ملف التخصيص لنفس اسم المشروع،
-  -- وإلا القطاع الغالب لمدينته بملف التخصيص. بلا مطابقة = غير محدد.
+  -- قطاع كل مشروع بسحوبات اليوم (ملف داشبورد NHC فيه المدينة لا القطاع): قطاع ملف التخصيص لنفس اسم
+  -- المشروع، وإلا قطاع مدينته. بحث مفهرس لكل مشروع (~800) بدل تجميع جدول التخصيص كاملاً بكل نداء —
+  -- النسخة السابقة كانت تتجاوز مهلة التنفيذ (statement timeout) على Supabase.
   select coalesce(jsonb_object_agg(pn, sec), '{}'::jsonb) into v_psec from (
-    select btrim(coalesce(file_project_name, project_name)) as pn,
-           mode() within group (order by coalesce(file_sector, sector)) as sec
-    from unit_allocation_mirror
-    where coalesce(file_sector, sector) is not null and coalesce(file_project_name, project_name) is not null
-    group by 1
+    select p.pn, coalesce(
+      (select tv_norm_sector(m.file_sector) from unit_allocation_mirror m
+        where m.file_project_name = p.pn and tv_norm_sector(m.file_sector) is not null limit 1),
+      (select tv_region(m.file_sector, m.sector) from unit_allocation_mirror m
+        where m.city = p.city and tv_region(m.file_sector, m.sector) <> 'غير محدد' limit 1),
+      'غير محدد') as sec
+    from (
+      select distinct on (btrim(project_name)) btrim(project_name) as pn, btrim(city) as city
+      from live_project_snapshots
+      where (snapshot_at at time zone 'Asia/Riyadh')::date = v_day
+      order by btrim(project_name), snapshot_at desc
+    ) p
   ) x;
-  select coalesce(jsonb_object_agg(c, sec), '{}'::jsonb) into v_csec from (
-    select btrim(city) as c, mode() within group (order by coalesce(file_sector, sector)) as sec
-    from unit_allocation_mirror
-    where coalesce(file_sector, sector) is not null and city is not null
-    group by 1
-  ) y;
 
   select coalesce(jsonb_agg(jsonb_build_object('at', snapshot_at, 'contracts', c, 'bookings', b, 'nhc', n) order by snapshot_at), '[]'::jsonb)
   into v_timeline
@@ -258,7 +297,7 @@ begin
   first as (select project_name, contracts_total, bookings from live_project_snapshots where snapshot_at = v_first)
   select coalesce(jsonb_agg(jsonb_build_object(
       'project', l.project_name, 'developer', l.developer_name, 'city', l.city, 'is_nhc', l.is_nhc,
-      'sector', coalesce(v_psec->>btrim(l.project_name), v_csec->>btrim(l.city), 'غير محدد'),
+      'sector', coalesce(v_psec->>btrim(l.project_name), 'غير محدد'),
       'contracts', l.contracts_total, 'bookings', l.bookings, 'available', l.available,
       'd_prev', case when v_prev is null then null else l.contracts_total - coalesce(p.contracts_total, 0) end,
       'd_first', l.contracts_total - coalesce(f.contracts_total, 0),
@@ -272,7 +311,7 @@ begin
   -- سجل الإشعارات: كل مشروع زادت عقوده بين سحبتين متتاليتين اليوم، الأحدث أولاً
   select coalesce(jsonb_agg(jsonb_build_object(
       'at', snapshot_at, 'project', project_name, 'developer', developer_name, 'city', city,
-      'sector', coalesce(v_psec->>btrim(project_name), v_csec->>btrim(city), 'غير محدد'), 'is_nhc', is_nhc, 'dc', dc, 'db', db, 'contracts', contracts_total
+      'sector', coalesce(v_psec->>btrim(project_name), 'غير محدد'), 'is_nhc', is_nhc, 'dc', dc, 'db', db, 'contracts', contracts_total
     ) order by snapshot_at desc, dc desc), '[]'::jsonb)
   into v_feed
   from (
@@ -302,7 +341,7 @@ begin
     -- عقود آخر لقطة لكل قطاع (نفس ربط المشروع/المدينة بالقطاع أعلاه)
     'today_by_sector', (
       select coalesce(jsonb_object_agg(sector, c), '{}'::jsonb) from (
-        select coalesce(v_psec->>btrim(project_name), v_csec->>btrim(city), 'غير محدد') as sector, sum(contracts_total) as c
+        select coalesce(v_psec->>btrim(project_name), 'غير محدد') as sector, sum(contracts_total) as c
         from live_project_snapshots
         where snapshot_at = v_latest
         group by 1

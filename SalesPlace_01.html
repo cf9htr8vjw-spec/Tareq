@@ -8767,7 +8767,8 @@ async function loadTvDashboard(){
   /* كل النداءات فشلت = لا اتصال بالقاعدة أصلاً (لا مشكلة بيانات): غالباً الملف مفتوح من ذاكرة الجوال
      (edge://external-file أو content://) فيمنع المتصفح اتصاله بالإنترنت، أو لا يوجد إنترنت */
   const offline=errs.length===keys.length;
-  const ctx={curY,curM,lastM,lastMY,monthEndDay,dayOfMonth:now.getDate(),todayStr:tvLocalDate(now),offline};
+  const liveErr=settled[keys.indexOf("live")].status==="rejected" ? String((settled[keys.indexOf("live")].reason||{}).message||"") : "";
+  const ctx={curY,curM,lastM,lastMY,monthEndDay,dayOfMonth:now.getDate(),todayStr:tvLocalDate(now),offline,liveErr};
   renderTvPage1(R,ctx);
   renderTvPage2(R,ctx);
   requestAnimationFrame(()=>{ tvRedrawCharts($("tvPage"+tvPage)); if(tvPage===1) tvSetupLeadScroll(); });
@@ -8780,8 +8781,10 @@ async function loadTvDashboard(){
     $("tvUpBtn").classList.toggle("stale",stale);
     upd.innerHTML=`<span class="${stale?"stale":""}">آخر سحب من داشبورد NHC: ${tvTime(live.latest_at)} (قبل ${fmt(ago)} دقيقة${stale?" — السحب متأخر، اطلب رفع ملف جديد":""})</span> · ${fmt(live.snapshots_today||0)} سحبات اليوم${syncTxt}`;
   } else { upd.textContent=syncTxt.replace(/^ · /,""); $("tvUpBtn").classList.toggle("stale",!!(live&&live.ok&&live.empty)); }
-  const srcNote = !fc ? "" : Number(fc.file_sector_rows)>0 ? " · العقود: ملف التخصيص بقطاع الملف"
-    : " · ارفع ملف التخصيص من جديد ليُعدّ بقطاع الملف";
+  const unm=(fc&&fc.unmapped)||[];
+  const srcNote = !fc ? "" : (Number(fc.file_sector_rows)>0 ? " · العقود: ملف التخصيص بقطاع الملف"
+    : " · ارفع ملف التخصيص من جديد ليُعدّ بقطاع الملف")
+    + (unm.length?` · قيم قطاع بالملف لم تُعرف (حُسبت بقطاع التطبيق): ${unm.slice(0,4).map(u=>`«${u.v}» ${fmt(u.cnt)}`).join("، ")}`:"");
   $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+srcNote+(errs.length?` · تعذّر: ${errs[0]}`:"");
 }
 
@@ -8789,6 +8792,14 @@ function tvOfflineMsg(){
   return /^https?:$/.test(location.protocol)
     ? "⚠ تعذّر الاتصال بقاعدة البيانات — تأكد من الإنترنت، والشاشة تعيد المحاولة تلقائياً كل دقيقتين"
     : "⚠ الشاشة مفتوحة كملف من الجهاز، والمتصفح يمنعها من الاتصال بقاعدة البيانات — افتحها من رابطها (https://…netlify.app)";
+}
+/* توحيد تهجئة القطاع (الاوسط/الوسطى/قطاع الأوسط...) — نفس قاعدة tv_norm_sector بالقاعدة، احتياطاً هنا أيضاً */
+function tvSecNorm(v){
+  const t=String(v==null?"":v), l=t.toLowerCase();
+  if(t.includes("وسط")||l.includes("central")) return "الأوسط";
+  if(t.includes("غرب")||l.includes("west")) return "الغربي";
+  if(t.includes("شرق")||l.includes("east")) return "الشرقي";
+  return t||"غير محدد";
 }
 /* نتيجة get_tv_contracts (شهر/يوم × قطاع × NHC/مطور) بنفس شكل صفوف get_sales_report التي ترسمها الشاشة */
 function tvFileSeries(fc,curY,curM){
@@ -8802,7 +8813,7 @@ function tvFileSeries(fc,curY,curM){
     day: agg(fc.days,"d",()=>true,d=>`${curY}-${pad(curM)}-${pad(d)}`),
     ytd_nhc: mRows(nhc), ytd_dev: mRows(r=>!nhc(r)),
   };
-  TV_SECTORS.forEach((sec,i)=>{ out["ytd_nhc_"+i]=mRows(r=>nhc(r)&&r.sector===sec); });
+  TV_SECTORS.forEach((sec,i)=>{ out["ytd_nhc_"+i]=mRows(r=>nhc(r)&&tvSecNorm(r.sector)===sec); });
   return out;
 }
 /* ---------- الصفحة ١ ---------- */
@@ -8833,7 +8844,7 @@ function renderTvPage1(R,ctx){
 
   /* عقود اليوم */
   if(hasLive){
-    const secToday=live.today_by_sector||{};
+    const secToday={}; Object.entries(live.today_by_sector||{}).forEach(([k,v])=>{ const n=tvSecNorm(k); secToday[n]=(secToday[n]||0)+Number(v||0); });
     const secNA=Object.keys(secToday).filter(k=>!TV_SECTORS.includes(k)).reduce((a,k)=>a+Number(secToday[k]||0),0);
     const dPrev=Ap?(A.contracts||0)-(Ap.contracts||0):null, dFirst=(A.contracts||0)-(Af.contracts||0);
     $("tvKpiContracts").innerHTML=`
@@ -8854,7 +8865,9 @@ function renderTvPage1(R,ctx){
       <div class="sub">NHC <b>${fmt((L.nhc||{}).projects_with_contracts||0)}</b> · المطورون <b>${fmt((L.dev||{}).projects_with_contracts||0)}</b><br>متاح للبيع الآن <b>${fmt(A.available||0)}</b></div>`;
   } else {
     const msg = ctx.offline ? tvOfflineMsg()
-      : !live ? "تعذّر قراءة لقطات داشبورد NHC — شغّل live_board.sql على القاعدة"
+      : !live ? (/timeout/i.test(ctx.liveErr) ? "انتهت مهلة قراءة سحوبات داشبورد NHC — شغّل tv_file_counts.sql (الإصدار 2) على القاعدة"
+        : /404|does not exist|Could not find/i.test(ctx.liveErr) ? "دالة السحوبات غير موجودة — شغّل live_board.sql على القاعدة"
+        : "تعذّر قراءة سحوبات داشبورد NHC — "+(ctx.liveErr||"خطأ غير معروف"))
       : "لم يُرفع أي سحب من داشبورد NHC بعد — اضغط «⬆ رفع سحب جديد» أسفل الشاشة";
     $("tvKpiContracts").innerHTML=`<div class="lbl">عقود اليوم — المملكة</div><div class="tvEmpty" style="font-size:17px;padding:8px">${msg}</div>`;
     $("tvKpiBookings").innerHTML=`<div class="lbl">حجوزات قائمة</div><div class="num">—</div>`;
@@ -8912,7 +8925,7 @@ function renderTvPage1(R,ctx){
   leadInner.innerHTML= movers.length ? movers.map((m,i)=>`<div class="tvLeadRow${freshSet.has(m.project)?" new":""}">
       <span class="rk">${i+1}</span>
       <span class="pj">${m.project}<span class="tvTag ${m.is_nhc?"":"dev"}">${m.is_nhc?"NHC":"مطوّر"}</span><small>${m.is_nhc?(m.city||""):[tvShort(m.developer,30),m.city].filter(Boolean).join(" · ")}</small></span>
-      <span class="s${TV_SECTORS.includes(m.sector)?"":" na"}">${m.sector&&m.sector!=="غير محدد"?m.sector:"—"}</span>
+      <span class="s${TV_SECTORS.includes(tvSecNorm(m.sector))?"":" na"}">${TV_SECTORS.includes(tvSecNorm(m.sector))?tvSecNorm(m.sector):"—"}</span>
       <span class="n">${fmt(m.contracts)}</span>
       <span class="c">${singlePull?"—":tvDelta(m.d_first)}</span>
       <span class="b">${fmt(m.bookings||0)}</span>

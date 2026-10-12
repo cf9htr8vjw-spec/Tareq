@@ -82,6 +82,29 @@ on conflict (region, property_type) do update set
 -- المشروع بالتطبيق؛ sector (بيانات التطبيق) احتياط فقط لصفوف رُفعت قبل إضافة file_sector.
 alter table unit_allocation_mirror add column if not exists file_sector text;
 
+-- ---------- القطاع الموحّد للشاشة ----------
+-- قطاع ملف التخصيص بأي تهجئة (الأوسط/الاوسط/الوسطى/قطاع الأوسط/Central...) يُوحَّد لأحد القطاعات
+-- الثلاثة؛ قيمة لا تُعرف بالملف (فارغة أو اسم آخر) → قطاع التطبيق لنفس الوحدة → وإلا "غير محدد".
+create or replace function tv_norm_sector(p text)
+returns text
+language sql
+immutable
+as $$
+  select case
+    when p is null then null
+    when p like '%وسط%' or lower(p) like '%central%' then 'الأوسط'
+    when p like '%غرب%' or lower(p) like '%west%' then 'الغربي'
+    when p like '%شرق%' or lower(p) like '%east%' then 'الشرقي'
+    else null end
+$$;
+create or replace function tv_region(p_file text, p_app text)
+returns text
+language sql
+immutable
+as $$
+  select coalesce(tv_norm_sector(p_file), tv_norm_sector(p_app), 'غير محدد')
+$$;
+
 -- ---------- get_sector_type_sales ----------
 -- مبيعات (عقود موقّعة) لكل قطاع × نوع وحدة خلال شهر معيّن: الإجمالي + تفصيل يومي —
 -- من unit_allocation_mirror.contract_date الحقيقي، نفس مصدر get_sales_report الأصلية،
@@ -103,13 +126,13 @@ begin
      القطاع+النوع+اليوم، ثم تجميع ثانٍ (grouped) فوقه — بلا أي ارتباط متداخل إطلاقاً. */
   with base as (
     select
-      coalesce(file_sector,sector,'غير محدد') as sector,
+      tv_region(file_sector, sector) as sector,
       coalesce(unit_type,'غير محدد') as unit_type,
       contract_date,
       count(*) as dcnt
     from unit_allocation_mirror
     where status='contracted' and contract_date between v_from and v_to
-    group by coalesce(file_sector,sector,'غير محدد'), coalesce(unit_type,'غير محدد'), contract_date
+    group by tv_region(file_sector, sector), coalesce(unit_type,'غير محدد'), contract_date
   ),
   grouped as (
     select
@@ -149,7 +172,7 @@ as $$
     'by_sector', coalesce((
       select jsonb_agg(jsonb_build_object('sector', sector, 'bookings', bookings, 'istisna', istisna, 'contracts', contracts) order by sector)
       from (
-        select coalesce(file_sector,sector,'غير محدد') as sector,
+        select tv_region(file_sector, sector) as sector,
           count(*) filter (where booking_date = current_date) as bookings,
           count(*) filter (where status='reserved' and istisna_date = current_date) as istisna,
           count(*) filter (where status='contracted' and contract_date = current_date) as contracts
@@ -157,7 +180,7 @@ as $$
         where booking_date = current_date
            or (status='reserved' and istisna_date = current_date)
            or (status='contracted' and contract_date = current_date)
-        group by coalesce(file_sector,sector,'غير محدد')
+        group by tv_region(file_sector, sector)
       ) s
     ), '[]'::jsonb),
     'ok', true
@@ -176,7 +199,7 @@ as $$
     'sector', sector, 'avail_count', avail_count, 'avg_price', avg_price, 'avg_price_sqm', avg_price_sqm
   ) order by sector), '[]'::jsonb)
   from (
-    select coalesce(file_sector,sector,'غير محدد') as sector,
+    select tv_region(file_sector, sector) as sector,
            count(*) as avail_count,
            round(avg(price)) as avg_price,
            case when sum(unit_size) filter (where unit_size>0)>0
@@ -184,6 +207,6 @@ as $$
                 else null end as avg_price_sqm
     from unit_allocation_mirror
     where status='avail'
-    group by coalesce(file_sector,sector,'غير محدد')
+    group by tv_region(file_sector, sector)
   ) t;
 $$;
