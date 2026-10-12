@@ -170,8 +170,17 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvUpConfirm{display:none;align-items:center;gap:10px;font-size:15px;font-weight:700;color:#C2491E;cursor:pointer}
 .tvUpConfirm.on{display:flex}
 .tvUpConfirm input{width:20px;height:20px;accent-color:#C2491E}
-.tvUpUndo{display:none;border:1.5px solid #E7C3B4;background:#FFF7F3;color:#C2491E;border-radius:12px;padding:9px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
-.tvUpUndo.on{display:block}
+.tvUpPulls{display:none;border-top:1px solid #EEEAE0;padding-top:8px}
+.tvUpPulls.on{display:block}
+.tvUpPulls .hd{font-size:14px;font-weight:800;color:#5e5a4f;margin-bottom:4px}
+.tvUpPulls .list{max-height:190px;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.tvUpPull{display:flex;align-items:center;gap:10px;padding:5px 10px;border-radius:10px;background:#FAF7F1;font-size:15px}
+.tvUpPull .t{font-weight:800;min-width:70px}
+.tvUpPull .c{flex:1;color:#5e5a4f}
+.tvUpPull.bad{background:#FBE5DC;color:#C2491E}
+.tvUpPull.bad .c{color:#C2491E;font-weight:700}
+.tvUpPull button{border:1.5px solid #E7C3B4;background:#fff;color:#C2491E;border-radius:9px;padding:3px 12px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+.tvUpPull button:disabled{opacity:.5;cursor:default}
 
 </style>
 </head>
@@ -255,7 +264,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
       <div class="tvUpMsg" id="tvUpMsg"></div>
       <label class="tvUpConfirm" id="tvUpConfirmRow"><input type="checkbox" id="tvUpConfirm">الأرقام صحيحة لعقود اليوم — ارفع رغم التحذير</label>
       <button type="button" id="tvUpGo" class="tvUpGo" disabled>رفع اللقطة وتحديث الشاشة</button>
-      <button type="button" id="tvUpUndo" class="tvUpUndo"></button>
+      <div class="tvUpPulls" id="tvUpPulls"><div class="hd">سحوبات اليوم — احذف أي سحب رُفع بالخطأ</div><div class="list" id="tvUpPullList"></div></div>
     </div>
   </div>
 </div>
@@ -953,11 +962,16 @@ function tvUpUpdateGo(){
   $("tvUpGo").disabled=!(tvUpList&&tvUpList.length&&tvUpHasAuth()&&(!tvUpSus||$("tvUpConfirm").checked));
   tvUpRefreshUndo();
 }
-/* حذف آخر سحب (مثلاً ملف رُفع بفلتر تاريخ خاطئ) — نفس صلاحية الأدمن، بتأكيد صريح */
+/* سحوبات اليوم مع حذف أي منها (مثلاً ملف رُفع بفلتر تاريخ خاطئ) — نفس صلاحية الأدمن، بتأكيد صريح.
+   أي سحب، لا آخر سحب فقط: السحب الخاطئ يبقى مرجع "منذ آخر سحب" لكل ما بعده حتى يُحذف. */
 function tvUpRefreshUndo(){
-  const b=$("tvUpUndo"), L=tvLastLive;
-  b.classList.toggle("on",!!L);
-  if(L) b.textContent=`↶ حذف آخر سحب (${tvTime(L.latest_at)} · ${fmt(((L.latest||{}).all||{}).contracts||0)} عقد)`;
+  const L=tvLastLive, tl=(L&&L.timeline)||[];
+  $("tvUpPulls").classList.toggle("on",tl.length>0);
+  $("tvUpPullList").innerHTML=[...tl].reverse().map(x=>{
+    const c=Number(x.contracts)||0, bad=c>LIVE_MAX_DAY;
+    return `<div class="tvUpPull${bad?" bad":""}"><span class="t">${tvTime(x.at)}</span><span class="c">${fmt(c)} عقد${bad?" — غير طبيعي":""}</span><button type="button" data-at="${x.at}" data-c="${c}">✕ حذف</button></div>`;
+  }).join("");
+  $("tvUpPullList").querySelectorAll("button").forEach(b=>b.onclick=()=>tvUpUndo(b.dataset.at,+b.dataset.c,b));
 }
 function tvUpRefreshAuth(){
   $("tvUpAuth").style.display=tvUpCreds?"none":"grid";
@@ -1000,21 +1014,19 @@ async function tvUpEnsureCreds(){
   if(!r.admin) throw new Error("هذا الحساب ليس أدمن — رفع السحب يتطلّب صلاحية أدمن");
   tvUpCreds={u,p,name:r.name||u}; $("tvUpPass").value=""; tvUpRefreshAuth();
 }
-async function tvUpUndo(){
-  const L=tvLastLive; if(!L) return;
-  const tot=((L.latest||{}).all||{}).contracts||0;
-  if(!confirm(`حذف سحب الساعة ${tvTime(L.latest_at)} (${fmt(tot)} عقد) نهائياً من الشاشة؟`)) return;
-  $("tvUpUndo").disabled=true;
+async function tvUpUndo(at,tot,btn){
+  if(!at) return;
+  if(!confirm(`حذف سحب الساعة ${tvTime(at)} (${fmt(tot)} عقد) نهائياً من الشاشة؟`)) return;
+  if(btn) btn.disabled=true;
   try{
     await tvUpEnsureCreds();
     let r;
-    try{ r=await sbCall("admin_delete_live_snapshot",{p_admin:tvUpCreds.u,p_pass:tvUpCreds.p,p_snapshot_at:L.latest_at}); }
+    try{ r=await sbCall("admin_delete_live_snapshot",{p_admin:tvUpCreds.u,p_pass:tvUpCreds.p,p_snapshot_at:at}); }
     catch(e){ throw new Error("تعذّر الحذف: "+(e.message||e)+" — تأكد من تشغيل live_undo.sql على القاعدة"); }
     if(!r||!r.ok) throw new Error("فشل الحذف: "+((r&&r.msg)||"خطأ غير معروف"));
-    tvUpMsg(`✓ حُذف سحب ${tvTime(L.latest_at)} (${fmt(r.count||0)} صفاً) — الشاشة تتحدّث الآن`,"ok");
+    tvUpMsg(`✓ حُذف سحب ${tvTime(at)} (${fmt(r.count||0)} صفاً) — الشاشة تتحدّث الآن`,"ok");
     await loadTvDashboard();
-  }catch(e){ tvUpMsg(e.message||String(e),"err"); }
-  $("tvUpUndo").disabled=false;
+  }catch(e){ tvUpMsg(e.message||String(e),"err"); if(btn) btn.disabled=false; }
 }
 async function tvUpGo(){
   if(!tvUpList||!tvUpList.length) return;
@@ -1039,7 +1051,6 @@ function tvInitUpload(){
   ["tvUpUser","tvUpPass"].forEach(id=>$(id).addEventListener("input",tvUpUpdateGo));
   $("tvUpPass").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!$("tvUpGo").disabled) tvUpGo(); });
   $("tvUpGo").onclick=tvUpGo;
-  $("tvUpUndo").onclick=tvUpUndo;
   $("tvUpConfirm").onchange=tvUpUpdateGo;
   /* لمسة على الجوال/التابلت تُظهر الزر مثل تحريك الفأرة */
   const showBtn=()=>{ view.classList.add("mouse"); clearTimeout(tvUpMouseT); tvUpMouseT=setTimeout(()=>view.classList.remove("mouse"),5000); };
