@@ -64,6 +64,16 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvGauge .gNeed b{color:#0B4332;font-weight:800}
 .tvGauge .gSrc{font-size:11.5px;color:#9c9484;margin-top:2px;white-space:nowrap}
 .tvGauge .gSub b{color:#0B4332;font-weight:800}
+.tvGauge .gRun{font-size:12.5px;color:#5e5a4f;margin-top:2px;white-space:nowrap}
+.tvGauge .gRun b{color:#0B4332}.tvGauge .gRun b.ok{color:#007a54}.tvGauge .gRun b.no{color:#C2491E}
+.tvGauge .gAll{font-size:11.5px;color:#767368;margin-top:1px;white-space:nowrap}
+.tvGauge .gAll b{color:#0B4332}.tvGauge .gAll small{font-size:10.5px}
+.tvGauge.pick,.tvGauge[data-all]{cursor:pointer}
+.tvGauge.pick:hover{border-color:#C97F2E}
+.tvGauge.sel{border:2.5px solid #C97F2E;box-shadow:0 0 0 3px rgba(201,127,46,.18)}
+#tvGauges.filtered .tvGauge:not(.sel){opacity:.55}
+.tvRegionChip{display:none;background:#C97F2E;color:#fff;border-radius:99px;padding:3px 14px;font-size:17px;font-weight:800;cursor:pointer;white-space:nowrap}
+.tvRegionChip.on{display:inline-block}
 /* عقود حسب المنتج + متوسط سعر المباع + سعر السوق — تحت حالة الأداء بكل عدّاد */
 .gProd{align-self:stretch;margin-top:4px;font-size:12px;line-height:1.35}
 .gProd .r{display:grid;grid-template-columns:38px repeat(3,1fr);column-gap:6px;text-align:center;white-space:nowrap}
@@ -83,16 +93,16 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvProd .c .n small{font-size:12px;color:#767368;font-weight:600}
 .tvProd .c .p{font-size:12.5px;color:#5e5a4f}
 .tvProd .c .p b{color:#0B4332}
-.tvStatus{display:inline-block;font-size:14px;font-weight:800;padding:2px 11px;border-radius:99px;margin-top:5px;white-space:nowrap}
+.tvStatus{display:inline-block;font-size:13.5px;font-weight:800;padding:1px 11px;border-radius:99px;margin-top:3px;white-space:nowrap}
 .tvStatus.good{background:#E1F5EC;color:#007a54}.tvStatus.warn{background:#FBEFD9;color:#9a5c12}.tvStatus.bad{background:#FBE5DC;color:#C2491E}.tvStatus.none{background:#EEEAE0;color:#767368}
 .tvBody{display:grid;grid-template-columns:1fr 1.45fr;gap:10px;flex:1;min-height:0}
-.tvKpis{display:flex;flex-direction:column;gap:6px;min-height:0}
-.tvKpis .tvTile.main{flex:1;justify-content:center}
+.tvKpis{display:flex;flex-direction:column;gap:4px;min-height:0}
+.tvKpis .tvTile.main{flex:1;justify-content:center;padding-top:6px;padding-bottom:6px}
 .tvCharts{display:grid;grid-template-rows:1fr 1fr .85fr;gap:10px;min-height:0}
 .tvTile{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:10px 16px;box-shadow:0 2px 10px rgba(11,67,50,.05);display:flex;flex-direction:column;min-width:0;min-height:0}
 .tvTile .lbl{font-size:19px;font-weight:800;color:#5e5a4f;display:flex;align-items:center;gap:8px;flex-wrap:wrap;white-space:nowrap}
 .tvTile .num{font-size:38px;font-weight:800;line-height:1.05;color:#0B4332;letter-spacing:-1px}
-.tvTile.main .num{color:#009C6D;font-size:52px}
+.tvTile.main .num{color:#009C6D;font-size:46px}
 /* عقود اليوم لكل منطقة بجانب عقود المملكة */
 .tvHeroRow{display:flex;align-items:center;gap:12px}
 .tvSecToday{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;min-width:0}
@@ -113,7 +123,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvMix i{display:block;height:100%}
 .tvMixLbl{display:flex;gap:12px;font-size:12.5px;color:#5e5a4f;flex-wrap:wrap;margin-top:3px}
 .tvMixLbl b{color:#0B4332}
-.tvKpiPair .tvTile{padding:7px 14px}
+.tvKpiPair .tvTile{padding:5px 14px}
 .tvKpiPair .tvTile .lbl{font-size:17px}
 .tvKpiPair .tvTile .num{font-size:30px}
 .tvKpiPair .tvTile .sub{font-size:12.5px;line-height:1.35}
@@ -127,7 +137,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 /* الوجهات — جدول مضغوط بعرض الشاشة كاملاً أسفل الصفحة الرئيسية، 3 أعمدة؛ يتحرّك عمودياً ببطء إن لم يتسع */
 .tvDests{grid-column:1/-1;background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:4px 14px 4px;box-shadow:0 2px 10px rgba(11,67,50,.05);display:flex;flex-direction:column;min-width:0}
 .tvDestHd,.tvDestTrack{display:grid;grid-template-columns:repeat(3,1fr);column-gap:22px}
-.tvDestWrap{height:130px;overflow:hidden;position:relative}
+.tvDestWrap{height:104px;overflow:hidden;position:relative}
 .tvDests .tvCardTitle{font-size:16px}
 .tvDests .tvCardTitle .tot{font-size:20px}
 .tvDestTrack.run{animation:tvLeadScroll var(--tv-dest-dur,60s) linear infinite}
@@ -145,6 +155,18 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvSeg{display:inline-flex;gap:4px;margin-inline-start:6px}
 .tvSeg button{border:1.5px solid #E7E1D3;background:#FAF7F1;color:#5e5a4f;border-radius:99px;padding:2px 12px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
 .tvSeg button.on{background:#0B4332;border-color:#0B4332;color:#fff}
+.tvSeg{flex-wrap:nowrap}
+.tvSeg button{padding:2px 9px!important;font-size:13px!important}
+.tvSeg .tvPause{background:#fff;border-color:#C97F2E;color:#C97F2E;padding:2px 8px!important}
+.tvSeg .tvPause.off{background:#C97F2E;color:#fff}
+.tvBanks{flex:none;border-top:1px solid #EEEAE0;margin-top:6px;padding-top:5px}
+.tvBanks .hd{font-size:14px;font-weight:800;color:#0B4332;margin-bottom:4px}
+.tvBanks .hd small{font-size:12px;color:#767368;font-weight:600}
+.tvBanks .bl{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 8px}
+.tvBanks .bk{display:flex;align-items:baseline;gap:6px;background:#FAF7F1;border-radius:9px;padding:2px 8px;font-size:12.5px;min-width:0}
+.tvBanks .bk .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#5e5a4f;font-weight:700}
+.tvBanks .bk b{color:#0B4332;font-size:14px}
+.tvBanks .bk .p{color:#767368;font-size:11.5px}
 .tvCard{background:#FFFFFF;border:1px solid #E7E1D3;border-radius:16px;padding:9px 14px;display:flex;flex-direction:column;min-height:0;overflow:hidden;box-shadow:0 2px 10px rgba(11,67,50,.05)}
 .tvCardTitle{font-size:18px;color:#0B4332;font-weight:800;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;flex:none}
 .tvCardTitle small{font-size:13px;color:#767368;font-weight:500}
@@ -240,6 +262,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 <div id="tvView">
   <div class="tvHead">
     <div class="tvTitle"><b>NHC</b> · شاشة المبيعات الحيّة <span class="tvLive"><i></i>مباشر</span></div>
+    <span class="tvRegionChip" id="tvRegionChip" title="العودة للمملكة"></span>
     <div class="tvPageDots" id="tvPageDots"><i class="on"></i><i></i></div>
     <div class="tvClock" id="tvClock"></div>
   </div>
@@ -276,10 +299,11 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
     </div>
     <div class="tvSide">
       <div class="tvCard">
-        <div class="tvCardTitle"><span id="tvLeadTitle">عقود اليوم حسب المشروع</span><span class="tvSeg" id="tvLeadSeg"><button type="button" data-m="today">اليوم</button><button type="button" data-m="yesterday">أمس</button><button type="button" data-m="week">الأسبوع</button><button type="button" data-m="month">الشهر</button></span><span class="tot" id="tvLeadTot"></span></div>
+        <div class="tvCardTitle"><span id="tvLeadTitle">عقود اليوم حسب المشروع</span><span class="tvSeg" id="tvLeadSeg"><button type="button" data-m="today">اليوم</button><button type="button" data-m="yesterday">أمس</button><button type="button" data-m="week">الأسبوع</button><button type="button" data-m="month">الشهر</button><button type="button" data-m="year">السنة</button><button type="button" id="tvLeadPause" class="tvPause" title="إيقاف التقليب التلقائي">❚❚</button></span><span class="tot" id="tvLeadTot"></span></div>
         <div class="tvLeadRow hd" id="tvLeadHd"></div>
         <div class="tvLeadWrap"><div class="tvLeadScroll" id="tvLeaders"></div></div>
         <div class="tvProd" id="tvLeadProd"></div>
+        <div class="tvBanks" id="tvLeadBanks"></div>
       </div>
     </div>
     <div class="tvDests">
@@ -543,16 +567,24 @@ function tvGaugeSvg(pct,status,hasTarget){
   s+=`<text x="${cx-r}" y="${H-1}" text-anchor="middle" font-size="12" fill="#767368">0</text><text x="${cx+r}" y="${H-1}" text-anchor="middle" font-size="12" fill="#767368">${TV_GAUGE_MAX}%</text>`;
   return s+`</svg>`;
 }
-function tvGaugeHtml(name,prog,prodHtml){
+function tvGaugeHtml(name,prog,prodHtml,opt){
+  opt=opt||{};
   const st=prog.status;
-  const stTxt={good:prog.yearPct>=100?"حقّق مستهدف السنة ✓":"أداء جيد ✓",bad:"أداء متأخر",none:"لا مستهدف مسجّل"}[st];
+  /* اللون حسب طلب رئيس المبيعات (أخضر من 50%)، والنص يقول الواقع: على المسار فقط من 100% */
+  const stTxt = st==="none" ? "لا مستهدف مسجّل"
+    : prog.yearPct>=100 ? "حقّق مستهدف السنة ✓"
+    : prog.pct>=100 ? "على المسار ✓"
+    : `ناقص ${fmt(Math.max(0,prog.deficit||0))} عن المسار`;
+  const rr=prog.reqDaily!=null ? `<div class="gRun">يومياً: <b class="${prog.runRate>=prog.reqDaily?"ok":"no"}">${fmt(Math.round(prog.runRate))}</b> فعلي · <b>${fmt(Math.ceil(prog.reqDaily))}</b> مطلوب</div>` : "";
   const col={good:"#009C6D",warn:"#B87516",bad:"#C2491E",none:"#767368"}[st];
-  return `<div class="tvGauge">
+  return `<div class="tvGauge${opt.sec?" pick":""}${opt.sel?" sel":""}"${opt.sec?` data-sec="${opt.sec}"`:""}${opt.all?` data-all="1"`:""}>
     <div class="gName">${name}</div>
     ${tvGaugeSvg(prog.pct,st,!!prog.tgt)}
     <div class="gPct" style="color:${col}">${prog.pct!=null?prog.pct+"%":"—"}<small>${prog.tgt?"حتى اليوم":""}</small></div>
     <div class="gSub">${prog.tgt?`<b>${fmt(prog.ytd)}</b> / ${fmt(prog.tgt)} · السنة ${prog.yearPct}%`:`<b>${fmt(prog.ytd)}</b> وحدة منذ بداية السنة`}</div>
     <span class="tvStatus ${st}">${stTxt}</span>
+    ${rr}
+    ${opt.allNhc!=null?`<div class="gAll" title="المحقق أعلاه لمشاريع مذكرات الاستثمار فقط (نطاق المستهدف)">كل عقود NHC: <b>${fmt(opt.allNhc)}</b></div>`:""}
     ${prodHtml||""}
   </div>`;
 }
@@ -610,7 +642,11 @@ function tvYearProg(rows,target,ctx){
     qLbl=`حتى نهاية الربع ${["","الأول","الثاني","الثالث"][lq]}`;
   }
   const need=tgt?Math.ceil(Math.max(0,tgt-ytd)/(12-ctx.curM+1)):null;
-  return {ytd,tgt,pct,yearPct,qPct,qLbl,need,status:tvPaceStatus(pct)};
+  /* المعدل اليومي الفعلي منذ بداية السنة مقابل المطلوب يومياً لبقية السنة لبلوغ المستهدف */
+  const daysDone=Math.max(1,Math.round((today-y0)/864e5)), daysLeft=Math.max(1,daysInYear-daysDone);
+  const runRate=ytd/daysDone, reqDaily=tgt?Math.max(0,tgt-ytd)/daysLeft:null;
+  const deficit=tgt?Math.round(tgt*frac-ytd):null;
+  return {ytd,tgt,pct,yearPct,qPct,qLbl,need,runRate,reqDaily,deficit,status:tvPaceStatus(pct)};
 }
 
 async function loadTvDashboard(){
@@ -633,7 +669,9 @@ async function loadTvDashboard(){
     dests:  sbCall("get_tv_destinations",{p_year:curY}),
     period: pr ? sbCall("get_tv_period_projects",{p_from:pr.from,p_to:pr.to}) : Promise.resolve(null),
     prodYtd: sbCall("get_tv_products",{p_from:`${curY}-01-01`,p_to:tvLocalDate(now)}),
-    prodPeriod: (()=>{ const r=tvProdRange(now); return sbCall("get_tv_products",{p_from:r.from,p_to:r.to}); })(),
+    prodPeriod: (()=>{ const r=tvAllocRange(now); return sbCall("get_tv_products",{p_from:r.from,p_to:r.to}); })(),
+    banks: (()=>{ const r=tvAllocRange(now); return sbCall("get_tv_banks",{p_from:r.from,p_to:r.to}); })(),
+    memo: sbCall("get_tv_memo_scope",{p_year:curY}),
     sector: sbCall("get_sector_type_sales",{p_year:lastMY,p_month:lastM}),
     pricing:sbCall("get_sector_avail_pricing",{}),
     market: sbSelect("market_price_stats",{select:"*"}),
@@ -653,7 +691,8 @@ async function loadTvDashboard(){
   const settled=await Promise.allSettled(keys.map(k=>calls[k]));
   const R={}, errs=[];
   settled.forEach((s,i)=>{ if(s.status==="fulfilled") R[keys[i]]=s.value; else { R[keys[i]]=null; errs.push(keys[i]+": "+((s.reason&&s.reason.message)||s.reason)); } });
-  if(fc) Object.assign(R,tvFileSeries(fc,curY,curM));
+  if(fc){ Object.assign(R,tvFileSeries(fc,curY,curM)); R.fc=Object.assign({},fc,{_y:curY,_m:curM}); }
+  tvModeCache={}; tvModeCache[tvLeadMode]={period:R.period,prodPeriod:R.prodPeriod,banks:R.banks};
   R.periodMode=tvLeadMode;
 
   /* كل النداءات فشلت = لا اتصال بالقاعدة أصلاً (لا مشكلة بيانات): غالباً الملف مفتوح من ذاكرة الجوال
@@ -662,7 +701,7 @@ async function loadTvDashboard(){
   const liveErr=settled[keys.indexOf("live")].status==="rejected" ? String((settled[keys.indexOf("live")].reason||{}).message||"") : "";
   const ctx={curY,curM,lastM,lastMY,monthEndDay,dayOfMonth:now.getDate(),todayStr:tvLocalDate(now),offline,liveErr};
   tvLastR=R; tvLastCtx=ctx;
-  renderTvPage1(R,ctx);
+  tvRenderAll();
   renderTvPage2(R,ctx);
   requestAnimationFrame(()=>{ tvRedrawCharts($("tvPage"+tvPage)); if(tvPage===1){ tvSetupLeadScroll(); tvSetupDestScroll(); } });
 
@@ -677,12 +716,13 @@ async function loadTvDashboard(){
     upd.innerHTML=`<span class="${stale?"stale":""}">آخر سحب من داشبورد NHC: ${tvTime(live.latest_at)} (قبل ${fmt(ago)} دقيقة${stale?" — السحب متأخر، اطلب رفع ملف جديد":""})</span> · ${fmt(live.snapshots_today||0)} سحبات اليوم${syncTxt}`;
   } else { upd.textContent=syncTxt.replace(/^ · /,""); $("tvUpBtn").classList.toggle("stale",!!(live&&live.ok&&live.empty)); }
   const unm=(fc&&fc.unmapped)||[];
+  const memoNote=R.memo&&R.memo.ok&&Number(R.memo.matched)>0?` · عدّادات NHC: مشاريع مذكرات الاستثمار (${fmt(R.memo.matched)} من ${fmt(R.memo.targets)} مطابَقة)`:"";
   const mkM=R.prodYtd&&R.prodYtd.ok&&R.prodYtd.market_month?` · سعر السوق: منصة سهيل — ${tvMonthName(R.prodYtd.market_month)}`:"";
   const srcNote = !fc ? "" : (fc.source==="file" ? " · العقود: ملف التخصيص كاملاً (حالة الحجز = عقد)"
     : Number(fc.file_sector_rows)>0 ? " · العقود: ملف التخصيص بقطاع الملف"
     : " · ارفع ملف التخصيص من جديد ليُعدّ بقطاع الملف")
     + (unm.length?` · قيم قطاع بالملف لم تُعرف (حُسبت ${fc.source==="file"?"غير محدد":"بقطاع التطبيق"}): ${unm.slice(0,4).map(u=>`«${u.v}» ${fmt(u.cnt)}`).join("، ")}`:"");
-  $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+srcNote+mkM+(errs.length?` · تعذّر: ${errs[0]}`:"");
+  $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+srcNote+memoNote+mkM+(errs.length?` · تعذّر: ${errs[0]}`:"");
 }
 
 function tvOfflineMsg(){
@@ -716,7 +756,13 @@ function tvFileSeries(fc,curY,curM){
 /* ---------- جدول العقود حسب المشروع: اليوم (سحوبات داشبورد NHC) أو أمس / آخر 7 أيام / الشهر
    (ملف التخصيص حتى آخر رفع، + اليوم لحظياً للأسبوع والشهر). الاختيار يُحفظ بهذا المتصفح فقط،
    أو يُثبَّت بالرابط: &list=yesterday|week|month ---------- */
-const TV_LEAD_MODES=["today","yesterday","week","month"];
+const TV_LEAD_MODES=["today","yesterday","week","month","year"];
+const TV_LEAD_LBL={today:"اليوم",yesterday:"أمس",week:"آخر 7 أيام",month:"الشهر",year:"السنة"};
+const TV_LEAD_ROTATE_MS=20000;
+/* تقليب تلقائي اليوم ← أمس ← الأسبوع ← الشهر ← السنة؛ زر الإيقاف بعنوان الجدول، والضغط على فترة يوقفه.
+   &rotate=0 بالرابط يبدأ موقوفاً */
+let tvLeadAuto=(()=>{ if(tvParam("rotate")==="0") return false; try{ return localStorage.getItem("tv_lead_rotate")!=="0"; }catch(e){ return true; } })();
+let tvLeadTimer=null, tvModeCache={};
 let tvLeadMode=(()=>{ const q=tvParam("list"); if(TV_LEAD_MODES.includes(q)) return q;
   try{ const v=localStorage.getItem("tv_lead_mode"); if(TV_LEAD_MODES.includes(v)) return v; }catch(e){} return "today"; })();
 let tvLastR=null, tvLastCtx=null;
@@ -725,31 +771,54 @@ function tvLeadRange(now){
   if(tvLeadMode==="yesterday") return {from:tvLocalDate(y),to:tvLocalDate(y)};
   if(tvLeadMode==="week") return {from:tvLocalDate(new Date(t-6*day)),to:tvLocalDate(y)};
   if(tvLeadMode==="month"){ const f=new Date(t.getFullYear(),t.getMonth(),1); return f<t?{from:tvLocalDate(f),to:tvLocalDate(y)}:null; }
+  if(tvLeadMode==="year"){ const f=new Date(t.getFullYear(),0,1); return f<t?{from:tvLocalDate(f),to:tvLocalDate(y)}:null; }
   return null;
+}
+/* فترة ملف التخصيص لصندوقي المنتج والبنوك — نفس الخيار، حتى اليوم (ما رُفع من التخصيص) */
+function tvAllocRange(now){
+  const t=new Date(now.getFullYear(),now.getMonth(),now.getDate()), day=864e5, to=tvLocalDate(t);
+  const from={today:t,yesterday:new Date(t-day),week:new Date(t-6*day),month:new Date(t.getFullYear(),t.getMonth(),1),year:new Date(t.getFullYear(),0,1)}[tvLeadMode]||t;
+  return {from:tvLocalDate(from),to:tvLeadMode==="yesterday"?tvLocalDate(new Date(t-day)):to};
 }
 /* مطابقة اسم المشروع بين سحب داشبورد NHC وملف التخصيص (نفس قاعدة tv_norm_name بالقاعدة) */
 function tvNormName(v){
   return String(v==null?"":v).toLowerCase().replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[ـ-]/g," ").replace(/ّ/g,"").replace(/\s+/g," ").trim();
 }
-async function tvSetLeadMode(m){
+async function tvSetLeadMode(m,auto){
   if(!TV_LEAD_MODES.includes(m)) return;
+  if(!auto) tvSetLeadAuto(false);
   tvLeadMode=m; try{ localStorage.setItem("tv_lead_mode",m); }catch(e){}
   if(!tvLastR) return;
-  const pr=tvLeadRange(new Date());
-  const rr=tvProdRange(new Date());
-  const [P,PP]=await Promise.all([
-    pr ? sbCall("get_tv_period_projects",{p_from:pr.from,p_to:pr.to}).catch(()=>null) : Promise.resolve(null),
-    sbCall("get_tv_products",{p_from:rr.from,p_to:rr.to}).catch(()=>null)]);
+  let c=tvModeCache[m];
+  if(!c){
+    const now=new Date(), pr=tvLeadRange(now), rr=tvAllocRange(now);
+    const [P,PP,B]=await Promise.all([
+      pr ? sbCall("get_tv_period_projects",{p_from:pr.from,p_to:pr.to}).catch(()=>null) : Promise.resolve(null),
+      sbCall("get_tv_products",{p_from:rr.from,p_to:rr.to}).catch(()=>null),
+      sbCall("get_tv_banks",{p_from:rr.from,p_to:rr.to}).catch(()=>null)]);
+    c=tvModeCache[m]={period:P,prodPeriod:PP,banks:B};
+  }
   if(tvLeadMode!==m) return;
-  tvLastR.period=P; tvLastR.prodPeriod=PP; tvRenderLead(tvLastR,tvLastCtx); tvRenderLeadProd(tvLastR);
+  Object.assign(tvLastR,c);
+  tvRenderAll();
   requestAnimationFrame(tvSetupLeadScroll);
+}
+function tvSetLeadAuto(on){
+  tvLeadAuto=!!on; try{ localStorage.setItem("tv_lead_rotate",on?"1":"0"); }catch(e){}
+  const b=$("tvLeadPause"); if(b){ b.textContent=on?"❚❚":"▶"; b.title=on?"إيقاف التقليب التلقائي":"تشغيل التقليب التلقائي"; b.classList.toggle("off",!on); }
+}
+function tvStartLeadRotation(){
+  if(tvLeadTimer) clearInterval(tvLeadTimer);
+  tvSetLeadAuto(tvLeadAuto);
+  tvLeadTimer=setInterval(()=>{ if(!tvLeadAuto||tvPage!==1) return;
+    const i=TV_LEAD_MODES.indexOf(tvLeadMode); tvSetLeadMode(TV_LEAD_MODES[(i+1)%TV_LEAD_MODES.length],true); },TV_LEAD_ROTATE_MS);
 }
 function tvRenderLead(R,ctx){
   const live=R.live, hasLive=!!(live&&live.ok&&!live.empty), mode=tvLeadMode;
   const movers=(hasLive&&live.movers)||[], feed=(hasLive&&live.feed)||[];
   const fresh=feed.filter(f=>tvSameTs(f.at,live.latest_at)), freshSum=fresh.reduce((a,f)=>a+Number(f.dc||0),0), freshSet=new Set(fresh.map(f=>f.project));
   const singlePull=!hasLive||!live.prev_at;
-  $("tvLeadSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.m===mode));
+  $("tvLeadSeg").querySelectorAll("button[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===mode));
   const secCell=m=>{ const n=tvSecNorm(m.sector), ok=TV_SECTORS.includes(n); return `<span class="s${ok?"":" na"}">${ok?n:"—"}</span>`; };
   const who=m=>m.is_nhc?(m.city||""):[tvShort(m.developer,30),m.city].filter(Boolean).join(" · ");
   const row=(m,i,cls,n,c,b)=>`<div class="tvLeadRow${cls}">
@@ -760,7 +829,7 @@ function tvRenderLead(R,ctx){
   const hd=cols=>`<span>#</span><span>المشروع</span><span style="text-align:center">القطاع</span>`+cols.map(t=>`<span style="text-align:center">${t}</span>`).join("");
   let html, title, tot;
   if(mode==="today"){
-    title=`عقود اليوم حسب المشروع ${freshSum?`<small>آخر سحب ${tvTime(live.latest_at)}: <b style="color:#007a54">+${fmt(freshSum)}</b></small>`:""}`;
+    title=`عقود اليوم حسب المشروع${ctx.region?` · ${ctx.region}`:""} ${freshSum?`<small>آخر سحب ${tvTime(live.latest_at)}: <b style="color:#007a54">+${fmt(freshSum)}</b></small>`:""}`;
     tot=`${fmt(movers.length)} مشروعاً`;
     $("tvLeadHd").innerHTML=hd(["عقود","منذ الصباح","حجوزات"]);
     html=movers.length ? movers.map((m,i)=>row(m,i,freshSet.has(m.project)?" new":"",fmt(m.contracts),singlePull?"—":tvDelta(m.d_first),fmt(m.bookings||0))).join("")
@@ -774,9 +843,9 @@ function tvRenderLead(R,ctx){
       if(e) e.today+=c; else map.set(k,{project:m.project,is_nhc:m.is_nhc,developer:m.developer,city:m.city,sector:m.sector,alloc:0,today:c}); });
     const list=[...map.values()].map(e=>Object.assign(e,{total:e.alloc+e.today})).filter(e=>e.total>0).sort((a,b)=>b.total-a.total||a.project.localeCompare(b.project));
     const sum=list.reduce((a,e)=>a+e.total,0);
-    const lbl={yesterday:"عقود أمس",week:"عقود آخر 7 أيام",month:"عقود الشهر"}[mode];
+    const lbl={yesterday:"عقود أمس",week:"عقود آخر 7 أيام",month:"عقود الشهر",year:"عقود السنة"}[mode];
     const asOf=ok&&P.as_of?new Date(P.as_of).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"}):"";
-    title=`${lbl} حسب المشروع ${asOf?`<small>ملف التخصيص (تحديث ${asOf})${addToday?" + اليوم لحظياً":""}</small>`:""}`;
+    title=`${lbl} حسب المشروع${ctx.region?` · ${ctx.region}`:""} ${asOf?`<small>ملف التخصيص (تحديث ${asOf})${addToday?" + اليوم لحظياً":""}</small>`:""}`;
     tot=`${fmt(sum)} عقد`;
     $("tvLeadHd").innerHTML=hd(["عقود",mode==="yesterday"?"":"منها اليوم",""]);
     html=list.length ? list.map((m,i)=>row(m,i,"",fmt(m.total),mode==="yesterday"?"":(m.today?tvDelta(m.today):"—"),"")).join("")
@@ -814,20 +883,29 @@ function tvProdTable(agg,mkt,month){
 }
 /* فترة صندوق المنتجات أسفل جدول المشاريع: نفس فترة الجدول (أمس/الأسبوع/الشهر حتى أمس)،
    ولـ"اليوم" الشهر حتى آخر رفع للتخصيص (ملف التخصيص لا يحوي عقود اليوم بعد) */
-function tvProdRange(now){
-  const pr=tvLeadRange(now); if(pr) return pr;
-  return {from:tvLocalDate(new Date(now.getFullYear(),now.getMonth(),1)),to:tvLocalDate(now)};
-}
+
 function tvRenderLeadProd(R){
   const P=R.prodPeriod&&R.prodPeriod.ok?R.prodPeriod:null, box=$("tvLeadProd");
   if(!P){ box.innerHTML=""; return; }
   const agg=tvProdAgg(P,()=>true), mkt=tvMarketFor(P,null);
-  const lbl={today:"الشهر حتى آخر تحديث للتخصيص",yesterday:"أمس",week:"آخر 7 أيام حتى أمس",month:"الشهر حتى أمس"}[tvLeadMode];
-  box.innerHTML=`<div class="hd">حسب المنتج ومتوسط سعر المباع <small>· ${lbl}</small></div>
+  const lbl=TV_LEAD_LBL[tvLeadMode]+" · ملف التخصيص";
+  const total=TV_PRODUCTS.reduce((s,t)=>s+agg[t].cnt,0);
+  box.innerHTML=`<div class="hd">حسب المنتج ومتوسط سعر المباع <small>· ${lbl}${tvLeadMode==="today"&&!total?" — عقود اليوم تظهر بعد رفع ملف التخصيص":""}</small></div>
     <div class="g">${TV_PRODUCTS.map(t=>{ const a=agg[t];
       return `<div class="c"><div class="t">${t}</div><div class="n">${fmt(a.cnt)} <small>عقد</small></div>
         <div class="p">متوسط المباع <b>${a.pn?tvPriceShort(a.psum/a.pn):"—"}</b></div>
         <div class="p">السوق (${tvMonthName(P.market_month)}) <b>${tvPriceShort(mkt[t])}</b></div></div>`; }).join("")}</div>`;
+}
+/* البنوك المنفّذة للعقود — نفس فترة الجدول، من آخر عمود بملف التخصيص */
+function tvRenderBanks(R){
+  const B=R.banks&&R.banks.ok?R.banks:null, box=$("tvLeadBanks");
+  if(!B){ box.innerHTML=""; return; }
+  if(!B.has_banks){ box.innerHTML=`<div class="hd">البنوك المنفّذة <small>· أضف عمود اسم البنك لملف التخصيص ثم ارفعه</small></div>`; return; }
+  const m={}; let none=0;
+  (B.rows||[]).forEach(r=>{ const c=Number(r.cnt)||0; if(!r.bank) none+=c; else m[r.bank]=(m[r.bank]||0)+c; });
+  const list=Object.entries(m).sort((a,b)=>b[1]-a[1]), tot=list.reduce((a,[,c])=>a+c,0);
+  box.innerHTML=`<div class="hd">البنوك المنفّذة <small>· ${TV_LEAD_LBL[tvLeadMode]} · ${fmt(tot)} عقد ممول${none?` · بلا بنك ${fmt(none)}`:""}</small></div>
+    <div class="bl">${list.length?list.slice(0,6).map(([b,c])=>`<div class="bk"><span class="n">${tvShort(b,22)}</span><b>${fmt(c)}</b><span class="p">${tot?Math.round(c/tot*100):0}%</span></div>`).join(""):`<div class="bk"><span class="n">لا عقود ممولة بهذه الفترة</span></div>`}</div>`;
 }
 /* المتاح على المنصة / لدى المطور من ملف التخصيص (pre: "" للمملكة، nhc_ أو dev_) */
 function tvAvailTxt(R,pre){
@@ -873,7 +951,83 @@ function tvSetupDestScroll(){
   }
 }
 /* ---------- الصفحة ١ ---------- */
-function renderTvPage1(R,ctx){
+/* عقود NHC لمشاريع مذكرات الاستثمار فقط (نطاق المستهدف) بصيغة صفوف شهرية — null إن لم تتوفر المطابقة */
+function tvMemoRows(memo,sec,curY){
+  if(!memo||!memo.ok||!Number(memo.matched)) return null;
+  const a={}; (memo.months||[]).forEach(r=>{ if(sec&&tvSecNorm(r.sector)!==sec) return; a[r.m]=(a[r.m]||0)+Number(r.cnt||0); });
+  return Object.keys(a).map(m=>({period:`${curY}-${String(m).padStart(2,"0")}`,cnt:a[m]}));
+}
+function tvRowsSum(rows){ return (rows||[]).reduce((a,r)=>a+Number(r.cnt||0),0); }
+function tvRenderGauges(R,ctx){
+  const T=(R.targets&&R.targets.ok&&R.targets.scopes)||{};
+  const tN=T.nhc||{}, tD=T.dev||{};
+  /* تحت كل عدّاد: عقود السنة حسب المنتج ومتوسط سعر المباع (ملف التخصيص) وسعر السوق لآخر شهر (سهيل) */
+  const PY=R.prodYtd&&R.prodYtd.ok?R.prodYtd:null;
+  const gp=(f,sec)=>PY?tvProdTable(tvProdAgg(PY,f),tvMarketFor(PY,sec),PY.market_month):"";
+  /* المحقق بنفس نطاق المستهدف: مشاريع مذكرات الاستثمار فقط؛ وكل عقود NHC تحتها للمعلومية */
+  const memo=R.memo&&R.memo.ok&&Number(R.memo.matched)>0?R.memo:null;
+  const progs={};
+  progs.kingdom=tvYearProg(memo?tvMemoRows(memo,null,ctx.curY):R.ytd_nhc,tN.total,ctx);
+  let g=tvGaugeHtml("NHC — المملكة",progs.kingdom,gp(r=>r.kind==="nhc",null),{all:true,allNhc:memo?tvRowsSum(R.ytd_nhc):null});
+  TV_SECTORS.forEach((sec,i)=>{
+    progs[sec]=tvYearProg(memo?tvMemoRows(memo,sec,ctx.curY):R["ytd_nhc_"+i],(tN.by_sector||{})[sec],ctx);
+    g+=tvGaugeHtml(`NHC ${sec}`,progs[sec],gp(r=>r.kind==="nhc"&&tvSecNorm(r.sector)===sec,sec),{sec,sel:tvRegion===sec,allNhc:memo?tvRowsSum(R["ytd_nhc_"+i]):null});
+  });
+  progs.dev=tvYearProg(R.ytd_dev,tD.total,ctx);
+  g+=tvGaugeHtml("المطورون",progs.dev,gp(r=>r.kind!=="nhc",null));
+  $("tvGauges").innerHTML=g;
+  $("tvGauges").classList.toggle("filtered",!!tvRegion);
+  return progs;
+}
+
+/* ---------- تصفية الشاشة حسب المنطقة: الضغط على عدّاد الأوسط/الغربي/الشرقي ----------
+   كل مكوّنات الصفحة الرئيسية (عدا العدّادات نفسها) تُبنى من نسخة مصفّاة من البيانات. الاختيار بذاكرة
+   الصفحة فقط (يعود للمملكة عند إعادة التحميل)، أو يُثبَّت للتلفزيون بالرابط: &region=الأوسط */
+let tvRegion=(()=>{ const q=tvParam("region"); return TV_SECTORS.includes(q)?q:null; })();
+function tvRegionView(R,sec){
+  const inS=x=>tvSecNorm(x&&x.sector)===sec;
+  const V=Object.assign({},R);
+  const live=R.live;
+  if(live&&live.ok&&!live.empty){
+    const st=live.sector_totals||null;
+    const tot=at=>{ if(!at||!st) return null;
+      const o={all:{},nhc:{},dev:{}}, K=["contracts","bookings","available","financed","cash","nonbene","selfbuild","projects_with_contracts"];
+      st.forEach(r=>{ if(!tvSameTs(r.at,at)||tvSecNorm(r.sector)!==sec) return;
+        [o.all,r.nhc?o.nhc:o.dev].forEach(t=>K.forEach(k=>t[k]=(t[k]||0)+Number(r[k]||0))); });
+      return o; };
+    const movers=(live.movers||[]).filter(inS);
+    let latest=tot(live.latest_at);
+    if(!latest){ /* قبل تشغيل tv_region_banks.sql: من المشاريع التي باعت فقط */
+      const sum=f=>movers.filter(f).reduce((a,m)=>({contracts:(a.contracts||0)+Number(m.contracts||0),bookings:(a.bookings||0)+Number(m.bookings||0),projects_with_contracts:(a.projects_with_contracts||0)+1}),{});
+      latest={all:sum(()=>true),nhc:sum(m=>m.is_nhc),dev:sum(m=>!m.is_nhc)};
+    }
+    const tls=live.timeline_sector?live.timeline_sector.filter(inS).map(x=>({at:x.at,contracts:x.contracts,nhc:x.nhc})):[];
+    V.live=Object.assign({},live,{
+      latest, prev:tot(live.prev_at)||{}, first:tot(live.first_at)||latest,
+      movers, feed:(live.feed||[]).filter(inS), timeline:tls,
+    });
+  }
+  if(R.fc){ const f={months:(R.fc.months||[]).filter(inS),days:(R.fc.days||[]).filter(inS)};
+    const S=tvFileSeries(f,R.fc._y,R.fc._m); V.year=S.year; V.day=S.day; V.ytd_nhc=S.ytd_nhc; V.ytd_dev=S.ytd_dev; }
+  const filt=o=>o&&o.ok?Object.assign({},o,{rows:(o.rows||[]).filter(inS)}):o;
+  V.period=filt(R.period); V.prodPeriod=filt(R.prodPeriod); V.banks=filt(R.banks);
+  if(R.dests&&R.dests.ok) V.dests=Object.assign({},R.dests,{rows:(R.dests.rows||[]).filter(inS),
+    avail:(R.dests.avail_by_sector||{})[sec]||(R.dests.avail_by_sector?{}:R.dests.avail)});
+  return V;
+}
+function tvRenderAll(){
+  if(!tvLastR) return;
+  const ctx=Object.assign({},tvLastCtx,{region:tvRegion});
+  renderTvPage1(tvRegion?tvRegionView(tvLastR,tvRegion):tvLastR,ctx,tvLastR);
+  const chip=$("tvRegionChip"); chip.classList.toggle("on",!!tvRegion); chip.textContent=tvRegion?`المنطقة: ${tvRegion}  ✕`:"";
+  requestAnimationFrame(()=>{ tvRedrawCharts($("tvPage1")); tvSetupLeadScroll(); tvSetupDestScroll(); });
+}
+function tvSetRegion(sec){
+  tvRegion=TV_SECTORS.includes(sec)&&tvRegion!==sec?sec:null;
+  if(tvPage!==1) tvShowPage(1);
+  tvRenderAll();
+}
+function renderTvPage1(R,ctx,Rg){
   const live=R.live;
   const hasLive=!!(live&&live.ok&&!live.empty);
   const liveToday=hasLive && String(live.day)===ctx.todayStr;
@@ -888,31 +1042,26 @@ function renderTvPage1(R,ctx){
   const todayAll = liveToday ? Number(A.contracts||0) : onDay(R.day);
   const mtdAll = before(R.day)+todayAll;
 
-  /* العدّادات: الفعلي منذ بداية السنة (ملف التخصيص) مقابل المستهدف السنوي من dashboard_targets */
-  const T=(R.targets&&R.targets.ok&&R.targets.scopes)||{};
-  const tN=T.nhc||{}, tD=T.dev||{};
-  /* تحت كل عدّاد: عقود السنة حسب المنتج ومتوسط سعر المباع (ملف التخصيص) وسعر السوق لآخر شهر (سهيل) */
-  const PY=R.prodYtd&&R.prodYtd.ok?R.prodYtd:null;
-  const gp=(f,sec)=>PY?tvProdTable(tvProdAgg(PY,f),tvMarketFor(PY,sec),PY.market_month):"";
-  let gauges=tvGaugeHtml("NHC — المملكة",tvYearProg(R.ytd_nhc,tN.total,ctx),gp(r=>r.kind==="nhc",null));
-  TV_SECTORS.forEach((sec,i)=>{
-    gauges+=tvGaugeHtml(`NHC ${sec}`,tvYearProg(R["ytd_nhc_"+i],(tN.by_sector||{})[sec],ctx),gp(r=>r.kind==="nhc"&&tvSecNorm(r.sector)===sec,sec));
-  });
-  gauges+=tvGaugeHtml("المطورون",tvYearProg(R.ytd_dev,tD.total,ctx),gp(r=>r.kind!=="nhc",null));
-  $("tvGauges").innerHTML=gauges;
+  /* العدّادات دائماً على مستوى المملكة والقطاعات كلها (Rg) — هي نفسها أزرار اختيار المنطقة */
+  const progs=tvRenderGauges(Rg||R,ctx);
+  const region=ctx.region||null, regLbl=region||"المملكة";
+  const progR=region?progs[region]:progs.kingdom;
 
   /* عقود اليوم */
   if(hasLive){
     const secToday={}; Object.entries(live.today_by_sector||{}).forEach(([k,v])=>{ const n=tvSecNorm(k); secToday[n]=(secToday[n]||0)+Number(v||0); });
-    const secNA=Object.keys(secToday).filter(k=>!TV_SECTORS.includes(k)).reduce((a,k)=>a+Number(secToday[k]||0),0);
+    const secNA=region?0:Object.keys(secToday).filter(k=>!TV_SECTORS.includes(k)).reduce((a,k)=>a+Number(secToday[k]||0),0);
+    /* بالمملكة: عقود اليوم لكل قطاع؛ بمنطقة: NHC والمطورون فيها */
+    const cells=region ? [["NHC",(L.nhc||{}).contracts||0],["المطورون",(L.dev||{}).contracts||0]] : TV_SECTORS.map(sec=>[sec,secToday[sec]||0]);
+    const nhcToday=Number((L.nhc||{}).contracts||0), req=progR&&progR.reqDaily!=null?Math.ceil(progR.reqDaily):null;
     const dPrev=Ap?(A.contracts||0)-(Ap.contracts||0):null, dFirst=(A.contracts||0)-(Af.contracts||0);
     $("tvKpiContracts").innerHTML=`
-      <div class="lbl">عقود اليوم — المملكة ${tvDelta(dPrev)}${singlePull?"":`<small style="font-size:14px;font-weight:600;color:#767368">منذ آخر سحب</small>`}</div>
+      <div class="lbl">عقود اليوم — ${regLbl} ${tvDelta(dPrev)}${singlePull?"":`<small style="font-size:14px;font-weight:600;color:#767368">منذ آخر سحب</small>`}</div>
       <div class="tvHeroRow">
         <div class="num">${fmt(A.contracts||0)}</div>
-        <div class="tvSecToday">${TV_SECTORS.map(sec=>`<div><span>${sec}</span><b>${fmt(secToday[sec]||0)}</b></div>`).join("")}</div>
+        <div class="tvSecToday" style="grid-template-columns:repeat(${cells.length},1fr)">${cells.map(([k,v])=>`<div><span>${k}</span><b>${fmt(v)}</b></div>`).join("")}</div>
       </div>
-      <div class="sub">منذ الصباح <b>${dFirst>0?"+":""}${fmt(dFirst)}</b> · آخر سحب <b>${tvTime(live.latest_at)}</b>${liveToday?"":` · <b style="color:#C2491E">ليس من اليوم</b>`}${secNA?` · غير محدد القطاع <b>${fmt(secNA)}</b>`:""}</div>`;
+      <div class="sub">منذ الصباح <b>${dFirst>0?"+":""}${fmt(dFirst)}</b>${liveToday?"":` · <b style="color:#C2491E">ليس من اليوم</b>`}${req!=null?` · NHC اليوم <b style="color:${nhcToday>=req?"#007a54":"#C2491E"}">${fmt(nhcToday)}</b> من <b>${fmt(req)}</b> مطلوب يومياً`:""}${secNA?` · غير محدد <b>${fmt(secNA)}</b>`:""}</div>`;
     const bPrev=Ap?(A.bookings||0)-(Ap.bookings||0):null, bFirst=(A.bookings||0)-(Af.bookings||0);
     $("tvKpiBookings").innerHTML=`
       <div class="lbl">حجوزات قائمة ${tvDelta(bPrev)}</div>
@@ -928,7 +1077,7 @@ function renderTvPage1(R,ctx){
         : /404|does not exist|Could not find/i.test(ctx.liveErr) ? "دالة السحوبات غير موجودة — شغّل live_board.sql على القاعدة"
         : "تعذّر قراءة سحوبات داشبورد NHC — "+(ctx.liveErr||"خطأ غير معروف"))
       : "لم يُرفع أي سحب من داشبورد NHC بعد — اضغط «⬆ رفع سحب جديد» أسفل الشاشة";
-    $("tvKpiContracts").innerHTML=`<div class="lbl">عقود اليوم — المملكة</div><div class="tvEmpty" style="font-size:17px;padding:8px">${msg}</div>`;
+    $("tvKpiContracts").innerHTML=`<div class="lbl">عقود اليوم — ${regLbl}</div><div class="tvEmpty" style="font-size:17px;padding:8px">${msg}</div>`;
     $("tvKpiBookings").innerHTML=`<div class="lbl">حجوزات قائمة</div><div class="num">—</div>`;
     $("tvKpiProjects").innerHTML=`<div class="lbl">مشاريع باعت اليوم</div><div class="num">—</div>`;
   }
@@ -954,21 +1103,21 @@ function renderTvPage1(R,ctx){
   const months=Array.from({length:ctx.curM},(_,i)=>i+1);
   const mVals=months.map(m=> m===ctx.curM ? mtdAll : (yr[m]||0));
   const ytd=mVals.reduce((a,b)=>a+b,0);
-  $("tvMonthlyTitle").innerHTML=`العقود الموقّعة شهرياً — ${ctx.curY} <small>${MNAMES[String(ctx.curM).padStart(2,"0")]} حتى الآن مع عقود اليوم</small><span class="tot">${fmt(ytd)} عقد</span>`;
+  $("tvMonthlyTitle").innerHTML=`العقود الموقّعة شهرياً — ${ctx.curY}${region?` · ${region}`:""} <small>${MNAMES[String(ctx.curM).padStart(2,"0")]} حتى الآن مع عقود اليوم</small><span class="tot">${fmt(ytd)} عقد</span>`;
   tvDrawChart($("tvMonthlyChart"), months.map(m=>MNAMES[String(m).padStart(2,"0")]), [{values:mVals,color:"#009C6D",area:true}], {pulseLast:true,empty:"لا بيانات — ارفع ملف التخصيص اليومي"});
 
   /* المنحنى اليومي — اليوم الجاري بقيمته الحيّة */
   const dy={}; (R.day||[]).forEach(r=>{ dy[+r.period.split("-")[2]]=Number(r.cnt||0); });
   const days=Array.from({length:ctx.dayOfMonth},(_,i)=>i+1);
   const dVals=days.map(d=> d===ctx.dayOfMonth ? todayAll : (dy[d]||0));
-  $("tvDailyTitle").innerHTML=`العقود يومياً — ${MNAMES[String(ctx.curM).padStart(2,"0")]} ${ctx.curY} <small>اليوم لحظياً، وما قبله من ملف التخصيص</small><span class="tot">${fmt(mtdAll)} عقد</span>`;
+  $("tvDailyTitle").innerHTML=`العقود يومياً — ${MNAMES[String(ctx.curM).padStart(2,"0")]} ${ctx.curY}${region?` · ${region}`:""} <small>اليوم لحظياً، وما قبله من ملف التخصيص</small><span class="tot">${fmt(mtdAll)} عقد</span>`;
   tvDrawChart($("tvDailyChart"), days.map(String), [{values:dVals,color:"#0B7A5A",area:true,valFont:14}], {pulseLast:true,xFont:12,empty:"لا عقود هذا الشهر بعد"});
 
   /* حركة العقود اليوم حسب وقت كل سحب — المملكة والـNHC */
   /* سحب بلا أي تغيّر عن السابق لا يُعرض كنقطة (يبقى أول سحب اليوم) */
   const tl=((hasLive&&live.timeline)||[]).filter((x,i,a)=>{ if(!i) return true;
     let j=i-1; return Number(x.contracts)!==Number(a[j].contracts)||Number(x.nhc)!==Number(a[j].nhc); });
-  $("tvTimelineTitle").innerHTML=`حركة العقود اليوم حسب الوقت <small><span style="color:#009C6D">●</span> المملكة <span style="color:#C97F2E">●</span> NHC · ${fmt(tl.length)} سحبات</small>`;
+  $("tvTimelineTitle").innerHTML=`حركة العقود اليوم حسب الوقت${region?` · ${region}`:""} <small><span style="color:#009C6D">●</span> ${regLbl} <span style="color:#C97F2E">●</span> NHC · ${fmt(tl.length)} سحبات</small>`;
   tvDrawChart($("tvTimelineChart"), tl.map(x=>tvTime(x.at)), [
     {values:tl.map(x=>Number(x.contracts)||0),color:"#009C6D",area:true},
     {values:tl.map(x=>Number(x.nhc)||0),color:"#C97F2E",width:3,labelColor:"#9a5c12",valFont:13},
@@ -982,6 +1131,7 @@ function renderTvPage1(R,ctx){
 
   tvRenderLead(R,ctx);
   tvRenderLeadProd(R);
+  tvRenderBanks(R);
   tvRenderDests(R,ctx);
   const movers=(hasLive&&live.movers)||[];
 
@@ -989,7 +1139,7 @@ function renderTvPage1(R,ctx){
   const items=[];
   if(hasLive){
     const dA=Ap?(A.contracts||0)-(Ap.contracts||0):null;
-    items.push(`<span class="tvTapeItem">المملكة ${fmt(A.contracts||0)} عقد ${dA!=null?`<span class="${dA>0?"up":dA<0?"down":"flat"}">${dA>0?"▲ +":dA<0?"▼ ":"◆ "}${fmt(dA)}</span>`:""}<small>NHC ${fmt((L.nhc||{}).contracts||0)} · المطورون ${fmt((L.dev||{}).contracts||0)}</small></span>`);
+    items.push(`<span class="tvTapeItem">${regLbl} ${fmt(A.contracts||0)} عقد ${dA!=null?`<span class="${dA>0?"up":dA<0?"down":"flat"}">${dA>0?"▲ +":dA<0?"▼ ":"◆ "}${fmt(dA)}</span>`:""}<small>NHC ${fmt((L.nhc||{}).contracts||0)} · المطورون ${fmt((L.dev||{}).contracts||0)}</small></span>`);
     const tickerRows = fresh.length ? fresh.map(f=>({name:f.project,d:Number(f.dc),tot:f.contracts,who:f.is_nhc?"NHC":f.developer}))
       : movers.slice(0,14).map(m=>({name:m.project,d:null,tot:m.contracts,who:m.is_nhc?"NHC":m.developer}));
     tickerRows.forEach(t=>items.push(`<span class="tvTapeItem">${t.name} ${t.d!=null?`<span class="up">▲ +${fmt(t.d)}</span>`:""}<small>${fmt(t.tot)} عقد اليوم · ${tvShort(t.who,26)}</small></span>`));
@@ -1090,7 +1240,12 @@ function startTvMode(){
   loadTvDashboard();
   setInterval(loadTvDashboard,TV_REFRESH_MS);
   let rz=null; window.addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(()=>{ tvRedrawCharts($("tvPage"+tvPage)); if(tvPage===1){ tvSetupLeadScroll(); tvSetupDestScroll(); } },200); });
-  $("tvLeadSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>tvSetLeadMode(b.dataset.m));
+  $("tvLeadSeg").querySelectorAll("button[data-m]").forEach(b=>b.onclick=()=>tvSetLeadMode(b.dataset.m));
+  $("tvLeadPause").onclick=()=>tvSetLeadAuto(!tvLeadAuto);
+  tvStartLeadRotation();
+  $("tvGauges").addEventListener("click",e=>{ const g=e.target.closest(".tvGauge"); if(!g) return;
+    if(g.dataset.sec) tvSetRegion(g.dataset.sec); else if(g.dataset.all) tvSetRegion(null); });
+  $("tvRegionChip").onclick=()=>tvSetRegion(null);
   document.addEventListener("keydown",e=>{
     if(e.key==="ArrowLeft"||e.key==="ArrowRight"){ tvPinnedPage=tvPage===1?2:1; tvStartRotation(); }
     else if(e.key==="r"||e.key==="R") loadTvDashboard();

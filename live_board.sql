@@ -258,6 +258,31 @@ begin
     'timeline', v_timeline,
     'movers', v_movers,
     'feed', v_feed,
+    -- إجماليات كل قطاع × NHC/مطور بآخر سحب والسابق وأول سحب اليوم، وحركة اليوم لكل قطاع — لتصفية الشاشة حسب المنطقة
+    'sector_totals', (
+      select coalesce(jsonb_agg(jsonb_build_object('at', snapshot_at, 'sector', sec, 'nhc', is_nhc,
+        'contracts', c, 'bookings', b, 'available', a, 'financed', f, 'cash', ca, 'nonbene', nb, 'selfbuild', sb,
+        'projects_with_contracts', pw)), '[]'::jsonb)
+      from (
+        select snapshot_at, coalesce(v_psec->>btrim(project_name), 'غير محدد') as sec, is_nhc,
+               sum(contracts_total) as c, sum(bookings) as b, sum(available) as a, sum(contracts_financed) as f,
+               sum(contracts_cash) as ca, sum(contracts_nonbene) as nb, sum(contracts_selfbuild) as sb,
+               count(*) filter (where contracts_total > 0) as pw
+        from live_project_snapshots
+        where snapshot_at in (v_latest, v_prev, v_first)
+        group by 1, 2, 3
+      ) st
+    ),
+    'timeline_sector', (
+      select coalesce(jsonb_agg(jsonb_build_object('at', snapshot_at, 'sector', sec, 'contracts', c, 'nhc', n) order by snapshot_at), '[]'::jsonb)
+      from (
+        select snapshot_at, coalesce(v_psec->>btrim(project_name), 'غير محدد') as sec,
+               sum(contracts_total) as c, coalesce(sum(contracts_total) filter (where is_nhc), 0) as n
+        from live_project_snapshots
+        where (snapshot_at at time zone 'Asia/Riyadh')::date = v_day
+        group by 1, 2
+      ) ts
+    ),
     -- عقود آخر لقطة لكل قطاع (نفس ربط المشروع/المدينة بالقطاع أعلاه)
     'today_by_sector', (
       select coalesce(jsonb_object_agg(sector, c), '{}'::jsonb) from (

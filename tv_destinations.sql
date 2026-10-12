@@ -217,6 +217,16 @@ as $$
         'nhc_developer', coalesce(sum(cnt) filter (where status = 'متاحة لدى المطور' and kind = 'nhc'), 0),
         'dev_platform', coalesce(sum(cnt) filter (where status = 'متاحة على المنصة' and kind <> 'nhc'), 0),
         'dev_developer', coalesce(sum(cnt) filter (where status = 'متاحة لدى المطور' and kind <> 'nhc'), 0))
-      from tv_unit_status)
+      from tv_unit_status),
+    -- نفس المتاح لكل قطاع — لتصفية الشاشة حسب المنطقة
+    'avail_by_sector', (select coalesce(jsonb_object_agg(sec, a), '{}'::jsonb) from (
+      select tv_region(nullif(sector, ''), null) as sec, jsonb_build_object(
+        'platform', coalesce(sum(cnt) filter (where status = 'متاحة على المنصة'), 0),
+        'developer', coalesce(sum(cnt) filter (where status = 'متاحة لدى المطور'), 0),
+        'nhc_platform', coalesce(sum(cnt) filter (where status = 'متاحة على المنصة' and kind = 'nhc'), 0),
+        'nhc_developer', coalesce(sum(cnt) filter (where status = 'متاحة لدى المطور' and kind = 'nhc'), 0),
+        'dev_platform', coalesce(sum(cnt) filter (where status = 'متاحة على المنصة' and kind <> 'nhc'), 0),
+        'dev_developer', coalesce(sum(cnt) filter (where status = 'متاحة لدى المطور' and kind <> 'nhc'), 0)) as a
+      from tv_unit_status group by 1) z)
   );
 $$;
