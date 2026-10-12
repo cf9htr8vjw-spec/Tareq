@@ -615,9 +615,10 @@ async function loadTvDashboard(){
     upd.innerHTML=`<span class="${stale?"stale":""}">آخر سحب من داشبورد NHC: ${tvTime(live.latest_at)} (قبل ${fmt(ago)} دقيقة${stale?" — السحب متأخر، اطلب رفع ملف جديد":""})</span> · ${fmt(live.snapshots_today||0)} سحبات اليوم${syncTxt}`;
   } else { upd.textContent=syncTxt.replace(/^ · /,""); $("tvUpBtn").classList.toggle("stale",!!(live&&live.ok&&live.empty)); }
   const unm=(fc&&fc.unmapped)||[];
-  const srcNote = !fc ? "" : (Number(fc.file_sector_rows)>0 ? " · العقود: ملف التخصيص بقطاع الملف"
+  const srcNote = !fc ? "" : (fc.source==="file" ? " · العقود: ملف التخصيص كاملاً (حالة الحجز = عقد)"
+    : Number(fc.file_sector_rows)>0 ? " · العقود: ملف التخصيص بقطاع الملف"
     : " · ارفع ملف التخصيص من جديد ليُعدّ بقطاع الملف")
-    + (unm.length?` · قيم قطاع بالملف لم تُعرف (حُسبت بقطاع التطبيق): ${unm.slice(0,4).map(u=>`«${u.v}» ${fmt(u.cnt)}`).join("، ")}`:"");
+    + (unm.length?` · قيم قطاع بالملف لم تُعرف (حُسبت ${fc.source==="file"?"غير محدد":"بقطاع التطبيق"}): ${unm.slice(0,4).map(u=>`«${u.v}» ${fmt(u.cnt)}`).join("، ")}`:"");
   $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+srcNote+(errs.length?` · تعذّر: ${errs[0]}`:"");
 }
 

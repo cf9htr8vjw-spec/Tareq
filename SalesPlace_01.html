@@ -5784,6 +5784,14 @@ function toISODate(v){
     return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`; }
   return null;
 }
+/* تاريخ لعدّ شاشة الداشبورد: رقم إكسل/تاريخ كما toISODate، وأيضاً نص (2026-03-05 أو 05/03/2026) */
+function tvRowDate(v){
+  const d=toISODate(v); if(d) return d;
+  const t=String(v==null?"":v).trim(); let m;
+  if((m=t.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/))) return `${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`;
+  if((m=t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/))) return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  return null;
+}
 function loadSheetJS(){
   return new Promise((resolve,reject)=>{
     if(window.XLSX){ resolve(); return; }
@@ -5870,6 +5878,19 @@ async function processSyncFile(){
   let matched=0, unmatched=0, excludedPrice=0;
 
   let excludedStatus=0;
+  /* عدّ عقود شاشة الداشبورد (فقط): من الملف كاملاً كما يُفلتر بالإكسل — حالة الحجز = عقد، حسب تاريخ
+     توقيع العقد وقطاع الملف ومطوّره — قبل أي استبعاد أدناه (السعر/الحالات)، فيطابق عدّ الملف نفسه */
+  const tvAgg=new Map(); let tvContracts=0, tvNoDate=0;
+  for(const row of rows){
+    if(String(row["حالة الحجز"]==null?"":row["حالة الحجز"]).trim()==="عقد"){
+      const cd=tvRowDate(row["تاريخ توقيع العقد"]);
+      if(cd){
+        const k=`${cd}|${String(row["القطاع"]==null?"":row["القطاع"]).trim()}|${String(row.developer_name==null?"":row.developer_name).trim()==="NHC"?"nhc":"other"}`;
+        tvAgg.set(k,(tvAgg.get(k)||0)+1); tvContracts++;
+      } else tvNoDate++;
+    }
+  }
+  const tvRows=[...tvAgg.entries()].map(([k,cnt])=>{ const [contract_date,sector,kind]=k.split("|"); return {contract_date,sector,kind,cnt}; });
   for(const row of rows){
     /* استبعاد أي حالة خارج الحالات الأربع المعتمدة (مثل محجوب أو تنموي) — لا تُحسب لا بالمخزون ولا بالمبيعات */
     const bucket=syncBucket(row["حالة الحجز"]);
@@ -5990,6 +6011,7 @@ async function processSyncFile(){
     <div class="cresrow"><span class="cl">مشاريع ستُحدَّث بنسبة شريحة المعروض</span><span class="cv">${fmt(segRows.length)}</span></div>
     <div class="cresrow"><span class="cl">مشاريع ستُحدَّث بعدد عقود الاستصناع المعلّقة</span><span class="cv">${fmt(istisnaRows.length)}</span></div>
     <div class="cresrow"><span class="cl">وحدات ستُرسَل لمرآة التخصيص الكاملة</span><span class="cv">${fmt(mirrorRows.length)}</span></div>
+    <div class="cresrow"><span class="cl">عقود شاشة الداشبورد (حالة الحجز = عقد، كل الملف)</span><span class="cv">${fmt(tvContracts)}${tvNoDate?` · ${fmt(tvNoDate)} بلا تاريخ توقيع`:""}</span></div>
     <div class="cresrow"><span class="cl">عمود رمز الوحدة (unit_code) بالملف</span><span class="cv">${unitCodeKey?`تم التعرّف عليه ("${unitCodeKey}")`:"لم يُعثر عليه بالملف"}</span></div>
     ${unitCodeKey?`<div class="cresrow"><span class="cl">وحدات معها رمز فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.unit_code).length)}</span></div>`:""}
     <div class="cresrow"><span class="cl">عمود رقم المبنى (building_number) بالملف</span><span class="cv">${buildingNumKey?`تم التعرّف عليه ("${buildingNumKey}")`:"لم يُعثر عليه بالملف"}</span></div>
@@ -6006,11 +6028,11 @@ async function processSyncFile(){
   <button class="btn" id="syncUpload" style="width:100%;margin-top:12px">رفع التحديث إلى القاعدة</button>`;
   $("syncStart").disabled=false;
   syncSetStatus("");
-  $("syncUpload").onclick=()=>uploadSyncData(statusRows,mirrorRows,modelRows,segRows,istisnaRows);
+  $("syncUpload").onclick=()=>uploadSyncData(statusRows,mirrorRows,modelRows,segRows,istisnaRows,tvRows);
 }
 $("syncStart").onclick=processSyncFile;
 
-async function uploadSyncData(statusRows,mirrorRows,modelRows,segRows,istisnaRows){
+async function uploadSyncData(statusRows,mirrorRows,modelRows,segRows,istisnaRows,tvRows){
   $("syncUpload").disabled=true;
   syncSetStatus("جارٍ رفع حالة الوحدات…");
   try{
@@ -6073,9 +6095,17 @@ async function uploadSyncData(statusRows,mirrorRows,modelRows,segRows,istisnaRow
     if(modelFailed) console.error("[تشخيص] فشل تحديث عمود النموذج بمرآة التخصيص (جزئياً أو كلياً)");
   }
 
-  syncSetStatus(failedChunks
+  /* عدّ عقود شاشة الداشبورد — استبدال كامل، أفضل-جهد (لا يوقف الرفع قبل تشغيل tv_contract_counts.sql) */
+  let tvNote="";
+  if(tvRows){
+    try{
+      const rt=await adminCall("admin_replace_tv_contract_daily",{p_rows:tvRows});
+      if(!rt||!rt.ok) tvNote=" · تعذّر تحديث عقود شاشة الداشبورد: "+((rt&&rt.msg)||"خطأ غير معروف");
+    }catch(e){ tvNote=" · تعذّر تحديث عقود شاشة الداشبورد — شغّل tv_contract_counts.sql على القاعدة"; console.error("[تشخيص] عقود شاشة الداشبورد:",e.message||e); }
+  }
+  syncSetStatus((failedChunks
     ? `اكتمل تحديث المخزون، لكن ${failedChunks} دفعة من مرآة التخصيص فشلت — التقارير قد تكون ناقصة`
-    : `اكتمل التحديث بنجاح — أُدرجت ${fmt(inserted)} وحدة بمرآة التخصيص الكاملة`,
+    : `اكتمل التحديث بنجاح — أُدرجت ${fmt(inserted)} وحدة بمرآة التخصيص الكاملة`)+tvNote,
     failedChunks?"err":null);
   toast(failedChunks?"اكتمل التحديث مع بعض الأخطاء":"اكتمل تحديث المخزون والمبيعات بنجاح", failedChunks?"err":"ok");
   try{ await adminCall("admin_mark_synced",{}); }catch(e){} /* سجل وقت آخر تحديث فعلي — يظهر لكل المستخدمين بدل تاريخ اليوم؛ لا يوقف التدفق إن فشل (قد يكون قبل تشغيل sync_status.sql) */
@@ -8800,9 +8830,10 @@ async function loadTvDashboard(){
     upd.innerHTML=`<span class="${stale?"stale":""}">آخر سحب من داشبورد NHC: ${tvTime(live.latest_at)} (قبل ${fmt(ago)} دقيقة${stale?" — السحب متأخر، اطلب رفع ملف جديد":""})</span> · ${fmt(live.snapshots_today||0)} سحبات اليوم${syncTxt}`;
   } else { upd.textContent=syncTxt.replace(/^ · /,""); $("tvUpBtn").classList.toggle("stale",!!(live&&live.ok&&live.empty)); }
   const unm=(fc&&fc.unmapped)||[];
-  const srcNote = !fc ? "" : (Number(fc.file_sector_rows)>0 ? " · العقود: ملف التخصيص بقطاع الملف"
+  const srcNote = !fc ? "" : (fc.source==="file" ? " · العقود: ملف التخصيص كاملاً (حالة الحجز = عقد)"
+    : Number(fc.file_sector_rows)>0 ? " · العقود: ملف التخصيص بقطاع الملف"
     : " · ارفع ملف التخصيص من جديد ليُعدّ بقطاع الملف")
-    + (unm.length?` · قيم قطاع بالملف لم تُعرف (حُسبت بقطاع التطبيق): ${unm.slice(0,4).map(u=>`«${u.v}» ${fmt(u.cnt)}`).join("، ")}`:"");
+    + (unm.length?` · قيم قطاع بالملف لم تُعرف (حُسبت ${fc.source==="file"?"غير محدد":"بقطاع التطبيق"}): ${unm.slice(0,4).map(u=>`«${u.v}» ${fmt(u.cnt)}`).join("، ")}`:"");
   $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+srcNote+(errs.length?` · تعذّر: ${errs[0]}`:"");
 }
 
