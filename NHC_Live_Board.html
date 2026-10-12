@@ -466,8 +466,96 @@ function xlsxBestSheet(wb,wantHeaders){
     if(score>bestScore){ bestScore=score; best=ws; bestName=n; }
   }
   if(!best){ bestName=wb.SheetNames[0]; best=wb.Sheets[bestName]; }
+  if(!best) return null;   /* المكتبة لم تستطع قراءة أي ورقة (غالباً ملف ضخم) — القارئ المتدرّج يتولاه */
   best.__name=bestName;
   return best;
+}
+/* ---------- قارئ xlsx متدرّج للملفات الضخمة ----------
+   مكتبة إكسل تفكّ ورقة البيانات كنص واحد؛ ملف التخصيص (60+ ميجابايت مضغوطاً) قد تتجاوز ورقته
+   غير المضغوطة أقصى طول نص بالمتصفح (~512 مليون حرف) فتفشل بصمت وتُرجع الورقة فارغة. هنا نقرأ
+   ملف zip مباشرة، ونفكّ ضغط الورقة قطعةً قطعة (DecompressionStream المدمج بالمتصفح)، ونحلّل الصفوف
+   أولاً بأول — الذاكرة بحجم الصفوف فقط. الناتج بنفس شكل sheet_to_json({defval:null}): الصف الأول
+   أسماء الأعمدة، الأرقام أرقام (التواريخ أرقام إكسل تسلسلية كما يتوقعها toISODate)، والنص نص. */
+async function xlsxStreamRows(file,wantHeaders,onProgress){
+  if(typeof DecompressionStream==="undefined") throw new Error("المتصفح لا يدعم قراءة الملفات الكبيرة — استخدم Chrome أو Edge حديث");
+  const buf=new Uint8Array(await file.arrayBuffer()), dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);
+  /* فهرس zip المركزي */
+  let eocd=-1; for(let i=buf.length-22;i>=Math.max(0,buf.length-70000);i--){ if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; } }
+  if(eocd<0) throw new Error("الملف ليس ملف Excel ‏(.xlsx) صالحاً");
+  let n=dv.getUint16(eocd+10,true), p=dv.getUint32(eocd+16,true); const entries={};
+  const td=new TextDecoder("utf-8");
+  for(let k=0;k<n;k++){
+    if(dv.getUint32(p,true)!==0x02014b50) break;
+    const method=dv.getUint16(p+10,true), csize=dv.getUint32(p+20,true), nl=dv.getUint16(p+28,true), xl=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true), off=dv.getUint32(p+42,true);
+    entries[td.decode(buf.subarray(p+46,p+46+nl)).replace(/^\//,"")]={method,csize,off};
+    p+=46+nl+xl+cl;
+  }
+  const dataOf=e=>{ const ln=dv.getUint16(e.off+26,true), lx=dv.getUint16(e.off+28,true), st=e.off+30+ln+lx; return buf.subarray(st,st+e.csize); };
+  /* يمرّر نص الملف الداخلي قطعة قطعة إلى onChunk؛ يتوقف إن أرجع true */
+  const streamText=async(name,onChunk)=>{
+    const e=entries[name]; if(!e) return false;
+    const raw=dataOf(e);
+    if(e.method===0){ onChunk(td.decode(raw)); return true; }
+    const rs=new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw")).pipeThrough(new TextDecoderStream());
+    const rd=rs.getReader();
+    while(true){ const {value,done}=await rd.read(); if(done) break; if(onChunk(value)){ try{ await rd.cancel(); }catch(_){} break; } }
+    return true;
+  };
+  const readSmall=async name=>{ let t=""; await streamText(name,c=>{ t+=c; }); return t; };
+  const ent=s=>s.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi,(m,c)=>c[0]==="#"?String.fromCodePoint(c[1]==="x"||c[1]==="X"?parseInt(c.slice(2),16):parseInt(c.slice(1),10)):{amp:"&",lt:"<",gt:">",quot:'"',apos:"'"}[c.toLowerCase()]);
+  const tText=xml=>{ let o="", m; const re=/<(?:\w+:)?t(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?t>|<(?:\w+:)?t\s*\/>/g; const noPh=xml.replace(/<(?:\w+:)?rPh\b[\s\S]*?<\/(?:\w+:)?rPh>/g,""); while((m=re.exec(noPh))) o+=m[1]||""; return ent(o); };
+  /* الأوراق ومساراتها */
+  const wbx=await readSmall("xl/workbook.xml"), rel=await readSmall("xl/_rels/workbook.xml.rels");
+  const tgt={}; rel.replace(/<(?:\w+:)?Relationship\b[^>]*>/g,r=>{ const id=(r.match(/\bId="([^"]+)"/)||[])[1], t=(r.match(/\bTarget="([^"]+)"/)||[])[1]; if(id&&t) tgt[id]=t; return r; });
+  const sheets=[]; wbx.replace(/<(?:\w+:)?sheet\b[^>]*>/g,x=>{ const nm=(x.match(/\bname="([^"]*)"/)||[])[1], id=(x.match(/\br:id="([^"]+)"/)||x.match(/:id="([^"]+)"/)||[])[1];
+    let t=tgt[id]||""; t=t.replace(/^\//,""); if(t&&!t.startsWith("xl/")) t="xl/"+t.replace(/^\.\//,""); sheets.push({name:ent(nm||""),path:t}); return x; });
+  if(!sheets.length) throw new Error("لم أجد أوراقاً بالملف");
+  /* النصوص المشتركة */
+  const ss=[]; let sbuf="";
+  await streamText("xl/sharedStrings.xml",c=>{ sbuf+=c; let i; while((i=sbuf.indexOf("</si>"))>=0){ const st=sbuf.lastIndexOf("<si",i); ss.push(tText(sbuf.slice(st,i))); sbuf=sbuf.slice(i+5); } });
+  const colIdx=ref=>{ let c=0; for(let i=0;i<ref.length;i++){ const ch=ref.charCodeAt(i); if(ch<65||ch>90) break; c=c*26+ch-64; } return c-1; };
+  const cellVal=(attrs,inner)=>{
+    const t=(attrs.match(/\bt="([^"]+)"/)||[])[1]||"n";
+    if(t==="inlineStr") return tText(inner);
+    const v=(inner.match(/<(?:\w+:)?v>([\s\S]*?)<\/(?:\w+:)?v>/)||[])[1];
+    if(v==null) return null;
+    if(t==="s") return ss[+v]==null?null:ss[+v];
+    if(t==="str"||t==="e") return ent(v);
+    if(t==="b") return v==="1";
+    if(t==="d") return ent(v);
+    const num=Number(v); return isFinite(num)?num:ent(v);
+  };
+  /* يحلّل صفوف ورقة: limit=1 لقراءة صف العناوين فقط (لاختيار الورقة) */
+  const parseSheet=async(path,limit)=>{
+    let tail="", header=null; const out=[]; let done=false, bytes=0;
+    const total=entries[path]?entries[path].csize*8:1;
+    const cellRe=/<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g;
+    const rowRe=/<(?:\w+:)?row\b[^>]*?(?:\/>|>([\s\S]*?)<\/(?:\w+:)?row>)/g;
+    await streamText(path,chunk=>{
+      bytes+=chunk.length; tail+=chunk;
+      const l1=tail.lastIndexOf("</row>"), l2=tail.lastIndexOf(":row>"), last=Math.max(l1,l2);
+      if(last<0) return false;
+      const cut=last===l1?l1+6:l2+5, work=tail.slice(0,cut); tail=tail.slice(cut);
+      let m; rowRe.lastIndex=0;
+      while((m=rowRe.exec(work))){
+        const cells=[]; let cm, seq=0; cellRe.lastIndex=0; const inner=m[1]||"";
+        while((cm=cellRe.exec(inner))){ const r=(cm[1].match(/\br="([A-Z]+)\d*"/)||[])[1]; const ci=r?colIdx(r):seq; seq=ci+1; cells[ci]=cellVal(cm[1],cm[2]||""); }
+        if(!header){ if(cells.some(v=>v!=null&&v!=="")){ header=cells.map(v=>v==null?"":String(v).trim()); if(limit===1){ done=true; return true; } } continue; }
+        if(!cells.some(v=>v!=null&&v!=="")) continue;
+        const o={}; header.forEach((h,i)=>{ if(h) o[h]=cells[i]===undefined?null:cells[i]; }); out.push(o);
+      }
+      if(onProgress&&limit!==1) onProgress(Math.min(99,Math.round(bytes/total*100)), out.length);
+      return false;
+    });
+    return {header:header||[],rows:out};
+  };
+  const want=new Set((wantHeaders||[]).map(normalizeHeaderKey));
+  let best=sheets[0], bestScore=-1;
+  if(sheets.length>1) for(const sh of sheets){ const {header}=await parseSheet(sh.path,1);
+    const sc=header.filter(h=>want.has(normalizeHeaderKey(h))).length*1e9+(entries[sh.path]?entries[sh.path].csize:0);
+    if(sc>bestScore){ bestScore=sc; best=sh; } }
+  const {rows}=await parseSheet(best.path,0);
+  return {rows,sheetName:best.name,sheetCount:sheets.length};
 }
 function loadSheetJS(){
   return new Promise((resolve,reject)=>{
@@ -1320,7 +1408,7 @@ async function liveReadFile(file){
   try{
     await loadSheetJS();
     const wb=XLSX.read(await file.arrayBuffer(),{type:"array"});
-    rows=XLSX.utils.sheet_to_json(xlsxBestSheet(wb,["اسم المشروع","عدد العقود","اسم المطور","المدينة"]),{defval:null});
+    rows=XLSX.utils.sheet_to_json(xlsxBestSheet(wb,["اسم المشروع","عدد العقود","اسم المطور","المدينة"])||{},{defval:null});
   }catch(e){ throw new Error("تعذّر قراءة الملف: "+(e.message||e)); }
   const K={}; for(const [k,c] of Object.entries(LIVE_COLS)) K[k]=resolveHeaderKey(rows,c,null);
   if(!K.project||!K.total) throw new Error(`لم أتعرّف على عمود ${!K.project?"«اسم المشروع»":"«عدد العقود»"} — تأكد أنه ملف Export من داشبورد NHC. الأعمدة الموجودة: ${allFileHeaders(rows).slice(0,25).join(" · ")}`);
