@@ -167,6 +167,11 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvUpMsg.ok{color:#007a54;font-weight:800;font-size:17px}
 .tvUpGo{background:#009C6D;color:#fff;border:none;border-radius:14px;padding:14px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit}
 .tvUpGo:disabled{opacity:.45;cursor:default}
+.tvUpConfirm{display:none;align-items:center;gap:10px;font-size:15px;font-weight:700;color:#C2491E;cursor:pointer}
+.tvUpConfirm.on{display:flex}
+.tvUpConfirm input{width:20px;height:20px;accent-color:#C2491E}
+.tvUpUndo{display:none;border:1.5px solid #E7C3B4;background:#FFF7F3;color:#C2491E;border-radius:12px;padding:9px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+.tvUpUndo.on{display:block}
 
 </style>
 </head>
@@ -248,7 +253,9 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
       <label class="tvUpDrop" id="tvUpDrop"><input type="file" id="tvUpFile" accept=".xlsx" hidden><span id="tvUpDropTxt">اسحب ملف Export هنا أو اضغط للاختيار</span></label>
       <div class="tvUpRow"><span>وقت السحب</span><input type="datetime-local" id="tvUpAt"></div>
       <div class="tvUpMsg" id="tvUpMsg"></div>
+      <label class="tvUpConfirm" id="tvUpConfirmRow"><input type="checkbox" id="tvUpConfirm">الأرقام صحيحة لعقود اليوم — ارفع رغم التحذير</label>
       <button type="button" id="tvUpGo" class="tvUpGo" disabled>رفع اللقطة وتحديث الشاشة</button>
+      <button type="button" id="tvUpUndo" class="tvUpUndo"></button>
     </div>
   </div>
 </div>
@@ -589,6 +596,8 @@ async function loadTvDashboard(){
   requestAnimationFrame(()=>{ tvRedrawCharts($("tvPage"+tvPage)); if(tvPage===1) tvSetupLeadScroll(); });
 
   const live=R.live, upd=$("tvUpdated");
+  tvLastLive=(live&&live.ok&&!live.empty)?live:null;
+  if(isTvMode()) tvUpRefreshUndo();
   const syncAt=R.sync&&R.sync[0]&&R.sync[0].last_synced_at;
   const syncTxt=syncAt?` · آخر رفع لملف التخصيص: ${new Date(syncAt).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})} ${tvTime(syncAt)}`:"";
   if(live&&live.ok&&!live.empty){
@@ -906,6 +915,14 @@ function liveSummary(list){
     top:[...list].filter(r=>r.contracts_total>0).sort((a,b)=>b.contracts_total-a.contracts_total).slice(0,8),
   };
 }
+/* ملف Export بفلتر تاريخ غير «اليوم» بداشبورد NHC يعطي عقوداً تراكمية (عشرات الآلاف) تظهر كأنها
+   عقود اليوم — حصل فعلاً: سحب 11:10 قفز من 1 إلى 154,965. حدود يوم واحد واسعة جداً عمداً. */
+const LIVE_MAX_DAY=5000, LIVE_MAX_PROJECT_DAY=500;
+function liveSuspicious(s){
+  const top=s.top[0];
+  if(s.contracts<=LIVE_MAX_DAY && !(top&&top.contracts_total>LIVE_MAX_PROJECT_DAY)) return "";
+  return `⚠ العقود بالملف <b>${fmt(s.contracts)}</b>${top?` وأعلى مشروع «${top.project_name}» <b>${fmt(top.contracts_total)}</b>`:""} — هذه لا تبدو عقود يوم واحد. غالباً فلتر التاريخ بداشبورد NHC ليس على «اليوم» فالأرقام تراكمية: صدّر الملف من جديد بفلتر اليوم.`;
+}
 /* دفعة واحدة عادةً (الملف ~800 مشروع) — تجنّب لقطة نصفية لو فشلت دفعة لاحقة */
 async function liveUploadRows(list,atISO,user,pass,onProgress){
   const batch=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{ const r=Math.random()*16|0; return (c==="x"?r:(r&3|8)).toString(16); });
@@ -928,9 +945,20 @@ async function liveUploadRows(list,atISO,user,pass,onProgress){
    بذاكرة الصفحة فقط (لا تُخزَّن بالمتصفح) حتى إعادة تحميل الصفحة، فلا يُعاد إدخالها كل ساعة.
    الزر يظهر عند تحريك الفأرة ويختفي بعد 5 ثوانٍ، ويبقى ظاهراً بالأحمر إن تأخر السحب. يمكن أيضاً
    سحب الملف وإفلاته فوق أي مكان بالشاشة، أو ضغط حرف U. */
-let tvUpCreds=null, tvUpList=null, tvUpMouseT=null;
+let tvUpCreds=null, tvUpList=null, tvUpMouseT=null, tvUpSus=false, tvLastLive=null;
 function tvUpMsg(t,cls){ const m=$("tvUpMsg"); m.className="tvUpMsg"+(cls?" "+cls:""); m.innerHTML=t||""; }
-function tvUpUpdateGo(){ $("tvUpGo").disabled=!(tvUpList&&tvUpList.length&&(tvUpCreds||($("tvUpUser").value.trim()&&$("tvUpPass").value))); }
+function tvUpHasAuth(){ return !!(tvUpCreds||($("tvUpUser").value.trim()&&$("tvUpPass").value)); }
+function tvUpUpdateGo(){
+  $("tvUpConfirmRow").classList.toggle("on",tvUpSus);
+  $("tvUpGo").disabled=!(tvUpList&&tvUpList.length&&tvUpHasAuth()&&(!tvUpSus||$("tvUpConfirm").checked));
+  tvUpRefreshUndo();
+}
+/* حذف آخر سحب (مثلاً ملف رُفع بفلتر تاريخ خاطئ) — نفس صلاحية الأدمن، بتأكيد صريح */
+function tvUpRefreshUndo(){
+  const b=$("tvUpUndo"), L=tvLastLive;
+  b.classList.toggle("on",!!L);
+  if(L) b.textContent=`↶ حذف آخر سحب (${tvTime(L.latest_at)} · ${fmt(((L.latest||{}).all||{}).contracts||0)} عقد)`;
+}
 function tvUpRefreshAuth(){
   $("tvUpAuth").style.display=tvUpCreds?"none":"grid";
   $("tvUpWho").style.display=tvUpCreds?"block":"none";
@@ -948,35 +976,56 @@ function tvUpOpen(file){
 }
 function tvUpClose(){ $("tvUpModal").classList.remove("on"); $("tvUpDrop").classList.remove("over"); }
 async function tvUpHandleFile(file){
-  tvUpList=null; tvUpUpdateGo();
+  tvUpList=null; tvUpSus=false; tvUpUpdateGo();
   $("tvUpDropTxt").textContent="📄 "+file.name;
   tvUpMsg("جارٍ قراءة الملف…");
   try{
     const res=await liveReadFile(file);
     tvUpList=res.list;
-    const s=liveSummary(res.list);
+    const s=liveSummary(res.list), sus=liveSuspicious(s);
+    tvUpSus=!!sus; $("tvUpConfirm").checked=false;
+    if(sus){ tvUpMsg(sus,"err"); tvUpUpdateGo(); return; }
     tvUpMsg(`<b>${fmt(s.projects)}</b> مشروعاً · عقود <b>${fmt(s.contracts)}</b> (NHC ${fmt(s.nhc)} · المطورون ${fmt(s.dev)}) · حجوزات <b>${fmt(s.bookings)}</b>${res.missing.length?`<br>أعمدة غير موجودة بالملف (ستُسجَّل صفراً): ${res.missing.join(" · ")}`:""}`);
   }catch(e){ tvUpMsg(e.message||String(e),"err"); }
   tvUpUpdateGo();
+}
+async function tvUpEnsureCreds(){
+  if(tvUpCreds) return;
+  const u=$("tvUpUser").value.trim(), p=$("tvUpPass").value;
+  if(!u||!p){ $("tvUpUser").focus(); throw new Error("أدخل اسم المستخدم وكلمة المرور (حساب أدمن)"); }
+  tvUpMsg("جارٍ التحقق من الحساب…");
+  let r;
+  try{ r=await sbCall("login",{p_user:u,p_pass:p}); }catch(e){ throw new Error("تعذّر الاتصال بالخادم — تأكد من الإنترنت"); }
+  if(!r||!r.ok){ $("tvUpPass").value=""; throw new Error((r&&r.msg)||"بيانات دخول غير صحيحة"); }
+  if(!r.admin) throw new Error("هذا الحساب ليس أدمن — رفع السحب يتطلّب صلاحية أدمن");
+  tvUpCreds={u,p,name:r.name||u}; $("tvUpPass").value=""; tvUpRefreshAuth();
+}
+async function tvUpUndo(){
+  const L=tvLastLive; if(!L) return;
+  const tot=((L.latest||{}).all||{}).contracts||0;
+  if(!confirm(`حذف سحب الساعة ${tvTime(L.latest_at)} (${fmt(tot)} عقد) نهائياً من الشاشة؟`)) return;
+  $("tvUpUndo").disabled=true;
+  try{
+    await tvUpEnsureCreds();
+    let r;
+    try{ r=await sbCall("admin_delete_live_snapshot",{p_admin:tvUpCreds.u,p_pass:tvUpCreds.p,p_snapshot_at:L.latest_at}); }
+    catch(e){ throw new Error("تعذّر الحذف: "+(e.message||e)+" — تأكد من تشغيل live_undo.sql على القاعدة"); }
+    if(!r||!r.ok) throw new Error("فشل الحذف: "+((r&&r.msg)||"خطأ غير معروف"));
+    tvUpMsg(`✓ حُذف سحب ${tvTime(L.latest_at)} (${fmt(r.count||0)} صفاً) — الشاشة تتحدّث الآن`,"ok");
+    await loadTvDashboard();
+  }catch(e){ tvUpMsg(e.message||String(e),"err"); }
+  $("tvUpUndo").disabled=false;
 }
 async function tvUpGo(){
   if(!tvUpList||!tvUpList.length) return;
   $("tvUpGo").disabled=true;
   try{
-    if(!tvUpCreds){
-      const u=$("tvUpUser").value.trim(), p=$("tvUpPass").value;
-      tvUpMsg("جارٍ التحقق من الحساب…");
-      let r;
-      try{ r=await sbCall("login",{p_user:u,p_pass:p}); }catch(e){ throw new Error("تعذّر الاتصال بالخادم — تأكد من الإنترنت"); }
-      if(!r||!r.ok){ $("tvUpPass").value=""; throw new Error((r&&r.msg)||"بيانات دخول غير صحيحة"); }
-      if(!r.admin) throw new Error("هذا الحساب ليس أدمن — رفع السحب يتطلّب صلاحية أدمن");
-      tvUpCreds={u,p,name:r.name||u}; $("tvUpPass").value=""; tvUpRefreshAuth();
-    }
+    await tvUpEnsureCreds();
     const atLocal=$("tvUpAt").value;
     const n=await liveUploadRows(tvUpList, atLocal?new Date(atLocal).toISOString():new Date().toISOString(), tvUpCreds.u, tvUpCreds.p,
       (i,tot)=>tvUpMsg(`جارٍ الرفع — دفعة ${i} من ${tot}…`));
     tvUpMsg(`✓ حُفظت اللقطة (${fmt(n)} مشروعاً) — الشاشة تتحدّث الآن`,"ok");
-    tvUpList=null; $("tvUpFile").value=""; $("tvUpAt").value=""; $("tvUpDropTxt").textContent="اسحب ملف Export هنا أو اضغط للاختيار";
+    tvUpList=null; tvUpSus=false; $("tvUpFile").value=""; $("tvUpAt").value=""; $("tvUpDropTxt").textContent="اسحب ملف Export هنا أو اضغط للاختيار";
     await loadTvDashboard();
     setTimeout(tvUpClose,1600);
   }catch(e){ tvUpMsg(e.message||String(e),"err"); tvUpUpdateGo(); }
@@ -990,6 +1039,8 @@ function tvInitUpload(){
   ["tvUpUser","tvUpPass"].forEach(id=>$(id).addEventListener("input",tvUpUpdateGo));
   $("tvUpPass").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!$("tvUpGo").disabled) tvUpGo(); });
   $("tvUpGo").onclick=tvUpGo;
+  $("tvUpUndo").onclick=tvUpUndo;
+  $("tvUpConfirm").onchange=tvUpUpdateGo;
   /* لمسة على الجوال/التابلت تُظهر الزر مثل تحريك الفأرة */
   const showBtn=()=>{ view.classList.add("mouse"); clearTimeout(tvUpMouseT); tvUpMouseT=setTimeout(()=>view.classList.remove("mouse"),5000); };
   view.addEventListener("mousemove",showBtn);
