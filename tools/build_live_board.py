@@ -82,7 +82,7 @@ out = f"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="مبيعات NHC">
 <meta name="robots" content="noindex,nofollow">
-<title>NHC · شاشة المبيعات الحيّة</title>
+<title>NHC · شاشة المبيعات</title>
 {manifest}
 {icons}
 {fonts}

@@ -25,7 +25,7 @@ if s.count(anchor) != 1:
     sys.exit("xlsx anchor not found")
 s = s.replace(anchor, "<script>\n" + mock + "\n</script>\n" + anchor)
 
-s = s.replace("<title>NHC · شاشة المبيعات الحيّة</title>", "<title>نسخة تجريبية · شاشة المبيعات الحيّة</title>")
+s = s.replace("<title>NHC · شاشة المبيعات</title>", "<title>نسخة تجريبية · شاشة المبيعات</title>")
 banner = ('<div style="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9999;background:#C2491E;color:#fff;'
           'font:800 15px/1.6 \'IBM Plex Sans Arabic\',system-ui,sans-serif;padding:2px 18px;border-radius:0 0 12px 12px;'
           'pointer-events:none;direction:rtl">نسخة تجريبية — أرقام وأسماء وهمية للعرض فقط</div>')
