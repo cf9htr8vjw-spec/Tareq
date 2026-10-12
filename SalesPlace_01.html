@@ -1728,7 +1728,8 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvGauge .gNums{flex:1;min-width:0;text-align:center}
 .tvGauge .gNums .gPct{font-size:34px}
 .tvGauge .gWhen{font-size:11.5px;color:#767368;font-weight:700;white-space:nowrap}
-.tvGauge .gNums .gSub{margin-top:1px;font-size:13.5px}
+.tvGauge .gNums .gSub{margin-top:2px;font-size:12.5px;line-height:1.35;display:flex;flex-direction:column}
+.tvGauge .gNums .gSub b{font-size:14.5px}
 .tvGauge .gProd{background:rgba(255,255,255,.75);border-radius:10px;padding:2px 4px}
 /* أقسام الصفحة: شريط لون رفيع أعلى كل بطاقة */
 .tvCharts .tvCard{border-top:3px solid #9fdcbf}
@@ -8937,14 +8938,15 @@ function tvRedrawCharts(root){
 const TV_GOOD_PCT=50;
 const TV_BOOK_PER_CONTRACT=3;   /* كل عقد يحتاج 3 حجوزات تقريباً (نسبة تحوّل الحجز إلى عقد ≈ 33%) */
 function tvPaceStatus(pct){ if(pct==null) return "none"; return pct>=TV_GOOD_PCT?"good":"bad"; }
-const TV_GAUGE_MAX=120;
-function tvGaugeSvg(pct,status,hasTarget){
+const TV_GAUGE_MAX=100;
+/* mark = أين يجب أن نكون اليوم (% من مستهدف السنة حسب الأيام المنقضية) — خط داكن على القوس */
+function tvGaugeSvg(pct,status,hasTarget,mark){
   const W=240,H=138,cx=120,cy=118,r=92,sw=20;
   const col={good:"#009C6D",warn:"#D4912F",bad:"#D9532A",none:"#B9B1A0"}[status];
   const P=(f,rr)=>{ const a=Math.PI*(1-f); return [+(cx+rr*Math.cos(a)).toFixed(1), +(cy-rr*Math.sin(a)).toFixed(1)]; };
   const arc=(f0,f1,color,w,rr,cap)=>{ if(f1-f0<0.002) return ""; const [x0,y0]=P(f0,rr),[x1,y1]=P(f1,rr); return `<path d="M${x0},${y0} A${rr},${rr} 0 0 1 ${x1},${y1}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="${cap||"butt"}"/>`; };
   const sc=v=>Math.max(0,Math.min(1,v/TV_GAUGE_MAX));
-  const f=sc(pct||0), tG=sc(TV_GOOD_PCT), t100=sc(100);
+  const f=sc(pct||0), tG=sc(TV_GOOD_PCT), t100=sc(mark!=null?mark:100);
   let s=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   if(hasTarget) s+=arc(0,tG,"#EDA58C",6,r+17)+arc(tG,1,"#7FD1AC",6,r+17);
   s+=arc(0,1,"#EEEAE0",sw,r,"round");
@@ -8961,7 +8963,7 @@ function tvGaugeHtml(name,prog,prodHtml,opt){
   /* اللون حسب طلب رئيس المبيعات (أخضر من 50%)، والنص يقول الواقع: على المسار فقط من 100% */
   const stTxt = st==="none" ? "لا مستهدف مسجّل"
     : prog.yearPct>=100 ? "حقّق مستهدف السنة ✓"
-    : prog.pct>=100 ? "على المسار ✓"
+    : prog.pacePct>=100 ? "على المسار ✓"
     : `ناقص ${fmt(Math.max(0,prog.deficit||0))} عن المسار`;
   /* المعدل اليومي الفعلي مقابل المطلوب، والحجوزات المطلوبة يومياً (3 حجوزات لكل عقد — نسبة تحوّل عكسية) */
   const rr=prog.reqDaily!=null ? `<div class="gRun">يومياً <b class="${prog.runRate>=prog.reqDaily?"ok":"no"}">${fmt(Math.round(prog.runRate))}</b> من <b>${fmt(Math.ceil(prog.reqDaily))}</b> عقد · <b>${fmt(Math.ceil(prog.reqDaily)*TV_BOOK_PER_CONTRACT)}</b> حجز</div>` : "";
@@ -8970,16 +8972,15 @@ function tvGaugeHtml(name,prog,prodHtml,opt){
   return `<div class="tvGauge tone-${tone}${opt.sec?" pick":""}${opt.sel?" sel":""}"${opt.sec?` data-sec="${opt.sec}"`:""}${opt.all?` data-all="1"`:""}>
     <div class="gName">${name}</div>
     <div class="gTop">
-      <div class="gDial">${tvGaugeSvg(prog.pct,st,!!prog.tgt)}</div>
+      <div class="gDial">${tvGaugeSvg(prog.pct,st,!!prog.tgt,prog.expPct)}</div>
       <div class="gNums">
         <div class="gPct" style="color:${col}">${prog.pct!=null?prog.pct+"%":"—"}</div>
-        <div class="gWhen">${prog.tgt?"من المطلوب حتى اليوم":""}</div>
-        <div class="gSub">${prog.tgt?`<b>${fmt(prog.ytd)}</b> / ${fmt(prog.tgt)}`:`<b>${fmt(prog.ytd)}</b> منذ بداية السنة`}</div>
+        <div class="gWhen">${prog.tgt?"من مستهدف السنة":""}</div>
+        <div class="gSub">${prog.tgt?`<span>المحقق <b>${fmt(prog.ytd)}</b></span><span>المستهدف <b>${fmt(prog.tgt)}</b></span>`:`<span>المحقق <b>${fmt(prog.ytd)}</b></span>`}</div>
       </div>
     </div>
     <span class="tvStatus ${st}">${stTxt}</span>
     ${rr}
-    ${opt.allNhc!=null?`<div class="gAll" title="المحقق أعلاه لمشاريع مذكرات الاستثمار فقط (نطاق المستهدف)">كل عقود NHC: <b>${fmt(opt.allNhc)}</b></div>`:""}
     ${prodHtml||""}
   </div>`;
 }
@@ -9028,17 +9029,21 @@ function tvSetLeadScroll(on){
                «الإنجاز مقابل مستهدف الأرباع» بالعرض
    • yearPct = المحقق ÷ المستهدف السنوي كاملاً
    rows = صفوف شهرية من get_sales_report (period بصيغة YYYY-MM). */
-function tvYearProg(rows,target,ctx){
+function tvYearProg(rows,target,ctx,adj){
   const tgt=Number(target)>0?Number(target):null;
   const byM={}; (rows||[]).forEach(r=>{ const m=+String(r.period).split("-")[1]; byM[m]=(byM[m]||0)+Number(r.cnt||0); });
+  /* المحقق حتى اليوم = ملف التخصيص (بدون يوم اليوم إن وُجد فيه) + عقود اليوم لحظياً من داشبورد NHC */
+  if(adj) byM[ctx.curM]=Math.max(0,(byM[ctx.curM]||0)-(adj.fileToday||0))+(adj.liveToday||0);
   const ytd=Object.values(byM).reduce((a,b)=>a+b,0);
   /* "حتى اليوم" = حتى تاريخ آخر رفع لملف التخصيص (ctx.asOf) لا ساعة الجهاز — فالنسبة لا تتغيّر إلا
      إذا تغيّرت البيانات فعلاً (رفع ملف تخصيص جديد)، لا مع مرور الوقت أو منتصف الليل */
   const y0=new Date(ctx.curY,0,1), today=ctx.asOf||new Date(ctx.curY,ctx.curM-1,ctx.dayOfMonth);
   const daysInYear=Math.round((new Date(ctx.curY+1,0,1)-y0)/864e5);
   const frac=Math.max(1,Math.round((today-y0)/864e5))/daysInYear;
-  const pct=tgt?Math.round(ytd/(tgt*frac)*100):null;
+  /* النسبة المعروضة = المحقق ÷ المستهدف السنوي كاملاً (طلب رئيس المبيعات)؛ المسار يبقى بسطر «ناقص عن المسار» */
   const yearPct=tgt?Math.round(ytd/tgt*100):null;
+  const pacePct=tgt?Math.round(ytd/(tgt*frac)*100):null;
+  const pct=yearPct;
   const lq=Math.floor((ctx.curM-1)/3);
   let qPct=null, qLbl="";
   if(tgt&&lq>=1){
@@ -9051,7 +9056,8 @@ function tvYearProg(rows,target,ctx){
   const daysDone=Math.max(1,Math.round((today-y0)/864e5)), daysLeft=Math.max(1,daysInYear-daysDone);
   const runRate=ytd/daysDone, reqDaily=tgt?Math.max(0,tgt-ytd)/daysLeft:null;
   const deficit=tgt?Math.round(tgt*frac-ytd):null;
-  return {ytd,tgt,pct,yearPct,qPct,qLbl,need,runRate,reqDaily,deficit,status:tvPaceStatus(pct)};
+  const expPct=tgt?Math.round(frac*100):null;
+  return {ytd,tgt,pct,yearPct,pacePct,expPct,qPct,qLbl,need,runRate,reqDaily,deficit,status:tvPaceStatus(pct)};
 }
 
 const tvGood={};
@@ -9083,7 +9089,6 @@ async function loadTvDashboard(){
     prodYtd: sbCall("get_tv_products",{p_from:`${curY}-01-01`,p_to:tvLocalDate(now)}),
     prodPeriod: (()=>{ const r=tvAllocRange(now); return sbCall("get_tv_products",{p_from:r.from,p_to:r.to}); })(),
     banks: (()=>{ const r=tvAllocRange(now); return sbCall("get_tv_banks",{p_from:r.from,p_to:r.to}); })(),
-    memo: sbCall("get_tv_memo_scope",{p_year:curY}),
     sector: sbCall("get_sector_type_sales",{p_year:lastMY,p_month:lastM}),
     pricing:sbCall("get_sector_avail_pricing",{}),
     market: sbSelect("market_price_stats",{select:"*"}),
@@ -9131,7 +9136,7 @@ async function loadTvDashboard(){
   if(live&&live.ok&&!live.empty){
     const ago=tvAgo(live.latest_at), stale=ago!=null&&ago>TV_STALE_MIN;
     $("tvUpBtn").classList.toggle("stale",stale);
-    upd.innerHTML=`<span class="${stale?"stale":""}">آخر تحديث للعقود: ${tvTime(live.latest_at)}${stale?" — متأخر، ارفع ملفاً جديداً":""}</span>${syncTxt}`;
+    upd.textContent=syncTxt.replace(/^ · /,"");
   } else { upd.textContent=syncTxt.replace(/^ · /,""); $("tvUpBtn").classList.toggle("stale",!!(live&&live.ok&&live.empty)); }
   const unm=(fc&&fc.unmapped)||[];
   const memoNote=R.memo&&R.memo.ok&&Number(R.memo.matched)>0?` · عدّادات NHC: مشاريع مذكرات الاستثمار (${fmt(R.memo.matched)} من ${fmt(R.memo.targets)} مطابَقة)`:"";
@@ -9394,6 +9399,20 @@ function tvMemoRows(memo,sec,curY){
   return Object.keys(a).map(m=>({period:`${curY}-${String(m).padStart(2,"0")}`,cnt:a[m]}));
 }
 function tvRowsSum(rows){ return (rows||[]).reduce((a,r)=>a+Number(r.cnt||0),0); }
+/* عقود اليوم لكل نطاق: من آخر سحب لداشبورد NHC اليوم (لحظياً)، ومن ملف التخصيص بتاريخ اليوم (لطرحها
+   فلا يُعدّ اليوم مرتين). بلا سحب لليوم أو بلا ملف تخصيص: null (المحقق = ملف التخصيص وحده) */
+function tvTodayAdj(R,ctx){
+  const live=R.live;
+  if(!R.fc||!live||!live.ok||live.empty||String(live.day)!==ctx.todayStr) return null;
+  let liveItems=(live.sector_totals||[]).filter(r=>tvSameTs(r.at,live.latest_at))
+    .map(r=>({nhc:!!r.nhc,sec:tvSecNorm(r.sector),cnt:Number(r.contracts||0)}));
+  if(!liveItems.length) liveItems=(live.movers||[]).map(m=>({nhc:!!m.is_nhc,sec:tvSecNorm(m.sector),cnt:Number(m.contracts||0)}));
+  const sameMonth=Number(R.fc._y)===ctx.curY&&Number(R.fc._m)===ctx.curM;
+  const fileItems=sameMonth?(R.fc.days||[]).filter(r=>Number(r.d)===ctx.dayOfMonth)
+    .map(r=>({nhc:r.kind==="nhc",sec:tvSecNorm(r.sector),cnt:Number(r.cnt||0)})):[];
+  const sum=(list,f)=>list.filter(f).reduce((a,x)=>a+x.cnt,0);
+  return f=>({liveToday:sum(liveItems,f),fileToday:sum(fileItems,f)});
+}
 function tvRenderGauges(R,ctx){
   const T=(R.targets&&R.targets.ok&&R.targets.scopes)||{};
   const tN=T.nhc||{}, tD=T.dev||{};
@@ -9401,18 +9420,18 @@ function tvRenderGauges(R,ctx){
   const PY=R.prodYtd&&R.prodYtd.ok?R.prodYtd:null;
   const MK=Array.isArray(R.market)?R.market:null;
   const gp=(f,sec)=>PY?tvProdTable(tvProdAgg(PY,f),tvMarketFor(PY,sec),PY.market_month,MK?tvMarketDeals(MK,sec):null):"";
-  /* المحقق بنفس نطاق المستهدف: مشاريع مذكرات الاستثمار فقط؛ وكل عقود NHC تحتها للمعلومية */
-  const memo=R.memo&&R.memo.ok&&Number(R.memo.matched)>0?R.memo:null;
+  /* المحقق = كل عقود NHC (أو المطورين) منذ بداية السنة حتى اليوم شاملاً عقود اليوم، والنسبة منه ÷ المستهدف السنوي */
+  const adj=tvTodayAdj(R,ctx);
   const progs={};
-  progs.kingdom=tvYearProg(memo?tvMemoRows(memo,null,ctx.curY):R.ytd_nhc,tN.total,ctx);
-  let g=tvGaugeHtml("NHC — الإجمالي",progs.kingdom,gp(r=>r.kind==="nhc",null),{all:true,allNhc:memo?tvRowsSum(R.ytd_nhc):null});
+  progs.kingdom=tvYearProg(R.ytd_nhc,tN.total,ctx,adj&&adj(r=>r.nhc));
+  let g=tvGaugeHtml("NHC — الإجمالي",progs.kingdom,gp(r=>r.kind==="nhc",null),{all:true});
   TV_SECTORS.forEach((sec,i)=>{
-    progs[sec]=tvYearProg(memo?tvMemoRows(memo,sec,ctx.curY):R["ytd_nhc_"+i],(tN.by_sector||{})[sec],ctx);
-    g+=tvGaugeHtml(`NHC ${sec}`,progs[sec],gp(r=>r.kind==="nhc"&&tvSecNorm(r.sector)===sec,sec),{sec,sel:tvRegion===sec,allNhc:memo?tvRowsSum(R["ytd_nhc_"+i]):null});
+    progs[sec]=tvYearProg(R["ytd_nhc_"+i],(tN.by_sector||{})[sec],ctx,adj&&adj(r=>r.nhc&&r.sec===sec));
+    g+=tvGaugeHtml(`NHC ${sec}`,progs[sec],gp(r=>r.kind==="nhc"&&tvSecNorm(r.sector)===sec,sec),{sec,sel:tvRegion===sec});
   });
-  progs.dev=tvYearProg(R.ytd_dev,tD.total,ctx);
+  progs.dev=tvYearProg(R.ytd_dev,tD.total,ctx,adj&&adj(r=>!r.nhc));
   if(R.fc) TV_SECTORS.forEach(sec=>{ const f={months:(R.fc.months||[]).filter(r=>r.kind!=="nhc"&&tvSecNorm(r.sector)===sec),days:[]};
-    progs["dev_"+sec]=tvYearProg(tvFileSeries(f,R.fc._y,R.fc._m).year,(tD.by_sector||{})[sec],ctx); });
+    progs["dev_"+sec]=tvYearProg(tvFileSeries(f,R.fc._y,R.fc._m).year,(tD.by_sector||{})[sec],ctx,adj&&adj(r=>!r.nhc&&r.sec===sec)); });
   g+=tvGaugeHtml("المطورون",progs.dev,gp(r=>r.kind!=="nhc",null),{sec:"dev",sel:tvRegion==="dev"});
   $("tvGauges").innerHTML=g;
   $("tvGauges").classList.toggle("filtered",!!tvRegion);
