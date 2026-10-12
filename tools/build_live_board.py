@@ -48,7 +48,7 @@ helpers = "\n".join([
     cut("const MNAMES=", "function periodLabel"),
     func("async function sbSelect("),
     func("async function sbCall("),
-    cut("function loadSheetJS(){", "const UNIT_CODE_CANDIDATES"),
+    cut("/* قراءة ورقة إكسل بأمان", "const UNIT_CODE_CANDIDATES"),  # xlsxFixRef/xlsxBestSheet + loadSheetJS + مطابقة الأعمدة
 ])
 tv = cut("/* ---------- TV board (?tv=1): no-login", "if(isTvMode()) startTvMode();", include_end=True)
 live = cut("/* ---------- سحب العقود الساعي", "/* ---- لوحة الإدارة ----")

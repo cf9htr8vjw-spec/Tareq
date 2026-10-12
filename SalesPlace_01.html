@@ -5875,6 +5875,37 @@ function tvRowDate(v){
   if((m=t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/))) return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
   return null;
 }
+/* قراءة ورقة إكسل بأمان:
+   ١) بعض البرامج التي تعدّل/تصدّر ملفات إكسل تكتب نطاق الورقة خاطئاً (الخلية الأولى فقط)، فتُقرأ
+      الورقة فارغة رغم وجود البيانات — نعيد حساب النطاق من الخلايا الفعلية عند الشك.
+   ٢) البيانات ليست دائماً بالورقة الأولى (ورقة غلاف/ملخص قبلها) — نختار الورقة التي يحوي صفها
+      الأول أكثر الأعمدة المتوقعة، وإلا الأكثر صفوفاً. */
+function xlsxFixRef(ws){
+  if(!ws) return ws;
+  const ref=ws["!ref"], rng=ref?XLSX.utils.decode_range(ref):null, E=XLSX.utils.encode_cell;
+  /* فحص رخيص قبل أي مسح (الملف قد يحوي ملايين الخلايا): نطاق بصف واحد أو أقل، أو خلية موجودة
+     مباشرة بعد آخر عمود/صف معلن = النطاق خاطئ */
+  const suspicious=!rng || rng.e.r-rng.s.r<1 || ws[E({r:rng.s.r,c:rng.e.c+1})] || ws[E({r:rng.e.r+1,c:rng.s.c})];
+  if(!suspicious) return ws;
+  let r0=Infinity,c0=Infinity,r1=-1,c1=-1;
+  for(const k in ws){ if(k[0]==="!") continue; const c=XLSX.utils.decode_cell(k); if(c.r<r0)r0=c.r; if(c.c<c0)c0=c.c; if(c.r>r1)r1=c.r; if(c.c>c1)c1=c.c; }
+  if(r1>=0) ws["!ref"]=XLSX.utils.encode_range({s:{r:r0,c:c0},e:{r:r1,c:c1}});
+  return ws;
+}
+function xlsxBestSheet(wb,wantHeaders){
+  const want=new Set((wantHeaders||[]).map(normalizeHeaderKey));
+  let best=null, bestScore=-1, bestName="";
+  for(const n of wb.SheetNames){
+    const ws=xlsxFixRef(wb.Sheets[n]); if(!ws||!ws["!ref"]) continue;
+    const rng=XLSX.utils.decode_range(ws["!ref"]); let hits=0;
+    for(let c=rng.s.c;c<=rng.e.c&&want.size;c++){ const cell=ws[XLSX.utils.encode_cell({r:rng.s.r,c})]; if(cell&&want.has(normalizeHeaderKey(cell.v))) hits++; }
+    const score=hits*1e9+(rng.e.r-rng.s.r);
+    if(score>bestScore){ bestScore=score; best=ws; bestName=n; }
+  }
+  if(!best){ bestName=wb.SheetNames[0]; best=wb.Sheets[bestName]; }
+  best.__name=bestName;
+  return best;
+}
 function loadSheetJS(){
   return new Promise((resolve,reject)=>{
     if(window.XLSX){ resolve(); return; }
@@ -5920,6 +5951,7 @@ function syncSetStatus(msg,type){
 }
 $("syncFile").onchange=()=>{ $("syncStart").disabled = !$("syncFile").files.length; };
 
+let syncSheetName="", syncSheetCount=0;
 async function processSyncFile(){
   const file=$("syncFile").files[0];
   if(!file) return;
@@ -5937,9 +5969,11 @@ async function processSyncFile(){
   try{
     const buf=await file.arrayBuffer();
     const wb=XLSX.read(buf,{type:"array"}); // بلا cellDates — نقرأ الأرقام التسلسلية الخام لنفكّها بأنفسنا، بلا أي التباس توقيت
-    const ws=wb.Sheets[wb.SheetNames[0]];
+    const ws=xlsxBestSheet(wb,["project_name","حالة الحجز","price","unit_type","developer_name","القطاع"]);
     rows=XLSX.utils.sheet_to_json(ws,{defval:null});
+    syncSheetName=ws.__name; syncSheetCount=wb.SheetNames.length;
   }catch(e){ syncSetStatus("تعذّر قراءة الملف: "+e.message,"err"); $("syncStart").disabled=false; return; }
+  if(!rows.length){ syncSetStatus(`لم أجد أي صفوف بالملف (${syncSheetCount} ورقة، أكبرها «${syncSheetName}») — تأكد أنه ملف التخصيص وأنه محفوظ كـ Excel Workbook (.xlsx) عادي`,"err"); $("syncStart").disabled=false; return; }
 
   syncSetStatus(`جارٍ المعالجة — ${fmt(rows.length)} صف…`);
   await new Promise(r=>setTimeout(r,30));
@@ -6114,6 +6148,7 @@ async function processSyncFile(){
   $("syncSummary").style.display="block";
   $("syncSummary").innerHTML=`<div class="cresblock">
     <h4>ملخّص المعالجة</h4>
+    <div class="cresrow"><span class="cl">الورقة المقروءة من الملف</span><span class="cv">«${syncSheetName}»${syncSheetCount>1?` (من ${fmt(syncSheetCount)} أوراق)`:""} · ${fmt(rows.length)} صف</span></div>
     <div class="cresrow"><span class="cl">صفوف مطابقة لمشاريع الداشبورد (تحدّث المخزون أيضاً)</span><span class="cv">${fmt(matched)}</span></div>
     <div class="cresrow"><span class="cl">صفوف لمشاريع خارج الداشبورد (تحدّث المبيعات فقط)</span><span class="cv">${fmt(unmatched)}</span></div>
     <div class="cresrow"><span class="cl">صفوف مستبعدة (حالة غير معتمدة — محجوب/تنموي وغيرها)</span><span class="cv">${fmt(excludedStatus)}</span></div>
@@ -6277,7 +6312,7 @@ async function processSuppFile(){
   try{
     const buf=await file.arrayBuffer();
     const wb=XLSX.read(buf,{type:"array"});
-    const ws=wb.Sheets[wb.SheetNames[0]];
+    const ws=xlsxBestSheet(wb,["unit_code"]);
     aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
   }catch(e){ suppSetStatus("تعذّر قراءة الملف: "+e.message,"err"); $("suppStart").disabled=false; return; }
   if(!aoa.length){ suppSetStatus("الملف فارغ","err"); $("suppStart").disabled=false; return; }
@@ -6393,7 +6428,7 @@ async function processBlockedFile(){
   try{
     const buf=await file.arrayBuffer();
     const wb=XLSX.read(buf,{type:"array"});
-    const ws=wb.Sheets[wb.SheetNames[0]];
+    const ws=xlsxBestSheet(wb,["project_name","حالة الحجز","unit_type"]);
     rows=XLSX.utils.sheet_to_json(ws,{defval:null});
   }catch(e){ blockedSetStatus("تعذّر قراءة الملف: "+e.message,"err"); $("blockedStart").disabled=false; return; }
   if(!rows.length){ blockedSetStatus("الملف فارغ","err"); $("blockedStart").disabled=false; return; }
@@ -6569,7 +6604,7 @@ async function processDevEvalFile(){
     /* نبحث عن شيت "المستهدف" تحديداً — الملف يحتوي شيتات أخرى (pivot، قوائم منسدلة، بيانات يدوية) لا علاقة لها بالتقييم */
     let sheetName = wb.SheetNames.find(n=>n.trim()==="المستهدف") || wb.SheetNames.find(n=>n.includes("مستهدف"));
     if(!sheetName){ devEvalSetStatus(`تعذّر العثور على شيت "المستهدف" بالملف — الشيتات الموجودة: ${wb.SheetNames.join("، ")}`,"err"); $("devEvalStart").disabled=false; return; }
-    const ws=wb.Sheets[sheetName];
+    const ws=xlsxFixRef(wb.Sheets[sheetName]);
     aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
   }catch(e){ devEvalSetStatus("تعذّر قراءة الملف: "+e.message,"err"); $("devEvalStart").disabled=false; return; }
   if(!aoa.length){ devEvalSetStatus("الملف فارغ","err"); $("devEvalStart").disabled=false; return; }
@@ -9551,7 +9586,7 @@ async function liveReadFile(file){
   try{
     await loadSheetJS();
     const wb=XLSX.read(await file.arrayBuffer(),{type:"array"});
-    rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:null});
+    rows=XLSX.utils.sheet_to_json(xlsxBestSheet(wb,["اسم المشروع","عدد العقود","اسم المطور","المدينة"]),{defval:null});
   }catch(e){ throw new Error("تعذّر قراءة الملف: "+(e.message||e)); }
   const K={}; for(const [k,c] of Object.entries(LIVE_COLS)) K[k]=resolveHeaderKey(rows,c,null);
   if(!K.project||!K.total) throw new Error(`لم أتعرّف على عمود ${!K.project?"«اسم المشروع»":"«عدد العقود»"} — تأكد أنه ملف Export من داشبورد NHC. الأعمدة الموجودة: ${allFileHeaders(rows).slice(0,25).join(" · ")}`);

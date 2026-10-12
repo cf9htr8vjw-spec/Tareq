@@ -552,6 +552,37 @@ async function sbCall(fn,body){
   return await r.json();
 }
 
+/* قراءة ورقة إكسل بأمان:
+   ١) بعض البرامج التي تعدّل/تصدّر ملفات إكسل تكتب نطاق الورقة خاطئاً (الخلية الأولى فقط)، فتُقرأ
+      الورقة فارغة رغم وجود البيانات — نعيد حساب النطاق من الخلايا الفعلية عند الشك.
+   ٢) البيانات ليست دائماً بالورقة الأولى (ورقة غلاف/ملخص قبلها) — نختار الورقة التي يحوي صفها
+      الأول أكثر الأعمدة المتوقعة، وإلا الأكثر صفوفاً. */
+function xlsxFixRef(ws){
+  if(!ws) return ws;
+  const ref=ws["!ref"], rng=ref?XLSX.utils.decode_range(ref):null, E=XLSX.utils.encode_cell;
+  /* فحص رخيص قبل أي مسح (الملف قد يحوي ملايين الخلايا): نطاق بصف واحد أو أقل، أو خلية موجودة
+     مباشرة بعد آخر عمود/صف معلن = النطاق خاطئ */
+  const suspicious=!rng || rng.e.r-rng.s.r<1 || ws[E({r:rng.s.r,c:rng.e.c+1})] || ws[E({r:rng.e.r+1,c:rng.s.c})];
+  if(!suspicious) return ws;
+  let r0=Infinity,c0=Infinity,r1=-1,c1=-1;
+  for(const k in ws){ if(k[0]==="!") continue; const c=XLSX.utils.decode_cell(k); if(c.r<r0)r0=c.r; if(c.c<c0)c0=c.c; if(c.r>r1)r1=c.r; if(c.c>c1)c1=c.c; }
+  if(r1>=0) ws["!ref"]=XLSX.utils.encode_range({s:{r:r0,c:c0},e:{r:r1,c:c1}});
+  return ws;
+}
+function xlsxBestSheet(wb,wantHeaders){
+  const want=new Set((wantHeaders||[]).map(normalizeHeaderKey));
+  let best=null, bestScore=-1, bestName="";
+  for(const n of wb.SheetNames){
+    const ws=xlsxFixRef(wb.Sheets[n]); if(!ws||!ws["!ref"]) continue;
+    const rng=XLSX.utils.decode_range(ws["!ref"]); let hits=0;
+    for(let c=rng.s.c;c<=rng.e.c&&want.size;c++){ const cell=ws[XLSX.utils.encode_cell({r:rng.s.r,c})]; if(cell&&want.has(normalizeHeaderKey(cell.v))) hits++; }
+    const score=hits*1e9+(rng.e.r-rng.s.r);
+    if(score>bestScore){ bestScore=score; best=ws; bestName=n; }
+  }
+  if(!best){ bestName=wb.SheetNames[0]; best=wb.Sheets[bestName]; }
+  best.__name=bestName;
+  return best;
+}
 function loadSheetJS(){
   return new Promise((resolve,reject)=>{
     if(window.XLSX){ resolve(); return; }
@@ -1403,7 +1434,7 @@ async function liveReadFile(file){
   try{
     await loadSheetJS();
     const wb=XLSX.read(await file.arrayBuffer(),{type:"array"});
-    rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:null});
+    rows=XLSX.utils.sheet_to_json(xlsxBestSheet(wb,["اسم المشروع","عدد العقود","اسم المطور","المدينة"]),{defval:null});
   }catch(e){ throw new Error("تعذّر قراءة الملف: "+(e.message||e)); }
   const K={}; for(const [k,c] of Object.entries(LIVE_COLS)) K[k]=resolveHeaderKey(rows,c,null);
   if(!K.project||!K.total) throw new Error(`لم أتعرّف على عمود ${!K.project?"«اسم المشروع»":"«عدد العقود»"} — تأكد أنه ملف Export من داشبورد NHC. الأعمدة الموجودة: ${allFileHeaders(rows).slice(0,25).join(" · ")}`);
