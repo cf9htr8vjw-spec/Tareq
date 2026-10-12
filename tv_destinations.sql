@@ -49,6 +49,15 @@ alter table tv_unit_status enable row level security;
 drop policy if exists tv_unit_status_read on tv_unit_status;
 create policy tv_unit_status_read on tv_unit_status for select using (true);
 
+-- أسماء مشاريع ملف التخصيص بالتطبيق (لمطابقة خطة المطورين) — تبقى بين رفعات الملف من شاشة المبيعات
+create table if not exists tv_project_app (
+  project_name text primary key,
+  app_name text not null
+);
+alter table tv_project_app enable row level security;
+drop policy if exists tv_project_app_read on tv_project_app;
+create policy tv_project_app_read on tv_project_app for select using (true);
+
 -- ---------- رفع الجدولين على دفعات (الأولى تمسح القديم) — يتطلّب صلاحية أدمن فعلية ----------
 create or replace function admin_load_tv_alloc(p_admin text, p_pass text, p_table text, p_rows jsonb, p_reset boolean)
 returns jsonb
@@ -80,7 +89,13 @@ begin
       cnt = tv_contract_daily.cnt + excluded.cnt, price_sum = tv_contract_daily.price_sum + excluded.price_sum,
       price_n = tv_contract_daily.price_n + excluded.price_n, updated_at = now();
   elsif p_table = 'status' then
-    if p_reset then delete from tv_unit_status where true; end if;
+    if p_reset then
+      -- أسماء المشاريع بالتطبيق تُحفظ قبل المسح: الرفع من شاشة المبيعات لا يعرفها (لا كتالوج هناك)
+      insert into tv_project_app (project_name, app_name)
+      select distinct on (project_name) project_name, app_name from tv_unit_status where app_name is not null order by project_name
+      on conflict (project_name) do update set app_name = excluded.app_name;
+      delete from tv_unit_status where true;
+    end if;
     insert into tv_unit_status (project_name, project_code, app_name, developer, city, dest, sector, kind, status, cnt)
     select btrim(r->>'project_name'), coalesce(btrim(r->>'project_code'), ''), max(nullif(btrim(r->>'app_name'), '')),
            max(nullif(btrim(r->>'developer'), '')), max(nullif(btrim(r->>'city'), '')),
@@ -90,6 +105,17 @@ begin
     where nullif(btrim(r->>'project_name'), '') is not null
     group by 1, 2, 6, 7, 8, 9
     on conflict (project_name, project_code, dest, sector, kind, status) do update set cnt = tv_unit_status.cnt + excluded.cnt, updated_at = now();
+    get diagnostics v_count = row_count;
+    -- اسم التطبيق: من الرفع إن وُجد (التطبيق الأساسي)، وإلا آخر اسم معروف للمشروع
+    insert into tv_project_app (project_name, app_name)
+    select distinct on (btrim(r->>'project_name')) btrim(r->>'project_name'), btrim(r->>'app_name')
+    from jsonb_array_elements(p_rows) r
+    where nullif(btrim(r->>'project_name'), '') is not null and nullif(btrim(r->>'app_name'), '') is not null
+    order by btrim(r->>'project_name')
+    on conflict (project_name) do update set app_name = excluded.app_name;
+    update tv_unit_status u set app_name = pa.app_name
+    from tv_project_app pa where u.app_name is null and pa.project_name = u.project_name;
+    return jsonb_build_object('ok', true, 'msg', 'حُفظ '||v_count||' صفاً', 'count', v_count);
   else
     return jsonb_build_object('ok', false, 'msg', 'جدول غير معروف');
   end if;
