@@ -1499,17 +1499,17 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvPage.on{display:flex}
 /* الصفحة ١ — هيكل: (عدادات + مؤشرات + منحنيات) يمين، (إشعارات + مشاريع باعت) يسار */
 #tvPage1{display:none;gap:10px}
-#tvPage1.on{display:grid;grid-template-columns:2.25fr 1.1fr}
+#tvPage1.on{display:grid;grid-template-columns:2.25fr 1.1fr;grid-template-rows:minmax(0,1fr) auto}
 .tvMain{display:flex;flex-direction:column;gap:10px;min-height:0;min-width:0}
 .tvGauges{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;flex:none}
-.tvGauge{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:8px 12px 10px;display:flex;flex-direction:column;align-items:center;box-shadow:0 2px 10px rgba(11,67,50,.05);min-width:0;position:relative}
-.tvGauge .gName{font-size:20px;font-weight:800;color:#C97F2E;font-family:'Noto Kufi Arabic',sans-serif;align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:6px;white-space:nowrap}
+.tvGauge{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:6px 12px 7px;display:flex;flex-direction:column;align-items:center;box-shadow:0 2px 10px rgba(11,67,50,.05);min-width:0;position:relative}
+.tvGauge .gName{font-size:18px;font-weight:800;color:#C97F2E;font-family:'Noto Kufi Arabic',sans-serif;align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:6px;white-space:nowrap}
 .tvGauge .gName small{font-size:13px;font-weight:600;color:#767368;font-family:inherit}
-.tvGauge svg{width:100%;max-width:120px;height:auto;display:block;margin-top:-4px}
+.tvGauge svg{width:100%;max-width:108px;height:auto;display:block;margin-top:-4px}
 .tvGauge .gPct{font-size:32px;font-weight:800;line-height:1;margin-top:0;white-space:nowrap;text-align:center}
 .tvGauge .gPct small{font-size:14px;font-weight:700;color:#767368;margin-inline-start:6px}
 .tvGauge .gSub{font-size:14px;color:#5e5a4f;margin-top:3px;font-weight:600;text-align:center;white-space:nowrap}
-.tvGauge .gNeed{font-size:14px;color:#5e5a4f;margin-top:4px;font-weight:600;white-space:nowrap}
+.tvGauge .gNeed{font-size:13.5px;color:#5e5a4f;margin-top:2px;font-weight:600;white-space:nowrap}
 .tvGauge .gNeed b{color:#0B4332;font-weight:800}
 .tvGauge .gSrc{font-size:11.5px;color:#9c9484;margin-top:2px;white-space:nowrap}
 .tvGauge .gSub b{color:#0B4332;font-weight:800}
@@ -1554,25 +1554,23 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvAvail{font-size:12px!important;margin-top:1px!important}
 .tvAvail{font-size:12.5px;color:#5e5a4f;margin-top:2px}
 .tvAvail b{color:#0B4332}
-/* الوجهات — شريط أسفل الصفحة الرئيسية، يتحرّك أفقياً ببطء إن لم يتسع */
-.tvDests{flex:none;background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:6px 12px 7px;box-shadow:0 2px 10px rgba(11,67,50,.05);display:flex;flex-direction:column;min-width:0}
-.tvDestWrap{overflow:hidden;margin-top:5px}
-.tvDestTrack{display:inline-flex;width:max-content}
-.tvDestTrack.run{animation:tvDestScroll var(--tv-dest-dur,60s) linear infinite}
-@keyframes tvDestScroll{0%,4%{transform:translateX(0)}100%{transform:translateX(50%)}}
-.tvDest{width:250px;margin-inline-end:10px;background:#FAF7F1;border:1px solid #EEEAE0;border-radius:12px;padding:6px 10px;flex:none}
-.tvDest .dn{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
-.tvDest .dn b{font-size:16px;font-weight:800;color:#0B4332;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tvDest .dn span{font-size:12px;font-weight:800;color:#C97F2E;white-space:nowrap}
-.tvDest .dl{display:grid;grid-template-columns:50px 1fr 40px;gap:6px;align-items:center;font-size:12.5px;margin-top:2px;line-height:1.3}
-.tvDest .dl .k{font-weight:800;color:#767368}
-.tvDest .dl .v{color:#5e5a4f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tvDest .dl .v b{color:#0B4332}
-.tvDest .dl .p{font-weight:800;text-align:left}
-.tvDest .bar{height:5px;background:#EEEAE0;border-radius:99px;overflow:hidden;margin-top:2px}
-.tvDest .bar i{display:block;height:100%;border-radius:99px}
-.tvDest .da{font-size:12px;color:#767368;margin-top:3px;white-space:nowrap}
-.tvDest .da b{color:#0B4332}
+/* الوجهات — جدول مضغوط بعرض الشاشة كاملاً أسفل الصفحة الرئيسية، 3 أعمدة؛ يتحرّك عمودياً ببطء إن لم يتسع */
+.tvDests{grid-column:1/-1;background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:4px 14px 4px;box-shadow:0 2px 10px rgba(11,67,50,.05);display:flex;flex-direction:column;min-width:0}
+.tvDestHd,.tvDestTrack{display:grid;grid-template-columns:repeat(3,1fr);column-gap:22px}
+.tvDestWrap{height:130px;overflow:hidden;position:relative}
+.tvDests .tvCardTitle{font-size:16px}
+.tvDests .tvCardTitle .tot{font-size:20px}
+.tvDestTrack.run{animation:tvLeadScroll var(--tv-dest-dur,60s) linear infinite}
+.tvDR{display:grid;grid-template-columns:minmax(0,1.25fr) 1.2fr 1.3fr .95fr;gap:8px;align-items:center;height:26px;border-bottom:1px solid #F0ECE2;font-size:14px;white-space:nowrap}
+.tvDR.h{height:20px;font-size:12px;color:#767368;font-weight:700;border-bottom:2px solid #E7E1D3}
+.tvDR .n{font-weight:800;color:#0B4332;overflow:hidden;text-overflow:ellipsis}
+.tvDR .n small{font-size:11px;color:#C97F2E;font-weight:800;margin-inline-start:5px}
+.tvDR .m{display:flex;align-items:center;gap:6px;color:#5e5a4f;overflow:hidden}
+.tvDR .m b{color:#0B4332}
+.tvDR .m .p{font-weight:800;border-radius:99px;padding:0 7px;font-size:12.5px;margin-inline-start:auto}
+.tvDR .m .p.good{background:#E1F5EC;color:#007a54}.tvDR .m .p.bad{background:#FBE5DC;color:#C2491E}.tvDR .m .p.none{color:#B9B1A0}
+.tvDR .a{font-size:12.5px;color:#767368;overflow:hidden;text-overflow:ellipsis}
+.tvDR .a b{color:#0B4332}
 /* أزرار فترة جدول العقود (اليوم / أمس / الأسبوع / الشهر) */
 .tvSeg{display:inline-flex;gap:4px;margin-inline-start:6px}
 .tvSeg button{border:1.5px solid #E7E1D3;background:#FAF7F1;color:#5e5a4f;border-radius:99px;padding:2px 12px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
@@ -2991,10 +2989,6 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
           </div>
         </div>
       </div>
-      <div class="tvDests">
-        <div class="tvCardTitle" id="tvDestTitle">الوجهات</div>
-        <div class="tvDestWrap"><div class="tvDestTrack" id="tvDestTrack"></div></div>
-      </div>
     </div>
     <div class="tvSide">
       <div class="tvCard">
@@ -3002,6 +2996,11 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
         <div class="tvLeadRow hd" id="tvLeadHd"></div>
         <div class="tvLeadWrap"><div class="tvLeadScroll" id="tvLeaders"></div></div>
       </div>
+    </div>
+    <div class="tvDests">
+      <div class="tvCardTitle" id="tvDestTitle">الوجهات</div>
+      <div class="tvDestHd" id="tvDestHd"></div>
+      <div class="tvDestWrap"><div class="tvDestTrack" id="tvDestTrack"></div></div>
     </div>
   </div>
 
@@ -9016,27 +9015,33 @@ function tvRenderDests(R,ctx){
   const y0=new Date(ctx.curY,0,1), daysInYear=Math.round((new Date(ctx.curY+1,0,1)-y0)/864e5);
   const frac=Math.max(1,Math.round((new Date(ref.getFullYear(),ref.getMonth(),ref.getDate())-y0)/864e5))/daysInYear;
   $("tvDestTitle").innerHTML=`الوجهات — عقود ${ctx.curY} حتى آخر تحديث للتخصيص${asOf?` <small>(${asOf.toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})}) · النسبة مقابل المستهدف حتى ذلك التاريخ</small>`:""}<span class="tot">${fmt(rows.length)} وجهة</span>`;
-  const line=(k,a,t)=>{ const pct=t?Math.round(a/(t*frac)*100):null, col=pct==null?"#B9B1A0":pct>=TV_GOOD_PCT?"#009C6D":"#D9532A";
-    return `<div class="dl"><span class="k">${k}</span><span class="v"><b>${fmt(a)}</b>${t?` / ${fmt(t)}`:` <small>بلا مستهدف</small>`}</span><span class="p" style="color:${col}">${pct!=null?pct+"%":"—"}</span></div>
-      <div class="bar"><i style="width:${pct!=null?Math.min(100,pct):0}%;background:${col}"></i></div>`; };
+  const m=(a,t)=>{ const pct=t?Math.round(a/(t*frac)*100):null, st=pct==null?"none":pct>=TV_GOOD_PCT?"good":"bad";
+    return `<span class="m"><b>${fmt(a)}</b>${t?` / ${fmt(t)}`:""}<span class="p ${st}">${pct!=null?pct+"%":"—"}</span></span>`; };
+  const hdRow=`<div class="tvDR h"><span>الوجهة</span><span>NHC (مذكرات الاستثمار)</span><span>المطورون (خطة المبيعات)</span><span>متاح منصة · مطور</span></div>`;
+  $("tvDestHd").innerHTML=rows.length?hdRow.repeat(3):"";
   const tr=$("tvDestTrack"); delete tr.dataset.base;
-  tr.innerHTML=rows.length ? rows.map(r=>`<div class="tvDest">
-      <div class="dn"><b>${r.dest}</b><span>${TV_SECTORS.includes(tvSecNorm(r.sector))?tvSecNorm(r.sector):""}</span></div>
-      ${line("NHC",Number(r.nhc)||0,Number(r.nhc_target)||0)}
-      ${line("مطورون",Number(r.dev)||0,Number(r.dev_target)||0)}
-      <div class="da">متاح: منصة <b>${fmt(r.avail_platform||0)}</b> · لدى المطور <b>${fmt(r.avail_developer||0)}</b></div>
-    </div>`).join("")
-    : `<div class="tvEmpty" style="font-size:15px;padding:6px 10px">${ok?"لا وجهات بعد — ارفع ملف التخصيص من التطبيق":"شغّل tv_destinations.sql على القاعدة ثم ارفع ملف التخصيص"}</div>`;
+  const dg=ok&&D.diag;
+  const emptyMsg=!ok ? "شغّل tv_destinations.sql على القاعدة ثم ارفع ملف التخصيص"
+    : dg&&!Number(dg.status_rows) ? "لم تصل بيانات الوجهات من رفع ملف التخصيص — ارفعه من النسخة الجديدة من التطبيق (SalesPlace_01.html) وتأكد أن رسالة نهاية الرفع لا تذكر خطأً بشاشة الداشبورد"
+    : dg&&!Number(dg.status_dest_rows) ? "عمود «الضاحية» فارغ أو غير موجود بملف التخصيص المرفوع — لا وجهات لعرضها"
+    : "لا وجهات بعد — ارفع ملف التخصيص من التطبيق";
+  tr.innerHTML=rows.length ? rows.map(r=>{ const sec=tvSecNorm(r.sector);
+      return `<div class="tvDR"><span class="n">${r.dest}${TV_SECTORS.includes(sec)?`<small>${sec}</small>`:""}</span>${m(Number(r.nhc)||0,Number(r.nhc_target)||0)}${m(Number(r.dev)||0,Number(r.dev_target)||0)}<span class="a"><b>${fmt(r.avail_platform||0)}</b> · <b>${fmt(r.avail_developer||0)}</b></span></div>`; }).join("")
+    : `<div class="tvEmpty" style="grid-column:1/-1;font-size:16px;padding:8px">${emptyMsg}</div>`;
 }
 function tvSetupDestScroll(){
   const tr=$("tvDestTrack"), wrap=tr&&tr.parentElement; if(!wrap) return;
   tr.classList.remove("run");
   if(tr.dataset.base){ tr.innerHTML=tr.dataset.base; delete tr.dataset.base; }
-  if(!wrap.clientWidth) return;
-  if(tr.scrollWidth>wrap.clientWidth+4){
-    const n=tr.children.length;
-    tr.dataset.base=tr.innerHTML; tr.innerHTML+=tr.innerHTML;
-    tr.style.setProperty("--tv-dest-dur",Math.max(25,n*5)+"s");
+  if(!wrap.clientHeight) return;
+  if(tr.scrollHeight>wrap.clientHeight+4){
+    const rowsN=Math.ceil(tr.children.length/3);
+    /* عدد العناصر زوجي لكل نسخة حتى تبقى الأعمدة الثلاثة متراصّة عند التكرار */
+    const pad=(3-tr.children.length%3)%3;
+    tr.dataset.base=tr.innerHTML;
+    const blank=`<div class="tvDR"></div>`.repeat(pad);
+    tr.innerHTML=tr.dataset.base+blank+tr.dataset.base+blank;
+    tr.style.setProperty("--tv-dest-dur",Math.max(20,rowsN*3)+"s");
     tr.classList.add("run");
   }
 }

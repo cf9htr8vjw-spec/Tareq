@@ -195,6 +195,13 @@ as $$
     'targets_outside', (select jsonb_build_object(
         'nhc', coalesce(sum(units) filter (where scope = 'nhc' and coalesce(dest, '') = ''), 0),
         'dev', coalesce(sum(units) filter (where scope = 'dev' and coalesce(dest, '') = ''), 0)) from tg),
+    -- تشخيص: هل وصلت بيانات رفع ملف التخصيص لهذين الجدولين؟ (تظهر رسالة واضحة بالشاشة إن لم تصل)
+    'diag', jsonb_build_object(
+      'status_rows', (select count(*) from tv_unit_status),
+      'status_dest_rows', (select count(*) from tv_unit_status where dest <> ''),
+      'status_updated', (select max(updated_at) from tv_unit_status),
+      'contract_rows', (select count(*) from tv_contract_daily),
+      'contract_project_rows', (select count(*) from tv_contract_daily where project_name <> '')),
     -- المتاح على مستوى المملكة و NHC / المطورين
     'avail', (select jsonb_build_object(
         'platform', coalesce(sum(cnt) filter (where status = 'متاحة على المنصة'), 0),
