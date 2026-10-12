@@ -105,6 +105,10 @@ $$;
 -- منحنى اليوم لقطةً لقطة، المشاريع التي باعت، وسجل الإشعارات (كل زيادة عقود بين سحبتين اليوم).
 -- التجميع اليومي بتوقيت الرياض. "السابقة" محصورة باليوم نفسه — أول سحبة بالصباح لا تُقارَن بآخر
 -- سحبة أمس (عمود العقود بالملف يومي، فالمقارنة عبر منتصف الليل تعطي هبوطاً وهمياً).
+-- أعمدة قطاع/اسم المشروع من ملف التخصيص نفسه (تُعبّأ مع كل رفع للملف) — يُربط بها قطاع كل مشروع بالشاشة
+alter table unit_allocation_mirror add column if not exists file_sector text;
+alter table unit_allocation_mirror add column if not exists file_project_name text;
+
 create or replace function get_live_board()
 returns jsonb
 language plpgsql
@@ -114,7 +118,7 @@ set search_path to 'public'
 as $$
 declare
   v_latest timestamptz; v_prev timestamptz; v_first timestamptz; v_day date;
-  v_timeline jsonb; v_movers jsonb; v_feed jsonb;
+  v_timeline jsonb; v_movers jsonb; v_feed jsonb; v_psec jsonb; v_csec jsonb;
 begin
   select max(snapshot_at) into v_latest from live_project_snapshots;
   if v_latest is null then
@@ -125,6 +129,22 @@ begin
     where snapshot_at < v_latest and (snapshot_at at time zone 'Asia/Riyadh')::date = v_day;
   select min(snapshot_at) into v_first from live_project_snapshots
     where (snapshot_at at time zone 'Asia/Riyadh')::date = v_day;
+
+  -- قطاع كل مشروع بملف داشبورد NHC (فيه المدينة لا القطاع): قطاع ملف التخصيص لنفس اسم المشروع،
+  -- وإلا القطاع الغالب لمدينته بملف التخصيص. بلا مطابقة = غير محدد.
+  select coalesce(jsonb_object_agg(pn, sec), '{}'::jsonb) into v_psec from (
+    select btrim(coalesce(file_project_name, project_name)) as pn,
+           mode() within group (order by coalesce(file_sector, sector)) as sec
+    from unit_allocation_mirror
+    where coalesce(file_sector, sector) is not null and coalesce(file_project_name, project_name) is not null
+    group by 1
+  ) x;
+  select coalesce(jsonb_object_agg(c, sec), '{}'::jsonb) into v_csec from (
+    select btrim(city) as c, mode() within group (order by coalesce(file_sector, sector)) as sec
+    from unit_allocation_mirror
+    where coalesce(file_sector, sector) is not null and city is not null
+    group by 1
+  ) y;
 
   select coalesce(jsonb_agg(jsonb_build_object('at', snapshot_at, 'contracts', c, 'bookings', b, 'nhc', n) order by snapshot_at), '[]'::jsonb)
   into v_timeline
@@ -144,6 +164,7 @@ begin
   first as (select project_name, contracts_total, bookings from live_project_snapshots where snapshot_at = v_first)
   select coalesce(jsonb_agg(jsonb_build_object(
       'project', l.project_name, 'developer', l.developer_name, 'city', l.city, 'is_nhc', l.is_nhc,
+      'sector', coalesce(v_psec->>btrim(l.project_name), v_csec->>btrim(l.city), 'غير محدد'),
       'contracts', l.contracts_total, 'bookings', l.bookings, 'available', l.available,
       'd_prev', case when v_prev is null then null else l.contracts_total - coalesce(p.contracts_total, 0) end,
       'd_first', l.contracts_total - coalesce(f.contracts_total, 0),
@@ -157,7 +178,7 @@ begin
   -- سجل الإشعارات: كل مشروع زادت عقوده بين سحبتين متتاليتين اليوم، الأحدث أولاً
   select coalesce(jsonb_agg(jsonb_build_object(
       'at', snapshot_at, 'project', project_name, 'developer', developer_name, 'city', city,
-      'is_nhc', is_nhc, 'dc', dc, 'db', db, 'contracts', contracts_total
+      'sector', coalesce(v_psec->>btrim(project_name), v_csec->>btrim(city), 'غير محدد'), 'is_nhc', is_nhc, 'dc', dc, 'db', db, 'contracts', contracts_total
     ) order by snapshot_at desc, dc desc), '[]'::jsonb)
   into v_feed
   from (
@@ -184,18 +205,12 @@ begin
     'timeline', v_timeline,
     'movers', v_movers,
     'feed', v_feed,
-    -- عقود آخر لقطة لكل قطاع: ملف داشبورد NHC فيه المدينة لا القطاع، فتُربط كل مدينة بقطاعها
-    -- الغالب في مرآة التخصيص (نفس النظام الوطني ونفس أسماء المدن). مدينة بلا مطابقة = غير محدد.
+    -- عقود آخر لقطة لكل قطاع (نفس ربط المشروع/المدينة بالقطاع أعلاه)
     'today_by_sector', (
       select coalesce(jsonb_object_agg(sector, c), '{}'::jsonb) from (
-        select coalesce(m.sector,'غير محدد') as sector, sum(s.contracts_total) as c
-        from live_project_snapshots s
-        left join (
-          select city, mode() within group (order by sector) as sector
-          from unit_allocation_mirror where sector is not null and city is not null
-          group by city
-        ) m on m.city = s.city
-        where s.snapshot_at = v_latest
+        select coalesce(v_psec->>btrim(project_name), v_csec->>btrim(city), 'غير محدد') as sector, sum(contracts_total) as c
+        from live_project_snapshots
+        where snapshot_at = v_latest
         group by 1
       ) x
     )
