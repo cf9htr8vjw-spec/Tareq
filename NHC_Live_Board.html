@@ -110,6 +110,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvSecToday span{display:block;font-size:14px;font-weight:800;color:#C97F2E;white-space:nowrap}
 .tvSecToday b{display:block;font-size:28px;font-weight:800;color:#0B4332}
 .tvTile .sub{font-size:13.5px;color:#767368;line-height:1.45;margin-top:2px}
+.tvTile.main .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tvTile .sub b{color:#0B4332}
 .tvKpiPair{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:none}
 .tvDelta{display:inline-flex;align-items:center;gap:5px;font-size:19px;font-weight:800;padding:2px 11px;border-radius:99px;white-space:nowrap}
@@ -124,9 +125,10 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvMixLbl{display:flex;gap:12px;font-size:12.5px;color:#5e5a4f;flex-wrap:wrap;margin-top:3px}
 .tvMixLbl b{color:#0B4332}
 .tvKpiPair .tvTile{padding:5px 14px}
-.tvKpiPair .tvTile .lbl{font-size:17px}
+.tvKpiPair .tvTile .lbl{font-size:17px;flex-wrap:nowrap}
+.tvKpiPair .tvTile .lbl .tvDelta{font-size:14px;padding:0 8px}
 .tvKpiPair .tvTile .num{font-size:30px}
-.tvKpiPair .tvTile .sub{font-size:12.5px;line-height:1.35}
+.tvKpiPair .tvTile .sub{font-size:12.5px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tvScope{padding:3px 12px!important}
 .tvScope .name{font-size:20px!important;min-width:96px!important}
 .tvScope .v{font-size:24px!important}
@@ -183,8 +185,8 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvLeadRow{display:grid;grid-template-columns:30px 1fr 70px 52px 74px 52px;gap:8px;align-items:center;padding:5px 2px;border-bottom:1px solid #EEEAE0;font-size:16px}
 .tvLeadRow.hd{font-size:13px;color:#767368;font-weight:700;border-bottom:2px solid #E7E1D3;padding-bottom:4px;flex:none}
 .tvLeadRow .rk{font-weight:800;color:#C97F2E;font-size:17px;text-align:center}
-.tvLeadRow .pj{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:#0B4332;font-size:17px}
-.tvLeadRow .pj small{display:block;font-size:12px;color:#767368;font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.tvLeadRow .pj{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:#0B4332;font-size:20px}
+.tvLeadRow .pj small{display:block;font-size:13.5px;color:#767368;font-weight:500;overflow:hidden;text-overflow:ellipsis}
 .tvLeadRow .n{font-weight:800;font-size:24px;color:#0B4332;text-align:center}
 .tvLeadRow .c{text-align:center}
 .tvLeadRow .c .tvDelta{font-size:15px;padding:1px 8px}
@@ -508,14 +510,19 @@ function tvDrawChart(el, labels, series, opts){
   if(!W||!H) return;
   const n=labels.length;
   if(!n||!series.some(s=>s.values.some(v=>v))){ el.innerHTML=`<div class="empty">${opts.empty||"لا بيانات بعد"}</div>`; return; }
-  const padX=opts.padX||22, padT=28, padB=24;
-  const max=Math.max(1,...series.flatMap(s=>s.values.map(v=>Number(v)||0)));
+  const padX=opts.padX||22, padT=opts.subLabels?24:28, padB=opts.subLabels?36:24;
+  const max=Math.max(1,...series.flatMap(s=>s.values.map(v=>Number(v)||0)),opts.refLine?Number(opts.refLine.value)||0:0);
   const step= n>1 ? (W-2*padX)/(n-1) : 0;
   const X=i=> n>1 ? W-padX-i*step : W/2;
   const Y=v=> padT+(1-(Number(v)||0)/max)*(H-padT-padB);
   let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   svg+=`<line x1="${padX}" x2="${W-padX}" y1="${Y(0)}" y2="${Y(0)}" stroke="#E2DBCB" stroke-width="1.5"/>`;
-  svg+=`<line x1="${padX}" x2="${W-padX}" y1="${Y(max/2)}" y2="${Y(max/2)}" stroke="#EEEAE0" stroke-dasharray="4 6"/>`;
+  if(!opts.refLine) svg+=`<line x1="${padX}" x2="${W-padX}" y1="${Y(max/2)}" y2="${Y(max/2)}" stroke="#EEEAE0" stroke-dasharray="4 6"/>`;
+  /* خط مرجعي أفقي (مثلاً متوسط الشهر) مع تسميته عند الطرف الأيسر */
+  if(opts.refLine&&opts.refLine.value){ const ry=Y(opts.refLine.value), rc=opts.refLine.color||"#C97F2E";
+    svg+=`<line x1="${padX}" x2="${W-padX}" y1="${ry}" y2="${ry}" stroke="${rc}" stroke-width="2" stroke-dasharray="7 5"/>`;
+    const rw=opts.refLine.w||118;
+    svg+=`<rect x="${W-padX-rw+2}" y="${ry+3}" width="${rw}" height="17" rx="5" fill="#FFF7EC" opacity=".92"/><text x="${W-padX-4}" y="${ry+16}" direction="rtl" text-anchor="start" font-size="13" font-weight="800" fill="${rc}">${opts.refLine.label}</text>`; }
   series.forEach(s=>{
     const pts=s.values.map((v,i)=>[+X(i).toFixed(1),+Y(v).toFixed(1)]);
     const gid="tvg"+Math.random().toString(36).slice(2,8);
@@ -535,7 +542,9 @@ function tvDrawChart(el, labels, series, opts){
     });
   });
   const every=opts.labelEvery||1;
-  labels.forEach((l,i)=>{ if(i%every===0||i===n-1) svg+=`<text x="${X(i)}" y="${H-5}" text-anchor="middle" font-size="${opts.xFont||13}" fill="#767368">${l}</text>`; });
+  labels.forEach((l,i)=>{ if(i%every===0||i===n-1) svg+=`<text x="${X(i)}" y="${opts.subLabels?H-20:H-5}" text-anchor="middle" font-size="${opts.xFont||13}" fill="#767368">${l}</text>`; });
+  /* سطر ثانٍ تحت أسماء المحور (مثلاً المعدل اليومي لكل شهر)، بلون لكل قيمة */
+  if(opts.subLabels) opts.subLabels.forEach((sl,i)=>{ if(sl) svg+=`<text x="${X(i)}" y="${H-4}" text-anchor="middle" font-size="13" font-weight="800" fill="${sl.c||"#0B4332"}">${sl.t}</text>`; });
   el.innerHTML=svg+`</svg>`;
 }
 function tvRedrawCharts(root){
@@ -581,7 +590,7 @@ function tvGaugeHtml(name,prog,prodHtml,opt){
     <div class="gName">${name}</div>
     ${tvGaugeSvg(prog.pct,st,!!prog.tgt)}
     <div class="gPct" style="color:${col}">${prog.pct!=null?prog.pct+"%":"—"}<small>${prog.tgt?"حتى اليوم":""}</small></div>
-    <div class="gSub">${prog.tgt?`<b>${fmt(prog.ytd)}</b> / ${fmt(prog.tgt)} · السنة ${prog.yearPct}%`:`<b>${fmt(prog.ytd)}</b> وحدة منذ بداية السنة`}</div>
+    <div class="gSub">${prog.tgt?`<b>${fmt(prog.ytd)}</b> / ${fmt(prog.tgt)}`:`<b>${fmt(prog.ytd)}</b> وحدة منذ بداية السنة`}</div>
     <span class="tvStatus ${st}">${stTxt}</span>
     ${rr}
     ${opt.allNhc!=null?`<div class="gAll" title="المحقق أعلاه لمشاريع مذكرات الاستثمار فقط (نطاق المستهدف)">كل عقود NHC: <b>${fmt(opt.allNhc)}</b></div>`:""}
@@ -758,7 +767,7 @@ function tvFileSeries(fc,curY,curM){
    أو يُثبَّت بالرابط: &list=yesterday|week|month ---------- */
 const TV_LEAD_MODES=["today","yesterday","week","month","year"];
 const TV_LEAD_LBL={today:"اليوم",yesterday:"أمس",week:"آخر 7 أيام",month:"الشهر",year:"السنة"};
-const TV_LEAD_ROTATE_MS=20000;
+const TV_LEAD_ROTATE_MS=60000;
 /* تقليب تلقائي اليوم ← أمس ← الأسبوع ← الشهر ← السنة؛ زر الإيقاف بعنوان الجدول، والضغط على فترة يوقفه.
    &rotate=0 بالرابط يبدأ موقوفاً */
 let tvLeadAuto=(()=>{ if(tvParam("rotate")==="0") return false; try{ return localStorage.getItem("tv_lead_rotate")!=="0"; }catch(e){ return true; } })();
@@ -890,7 +899,7 @@ function tvRenderLeadProd(R){
   const agg=tvProdAgg(P,()=>true), mkt=tvMarketFor(P,null);
   const lbl=TV_LEAD_LBL[tvLeadMode]+" · ملف التخصيص";
   const total=TV_PRODUCTS.reduce((s,t)=>s+agg[t].cnt,0);
-  box.innerHTML=`<div class="hd">حسب المنتج ومتوسط سعر المباع <small>· ${lbl}${tvLeadMode==="today"&&!total?" — عقود اليوم تظهر بعد رفع ملف التخصيص":""}</small></div>
+  box.innerHTML=`<div class="hd">حسب المنتج ومتوسط سعر المباع <small>· ${lbl}${tvLeadMode==="today"&&!total?" — تظهر بعد رفع ملف اليوم":""}</small></div>
     <div class="g">${TV_PRODUCTS.map(t=>{ const a=agg[t];
       return `<div class="c"><div class="t">${t}</div><div class="n">${fmt(a.cnt)} <small>عقد</small></div>
         <div class="p">متوسط المباع <b>${a.pn?tvPriceShort(a.psum/a.pn):"—"}</b></div>
@@ -910,7 +919,7 @@ function tvRenderBanks(R){
 /* المتاح على المنصة / لدى المطور من ملف التخصيص (pre: "" للمملكة، nhc_ أو dev_) */
 function tvAvailTxt(R,pre){
   const a=R.dests&&R.dests.ok&&R.dests.avail; if(!a) return "";
-  return `متاح: منصة <b>${fmt(a[pre+"platform"]||0)}</b> · لدى المطور <b>${fmt(a[pre+"developer"]||0)}</b>`;
+  return `متاح: منصة <b>${fmt(a[pre+"platform"]||0)}</b> · مطور <b>${fmt(a[pre+"developer"]||0)}</b>`;
 }
 /* ---------- الوجهات (الضاحية): عقود السنة حتى آخر رفع للتخصيص مقابل المستهدف حتى ذلك التاريخ —
    نفس منهجية العدّادات: NHC مقابل مذكرات الاستثمار، المطورون مقابل خطة المبيعات، أخضر من 50% ---------- */
@@ -1103,15 +1112,23 @@ function renderTvPage1(R,ctx,Rg){
   const months=Array.from({length:ctx.curM},(_,i)=>i+1);
   const mVals=months.map(m=> m===ctx.curM ? mtdAll : (yr[m]||0));
   const ytd=mVals.reduce((a,b)=>a+b,0);
-  $("tvMonthlyTitle").innerHTML=`العقود الموقّعة شهرياً — ${ctx.curY}${region?` · ${region}`:""} <small>${MNAMES[String(ctx.curM).padStart(2,"0")]} حتى الآن مع عقود اليوم</small><span class="tot">${fmt(ytd)} عقد</span>`;
-  tvDrawChart($("tvMonthlyChart"), months.map(m=>MNAMES[String(m).padStart(2,"0")]), [{values:mVals,color:"#009C6D",area:true}], {pulseLast:true,empty:"لا بيانات — ارفع ملف التخصيص اليومي"});
+  /* متوسط التنفيذ اليومي لكل شهر (عقود الشهر ÷ أيامه؛ الشهر الجاري ÷ أيامه حتى اليوم) مقابل متوسط السنة اليومي */
+  const dayOfYear=Math.round((new Date(ctx.curY,ctx.curM-1,ctx.dayOfMonth)-new Date(ctx.curY,0,1))/864e5)+1;
+  const yearAvg=ytd/dayOfYear;
+  const mAvg=months.map((m,i)=>mVals[i]/(m===ctx.curM?ctx.dayOfMonth:new Date(ctx.curY,m,0).getDate()));
+  const avgTxt=v=>v>=10?fmt(Math.round(v)):(Math.round(v*10)/10).toLocaleString("en-US");
+  $("tvMonthlyTitle").innerHTML=`العقود شهرياً — ${ctx.curY}${region?` · ${region}`:""} <small>↓ المعدل اليومي · السنة <b style="color:#0B4332">${avgTxt(yearAvg)}</b></small><span class="tot">${fmt(ytd)} عقد</span>`;
+  tvDrawChart($("tvMonthlyChart"), months.map(m=>MNAMES[String(m).padStart(2,"0")]), [{values:mVals,color:"#009C6D",area:true}],
+    {pulseLast:true,empty:"لا بيانات — ارفع ملف التخصيص اليومي",subLabels:ytd?mAvg.map(v=>({t:avgTxt(v),c:v>=yearAvg?"#007a54":"#C2491E"})):null});
 
   /* المنحنى اليومي — اليوم الجاري بقيمته الحيّة */
   const dy={}; (R.day||[]).forEach(r=>{ dy[+r.period.split("-")[2]]=Number(r.cnt||0); });
   const days=Array.from({length:ctx.dayOfMonth},(_,i)=>i+1);
   const dVals=days.map(d=> d===ctx.dayOfMonth ? todayAll : (dy[d]||0));
   $("tvDailyTitle").innerHTML=`العقود يومياً — ${MNAMES[String(ctx.curM).padStart(2,"0")]} ${ctx.curY}${region?` · ${region}`:""} <small>اليوم لحظياً، وما قبله من ملف التخصيص</small><span class="tot">${fmt(mtdAll)} عقد</span>`;
-  tvDrawChart($("tvDailyChart"), days.map(String), [{values:dVals,color:"#0B7A5A",area:true,valFont:14}], {pulseLast:true,xFont:12,empty:"لا عقود هذا الشهر بعد"});
+  const monthAvg=mtdAll/ctx.dayOfMonth;
+  tvDrawChart($("tvDailyChart"), days.map(String), [{values:dVals,color:"#0B7A5A",area:true,valFont:14}],
+    {pulseLast:true,xFont:12,empty:"لا عقود هذا الشهر بعد",refLine:monthAvg?{value:monthAvg,label:`متوسط الشهر ${avgTxt(monthAvg)} يومياً`,color:"#C97F2E",w:150}:null});
 
   /* حركة العقود اليوم حسب وقت كل سحب — المملكة والـNHC */
   /* سحب بلا أي تغيّر عن السابق لا يُعرض كنقطة (يبقى أول سحب اليوم) */
