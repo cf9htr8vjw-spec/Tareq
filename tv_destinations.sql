@@ -23,8 +23,12 @@ $$;
 -- ---------- tv_contract_daily: + المشروع والوجهة ----------
 alter table tv_contract_daily add column if not exists project_name text not null default '';
 alter table tv_contract_daily add column if not exists dest text not null default '';
+-- نوع الوحدة وسعرها (لعقود حسب المنتج ومتوسط سعر المباع — tv_products.sql)
+alter table tv_contract_daily add column if not exists unit_type text not null default '';
+alter table tv_contract_daily add column if not exists price_sum numeric not null default 0;  -- مجموع سعر العقود ذات السعر الصحيح
+alter table tv_contract_daily add column if not exists price_n integer not null default 0;    -- عددها
 alter table tv_contract_daily drop constraint if exists tv_contract_daily_pkey;
-alter table tv_contract_daily add constraint tv_contract_daily_pkey primary key (contract_date, project_name, sector, dest, kind);
+alter table tv_contract_daily add constraint tv_contract_daily_pkey primary key (contract_date, project_name, sector, dest, kind, unit_type);
 
 -- ---------- tv_unit_status ----------
 create table if not exists tv_unit_status (
@@ -65,13 +69,16 @@ begin
 
   if p_table = 'contracts' then
     if p_reset then delete from tv_contract_daily where true; end if;
-    insert into tv_contract_daily (contract_date, project_name, sector, dest, kind, cnt)
+    insert into tv_contract_daily (contract_date, project_name, sector, dest, kind, unit_type, cnt, price_sum, price_n)
     select (r->>'contract_date')::date, coalesce(btrim(r->>'project_name'), ''), coalesce(btrim(r->>'sector'), ''),
-           coalesce(btrim(r->>'dest'), ''), coalesce(r->>'kind', 'other'), sum((r->>'cnt')::int)
+           coalesce(btrim(r->>'dest'), ''), coalesce(r->>'kind', 'other'), coalesce(btrim(r->>'unit_type'), ''),
+           sum((r->>'cnt')::int), sum(coalesce(nullif(r->>'price_sum', '')::numeric, 0)), sum(coalesce(nullif(r->>'price_n', '')::int, 0))
     from jsonb_array_elements(p_rows) r
     where nullif(r->>'contract_date', '') is not null
-    group by 1, 2, 3, 4, 5
-    on conflict (contract_date, project_name, sector, dest, kind) do update set cnt = tv_contract_daily.cnt + excluded.cnt, updated_at = now();
+    group by 1, 2, 3, 4, 5, 6
+    on conflict (contract_date, project_name, sector, dest, kind, unit_type) do update set
+      cnt = tv_contract_daily.cnt + excluded.cnt, price_sum = tv_contract_daily.price_sum + excluded.price_sum,
+      price_n = tv_contract_daily.price_n + excluded.price_n, updated_at = now();
   elsif p_table = 'status' then
     if p_reset then delete from tv_unit_status where true; end if;
     insert into tv_unit_status (project_name, project_code, app_name, developer, city, dest, sector, kind, status, cnt)

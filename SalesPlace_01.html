@@ -1505,7 +1505,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvGauge{background:#fff;border:1px solid #E7E1D3;border-radius:16px;padding:6px 12px 7px;display:flex;flex-direction:column;align-items:center;box-shadow:0 2px 10px rgba(11,67,50,.05);min-width:0;position:relative}
 .tvGauge .gName{font-size:18px;font-weight:800;color:#C97F2E;font-family:'Noto Kufi Arabic',sans-serif;align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:6px;white-space:nowrap}
 .tvGauge .gName small{font-size:13px;font-weight:600;color:#767368;font-family:inherit}
-.tvGauge svg{width:100%;max-width:108px;height:auto;display:block;margin-top:-4px}
+.tvGauge svg{width:100%;max-width:100px;height:auto;display:block;margin-top:-4px}
 .tvGauge .gPct{font-size:32px;font-weight:800;line-height:1;margin-top:0;white-space:nowrap;text-align:center}
 .tvGauge .gPct small{font-size:14px;font-weight:700;color:#767368;margin-inline-start:6px}
 .tvGauge .gSub{font-size:14px;color:#5e5a4f;margin-top:3px;font-weight:600;text-align:center;white-space:nowrap}
@@ -1513,6 +1513,25 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvGauge .gNeed b{color:#0B4332;font-weight:800}
 .tvGauge .gSrc{font-size:11.5px;color:#9c9484;margin-top:2px;white-space:nowrap}
 .tvGauge .gSub b{color:#0B4332;font-weight:800}
+/* عقود حسب المنتج + متوسط سعر المباع + سعر السوق — تحت حالة الأداء بكل عدّاد */
+.gProd{align-self:stretch;margin-top:4px;font-size:12px;line-height:1.35}
+.gProd .r{display:grid;grid-template-columns:38px repeat(3,1fr);column-gap:6px;text-align:center;white-space:nowrap}
+.gProd .r>span:first-child{font-size:11px}
+.gProd .r>span:first-child{text-align:right;color:#767368;font-weight:700}
+.gProd .r.h{color:#C97F2E;font-weight:800;border-bottom:1px solid #EEEAE0}
+.gProd .r b{color:#0B4332;font-weight:800}
+.gProd .r.mk b{color:#8a5516;font-weight:700}
+/* أسفل جدول المشاريع: العقود حسب المنتج ومتوسط سعر المباع */
+.tvProd{flex:none;border-top:2px solid #E7E1D3;margin-top:6px;padding-top:6px}
+.tvProd .hd{font-size:14px;font-weight:800;color:#0B4332;margin-bottom:4px}
+.tvProd .hd small{font-size:12px;color:#767368;font-weight:600}
+.tvProd .g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tvProd .c{background:#FAF7F1;border:1px solid #EEEAE0;border-radius:12px;padding:5px 10px;text-align:center;line-height:1.3}
+.tvProd .c .t{font-size:14px;font-weight:800;color:#C97F2E}
+.tvProd .c .n{font-size:26px;font-weight:800;color:#0B4332}
+.tvProd .c .n small{font-size:12px;color:#767368;font-weight:600}
+.tvProd .c .p{font-size:12.5px;color:#5e5a4f}
+.tvProd .c .p b{color:#0B4332}
 .tvStatus{display:inline-block;font-size:14px;font-weight:800;padding:2px 11px;border-radius:99px;margin-top:5px;white-space:nowrap}
 .tvStatus.good{background:#E1F5EC;color:#007a54}.tvStatus.warn{background:#FBEFD9;color:#9a5c12}.tvStatus.bad{background:#FBE5DC;color:#C2491E}.tvStatus.none{background:#EEEAE0;color:#767368}
 .tvBody{display:grid;grid-template-columns:1fr 1.45fr;gap:10px;flex:1;min-height:0}
@@ -2995,6 +3014,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
         <div class="tvCardTitle"><span id="tvLeadTitle">عقود اليوم حسب المشروع</span><span class="tvSeg" id="tvLeadSeg"><button type="button" data-m="today">اليوم</button><button type="button" data-m="yesterday">أمس</button><button type="button" data-m="week">الأسبوع</button><button type="button" data-m="month">الشهر</button></span><span class="tot" id="tvLeadTot"></span></div>
         <div class="tvLeadRow hd" id="tvLeadHd"></div>
         <div class="tvLeadWrap"><div class="tvLeadScroll" id="tvLeaders"></div></div>
+        <div class="tvProd" id="tvLeadProd"></div>
       </div>
     </div>
     <div class="tvDests">
@@ -5937,10 +5957,16 @@ async function processSyncFile(){
       const cd=tvRowDate(row["تاريخ توقيع العقد"]);
       if(!cd){ tvNoDate++; continue; }
       if(cd>=tvYearStart) tvContracts++;
-      if(cd>=tvFrom){ const k=[cd,pn,sector,dest,kind].join("\u0001"); tvAgg.set(k,(tvAgg.get(k)||0)+1); }
+      if(cd>=tvFrom){
+        /* نوع الوحدة وسعرها — للعقود حسب المنتج ومتوسط سعر المباع (سعر صحيح = 10,000 فأكثر) */
+        const ut=SYNC_TYPEAR[tvS(row.unit_type).toLowerCase()]||tvS(row.unit_type), pr=Number(row.price);
+        const k=[cd,pn,sector,dest,kind,ut].join("\u0001");
+        const a=tvAgg.get(k)||{cnt:0,psum:0,pn:0}; a.cnt++; if(pr>=10000){ a.psum+=pr; a.pn++; } tvAgg.set(k,a);
+      }
     }
   }
-  const tvRows=[...tvAgg.entries()].map(([k,cnt])=>{ const [contract_date,project_name,sector,dest,kind]=k.split("\u0001"); return {contract_date,project_name,sector,dest,kind,cnt}; });
+  const tvRows=[...tvAgg.entries()].map(([k,a])=>{ const [contract_date,project_name,sector,dest,kind,unit_type]=k.split("\u0001");
+    return {contract_date,project_name,sector,dest,kind,unit_type,cnt:a.cnt,price_sum:a.psum,price_n:a.pn}; });
   /* اسم المشروع بالتطبيق (إن كان مسجّلاً) — لمطابقة مستهدفات المطورين (خطة المبيعات بأسماء التطبيق) بوجهاتها */
   const tvApp=new Map();
   const tvStatusRows=[...tvStat.values()].map(e=>{
@@ -8763,7 +8789,7 @@ function tvGaugeSvg(pct,status,hasTarget){
   s+=`<text x="${cx-r}" y="${H-1}" text-anchor="middle" font-size="12" fill="#767368">0</text><text x="${cx+r}" y="${H-1}" text-anchor="middle" font-size="12" fill="#767368">${TV_GAUGE_MAX}%</text>`;
   return s+`</svg>`;
 }
-function tvGaugeHtml(name,prog,srcNote){
+function tvGaugeHtml(name,prog,prodHtml){
   const st=prog.status;
   const stTxt={good:prog.yearPct>=100?"حقّق مستهدف السنة ✓":"أداء جيد ✓",bad:"أداء متأخر",none:"لا مستهدف مسجّل"}[st];
   const col={good:"#009C6D",warn:"#B87516",bad:"#C2491E",none:"#767368"}[st];
@@ -8773,9 +8799,7 @@ function tvGaugeHtml(name,prog,srcNote){
     <div class="gPct" style="color:${col}">${prog.pct!=null?prog.pct+"%":"—"}<small>${prog.tgt?"حتى اليوم":""}</small></div>
     <div class="gSub">${prog.tgt?`<b>${fmt(prog.ytd)}</b> / ${fmt(prog.tgt)} · السنة ${prog.yearPct}%`:`<b>${fmt(prog.ytd)}</b> وحدة منذ بداية السنة`}</div>
     <span class="tvStatus ${st}">${stTxt}</span>
-    ${prog.qPct!=null?`<div class="gNeed">${prog.qLbl}: <b>${prog.qPct.toFixed(1)}%</b></div>`:""}
-    ${prog.tgt&&prog.yearPct<100&&prog.need!=null?`<div class="gNeed">المطلوب شهرياً <b>${fmt(prog.need)}</b></div>`:""}
-    ${srcNote?`<div class="gSrc">${srcNote}</div>`:""}
+    ${prodHtml||""}
   </div>`;
 }
 
@@ -8854,6 +8878,8 @@ async function loadTvDashboard(){
     targets:sbCall("get_dashboard_targets",{p_year:curY}),
     dests:  sbCall("get_tv_destinations",{p_year:curY}),
     period: pr ? sbCall("get_tv_period_projects",{p_from:pr.from,p_to:pr.to}) : Promise.resolve(null),
+    prodYtd: sbCall("get_tv_products",{p_from:`${curY}-01-01`,p_to:tvLocalDate(now)}),
+    prodPeriod: (()=>{ const r=tvProdRange(now); return sbCall("get_tv_products",{p_from:r.from,p_to:r.to}); })(),
     sector: sbCall("get_sector_type_sales",{p_year:lastMY,p_month:lastM}),
     pricing:sbCall("get_sector_avail_pricing",{}),
     market: sbSelect("market_price_stats",{select:"*"}),
@@ -8897,11 +8923,12 @@ async function loadTvDashboard(){
     upd.innerHTML=`<span class="${stale?"stale":""}">آخر سحب من داشبورد NHC: ${tvTime(live.latest_at)} (قبل ${fmt(ago)} دقيقة${stale?" — السحب متأخر، اطلب رفع ملف جديد":""})</span> · ${fmt(live.snapshots_today||0)} سحبات اليوم${syncTxt}`;
   } else { upd.textContent=syncTxt.replace(/^ · /,""); $("tvUpBtn").classList.toggle("stale",!!(live&&live.ok&&live.empty)); }
   const unm=(fc&&fc.unmapped)||[];
+  const mkM=R.prodYtd&&R.prodYtd.ok&&R.prodYtd.market_month?` · سعر السوق: منصة سهيل — ${tvMonthName(R.prodYtd.market_month)}`:"";
   const srcNote = !fc ? "" : (fc.source==="file" ? " · العقود: ملف التخصيص كاملاً (حالة الحجز = عقد)"
     : Number(fc.file_sector_rows)>0 ? " · العقود: ملف التخصيص بقطاع الملف"
     : " · ارفع ملف التخصيص من جديد ليُعدّ بقطاع الملف")
     + (unm.length?` · قيم قطاع بالملف لم تُعرف (حُسبت ${fc.source==="file"?"غير محدد":"بقطاع التطبيق"}): ${unm.slice(0,4).map(u=>`«${u.v}» ${fmt(u.cnt)}`).join("، ")}`:"");
-  $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+srcNote+(errs.length?` · تعذّر: ${errs[0]}`:"");
+  $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+srcNote+mkM+(errs.length?` · تعذّر: ${errs[0]}`:"");
 }
 
 function tvOfflineMsg(){
@@ -8955,9 +8982,12 @@ async function tvSetLeadMode(m){
   tvLeadMode=m; try{ localStorage.setItem("tv_lead_mode",m); }catch(e){}
   if(!tvLastR) return;
   const pr=tvLeadRange(new Date());
-  let P=null; if(pr){ try{ P=await sbCall("get_tv_period_projects",{p_from:pr.from,p_to:pr.to}); }catch(e){ P=null; } }
+  const rr=tvProdRange(new Date());
+  const [P,PP]=await Promise.all([
+    pr ? sbCall("get_tv_period_projects",{p_from:pr.from,p_to:pr.to}).catch(()=>null) : Promise.resolve(null),
+    sbCall("get_tv_products",{p_from:rr.from,p_to:rr.to}).catch(()=>null)]);
   if(tvLeadMode!==m) return;
-  tvLastR.period=P; tvRenderLead(tvLastR,tvLastCtx);
+  tvLastR.period=P; tvLastR.prodPeriod=PP; tvRenderLead(tvLastR,tvLastCtx); tvRenderLeadProd(tvLastR);
   requestAnimationFrame(tvSetupLeadScroll);
 }
 function tvRenderLead(R,ctx){
@@ -9001,6 +9031,49 @@ function tvRenderLead(R,ctx){
   $("tvLeadTitle").innerHTML=title; $("tvLeadTot").innerHTML=tot;
   const leadInner=$("tvLeaders"); delete leadInner.dataset.base;
   leadInner.innerHTML=html;
+}
+/* ---------- العقود حسب المنتج ومتوسط سعر المباع (ملف التخصيص) + سعر السوق (منصة سهيل، آخر شهر) ---------- */
+const TV_PRODUCTS=["شقة","فيلا","تاون هاوس"];
+function tvProdAgg(P,f){
+  const o={}; TV_PRODUCTS.forEach(t=>o[t]={cnt:0,psum:0,pn:0});
+  (P.rows||[]).forEach(r=>{ if(!o[r.type]||!f(r)) return; const a=o[r.type]; a.cnt+=Number(r.cnt)||0; a.psum+=Number(r.psum)||0; a.pn+=Number(r.pn)||0; });
+  return o;
+}
+/* سعر السوق لقطاع (أو المملكة): متوسط مناطقه مرجّحاً بعدد صفقات الشهر */
+function tvMarketFor(P,sec){
+  const o={};
+  (P.market||[]).forEach(m=>{ const s=MARKET_REGION_SECTOR[m.region]; if(sec&&s!==sec) return;
+    const d=Number(m.deals)||0, p=Number(m.avg_price)||0; if(!d||!p) return;
+    const a=o[m.type]||(o[m.type]={w:0,v:0}); a.w+=d; a.v+=p*d; });
+  const out={}; Object.keys(o).forEach(t=>out[t]=o[t].v/o[t].w); return out;
+}
+function tvMonthName(iso){ return iso?MNAMES[String(iso).slice(5,7)]||"":""; }
+function tvPriceShort(v){ return v?compact(v):"—"; }
+function tvProdTable(agg,mkt,month){
+  const cols=TV_PRODUCTS.map(t=>agg[t]);
+  return `<div class="gProd">
+    <div class="r h"><span></span><span>شقة</span><span>فيلا</span><span>تاون</span></div>
+    <div class="r"><span>عقود</span>${cols.map(a=>`<b>${fmt(a.cnt)}</b>`).join("")}</div>
+    <div class="r"><span>متوسط</span>${cols.map(a=>`<b>${a.pn?tvPriceShort(a.psum/a.pn):"—"}</b>`).join("")}</div>
+    <div class="r mk"><span>السوق</span>${TV_PRODUCTS.map(t=>`<b>${tvPriceShort(mkt[t])}</b>`).join("")}</div>
+  </div>`;
+}
+/* فترة صندوق المنتجات أسفل جدول المشاريع: نفس فترة الجدول (أمس/الأسبوع/الشهر حتى أمس)،
+   ولـ"اليوم" الشهر حتى آخر رفع للتخصيص (ملف التخصيص لا يحوي عقود اليوم بعد) */
+function tvProdRange(now){
+  const pr=tvLeadRange(now); if(pr) return pr;
+  return {from:tvLocalDate(new Date(now.getFullYear(),now.getMonth(),1)),to:tvLocalDate(now)};
+}
+function tvRenderLeadProd(R){
+  const P=R.prodPeriod&&R.prodPeriod.ok?R.prodPeriod:null, box=$("tvLeadProd");
+  if(!P){ box.innerHTML=""; return; }
+  const agg=tvProdAgg(P,()=>true), mkt=tvMarketFor(P,null);
+  const lbl={today:"الشهر حتى آخر تحديث للتخصيص",yesterday:"أمس",week:"آخر 7 أيام حتى أمس",month:"الشهر حتى أمس"}[tvLeadMode];
+  box.innerHTML=`<div class="hd">حسب المنتج ومتوسط سعر المباع <small>· ${lbl}</small></div>
+    <div class="g">${TV_PRODUCTS.map(t=>{ const a=agg[t];
+      return `<div class="c"><div class="t">${t}</div><div class="n">${fmt(a.cnt)} <small>عقد</small></div>
+        <div class="p">متوسط المباع <b>${a.pn?tvPriceShort(a.psum/a.pn):"—"}</b></div>
+        <div class="p">السوق (${tvMonthName(P.market_month)}) <b>${tvPriceShort(mkt[t])}</b></div></div>`; }).join("")}</div>`;
 }
 /* المتاح على المنصة / لدى المطور من ملف التخصيص (pre: "" للمملكة، nhc_ أو dev_) */
 function tvAvailTxt(R,pre){
@@ -9064,11 +9137,14 @@ function renderTvPage1(R,ctx){
   /* العدّادات: الفعلي منذ بداية السنة (ملف التخصيص) مقابل المستهدف السنوي من dashboard_targets */
   const T=(R.targets&&R.targets.ok&&R.targets.scopes)||{};
   const tN=T.nhc||{}, tD=T.dev||{};
-  let gauges=tvGaugeHtml("NHC — المملكة",tvYearProg(R.ytd_nhc,tN.total,ctx),`المستهدف: مذكرات الاستثمار${tN.projects?` · ${fmt(tN.projects)} مشروعاً`:""}`);
+  /* تحت كل عدّاد: عقود السنة حسب المنتج ومتوسط سعر المباع (ملف التخصيص) وسعر السوق لآخر شهر (سهيل) */
+  const PY=R.prodYtd&&R.prodYtd.ok?R.prodYtd:null;
+  const gp=(f,sec)=>PY?tvProdTable(tvProdAgg(PY,f),tvMarketFor(PY,sec),PY.market_month):"";
+  let gauges=tvGaugeHtml("NHC — المملكة",tvYearProg(R.ytd_nhc,tN.total,ctx),gp(r=>r.kind==="nhc",null));
   TV_SECTORS.forEach((sec,i)=>{
-    gauges+=tvGaugeHtml(`NHC ${sec}`,tvYearProg(R["ytd_nhc_"+i],(tN.by_sector||{})[sec],ctx),"");
+    gauges+=tvGaugeHtml(`NHC ${sec}`,tvYearProg(R["ytd_nhc_"+i],(tN.by_sector||{})[sec],ctx),gp(r=>r.kind==="nhc"&&tvSecNorm(r.sector)===sec,sec));
   });
-  gauges+=tvGaugeHtml("المطورون",tvYearProg(R.ytd_dev,tD.total,ctx),"المستهدف مؤقتاً: خطة المبيعات");
+  gauges+=tvGaugeHtml("المطورون",tvYearProg(R.ytd_dev,tD.total,ctx),gp(r=>r.kind!=="nhc",null));
   $("tvGauges").innerHTML=gauges;
 
   /* عقود اليوم */
@@ -9151,6 +9227,7 @@ function renderTvPage1(R,ctx){
   const freshSet=new Set(fresh.map(f=>f.project));
 
   tvRenderLead(R,ctx);
+  tvRenderLeadProd(R);
   tvRenderDests(R,ctx);
   const movers=(hasLive&&live.movers)||[];
 
