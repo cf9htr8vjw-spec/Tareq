@@ -92,6 +92,12 @@ alter table tv_rev_params add column if not exists y_value numeric;
 alter table tv_rev_params add column if not exists y_bank_due numeric;
 alter table tv_rev_params add column if not exists y_cash_due numeric;
 alter table tv_rev_params add column if not exists year_only boolean not null default false;
+-- التحصيل من تقرير المالية (تراكمي، عملاء البيع النقدي) كما بالجدول: المفوتر، المحصّل المطبَّق، النقد الواصل، المتبقي
+alter table tv_rev_params add column if not exists billed numeric;
+alter table tv_rev_params add column if not exists collected numeric;
+alter table tv_rev_params add column if not exists received numeric;
+alter table tv_rev_params add column if not exists remaining numeric;
+alter table tv_rev_params add column if not exists coll_as_of date;
 alter table tv_rev_params enable row level security;
 drop policy if exists tv_rev_params_read on tv_rev_params;
 
@@ -122,14 +128,16 @@ begin
   end if;
   delete from tv_rev_params where true;
   insert into tv_rev_params (name, norm, sector, is_region, excluded, cash_pct, cum_value, cash_due, bank_due, target_cum, as_of, target_year, due_year,
-                             y_value, y_bank_due, y_cash_due, year_only)
+                             y_value, y_bank_due, y_cash_due, year_only, billed, collected, received, remaining, coll_as_of)
   select distinct on (btrim(r->>'name')) btrim(r->>'name'), coalesce(tv_norm_name(r->>'name'), btrim(r->>'name')),
          nullif(btrim(r->>'sector'), ''), coalesce((r->>'is_region')::boolean, false), coalesce((r->>'excluded')::boolean, false),
          nullif(r->>'cash_pct', '')::numeric, nullif(r->>'cum_value', '')::numeric, nullif(r->>'cash_due', '')::numeric,
          nullif(r->>'bank_due', '')::numeric, nullif(r->>'target_cum', '')::numeric, nullif(r->>'as_of', '')::date,
          nullif(r->>'target_year', '')::numeric, nullif(r->>'due_year', '')::numeric,
          nullif(r->>'y_value', '')::numeric, nullif(r->>'y_bank_due', '')::numeric, nullif(r->>'y_cash_due', '')::numeric,
-         coalesce((r->>'year_only')::boolean, false)
+         coalesce((r->>'year_only')::boolean, false),
+         nullif(r->>'billed', '')::numeric, nullif(r->>'collected', '')::numeric, nullif(r->>'received', '')::numeric,
+         nullif(r->>'remaining', '')::numeric, nullif(r->>'coll_as_of', '')::date
   from jsonb_array_elements(p_rows) r
   where nullif(btrim(r->>'name'), '') is not null
   order by btrim(r->>'name');
@@ -488,7 +496,7 @@ as $$
     select pm.project_name, coalesce(py.sec, pv.sec, sp.sector) as sec, pm.pname, pm.danyat, pm.unmatched,
            coalesce(py.cnt, 0) as cnt, coalesce(py.fin, 0) as fin, coalesce(py.cash, 0) as cash,
            coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10) as cpct,
-           sp.y_bank_due, sp.y_cash_due, sp.target_year as p_target
+           sp.y_bank_due, sp.y_cash_due, sp.target_year as p_target, sp.billed, sp.collected
     from pm left join projy py using (project_name) left join pvsec pv using (project_name)
     left join tv_rev_params sp on sp.name = pm.pname and not sp.is_region
     left join secdef sd on sd.sector = coalesce(py.sec, pv.sec, sp.sector)
@@ -508,14 +516,18 @@ as $$
     'has_value', exists(select 1 from tv_project_value),
     'target_src', case when exists(select 1 from tv_rev_params where is_region and target_cum is not null) then 'table' else 'targets' end,
     'params_as_of', (select max(as_of) from tv_rev_params),
+    'coll_as_of', (select max(coll_as_of) from tv_rev_params),
     'value_as_of', (select max(updated_at) from tv_project_value),
     'sectors', coalesce((
       select jsonb_object_agg(s.sec, jsonb_build_object(
         'cnt', coalesce(a.cnt, 0), 'value', coalesce(a.value, 0), 'cash_due', coalesce(a.cash_due, 0), 'bank_due', coalesce(a.bank_due, 0),
         'due', coalesce(a.cash_due, 0) + coalesce(a.bank_due, 0), 'target_cum', t.target_cum, 'target_year', t.target_year,
         'y_cnt', coalesce(y.cnt, 0), 'y_value', coalesce(y.value, 0), 'y_cash_due', coalesce(y.cash_due, 0), 'y_bank_due', coalesce(y.bank_due, 0),
-        'y_due', coalesce(y.cash_due, 0) + coalesce(y.bank_due, 0), 'y_target', ty.target_year))
+        'y_due', coalesce(y.cash_due, 0) + coalesce(y.bank_due, 0), 'y_target', ty.target_year,
+        'billed', cl.billed, 'collected', cl.collected, 'received', cl.received))
       from secs s left join ach a using (sec) left join tg t using (sec) left join achy y using (sec) left join tgy ty using (sec)
+      left join (select sector as sec, sum(billed) as billed, sum(collected) as collected, sum(received) as received
+                 from tv_rev_params where is_region and billed is not null group by 1) cl using (sec)
     ), '{}'::jsonb),
     -- لقطة أرقام الجدول المرفوع (صفوف المناطق) للتحقق
     'table', coalesce((select jsonb_agg(jsonb_build_object('name', name, 'sector', sector, 'cum_value', cum_value,
@@ -539,7 +551,7 @@ as $$
     'projects', coalesce((
       select jsonb_agg(jsonb_build_object('project', project_name, 'table_name', pname, 'sector', sec, 'danyat', danyat, 'new', unmatched,
         'cnt', cnt, 'value', fin + cash, 'bank_due', fin * 0.2, 'cash_due', cash * cpct, 'due', fin * 0.2 + cash * cpct, 'cash_pct', cpct,
-        'target', p_target, 'sheet_due', case when y_bank_due is null and y_cash_due is null then null else coalesce(y_bank_due, 0) + coalesce(y_cash_due, 0) end)
+        'target', p_target, 'billed', billed, 'collected', collected, 'sheet_due', case when y_bank_due is null and y_cash_due is null then null else coalesce(y_bank_due, 0) + coalesce(y_cash_due, 0) end)
         order by fin * 0.2 + cash * cpct desc)
       from plist where cnt > 0 or coalesce(p_target, 0) > 0
     ), '[]'::jsonb),
