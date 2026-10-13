@@ -1728,8 +1728,9 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvGauge .gNums{flex:1;min-width:0;text-align:center}
 .tvGauge .gNums .gPct{font-size:34px}
 .tvGauge .gWhen{font-size:11.5px;color:#767368;font-weight:700;white-space:nowrap}
-.tvGauge .gNums .gSub{margin-top:2px;font-size:12.5px;line-height:1.35;display:flex;flex-direction:column}
-.tvGauge .gNums .gSub b{font-size:14.5px}
+.tvGauge .gNums .gSub{margin-top:2px;font-size:11.5px;line-height:1.35;display:flex;flex-direction:column;white-space:nowrap}
+.tvGauge .gNums .gSub b{font-size:13.5px}
+.tvGauge .gTop .gDial{width:86px}.tvGauge .gTop .gDial svg{max-width:86px!important}
 .tvGauge .gProd{background:rgba(255,255,255,.75);border-radius:10px;padding:2px 4px}
 /* أقسام الصفحة: شريط لون رفيع أعلى كل بطاقة */
 .tvCharts .tvCard{border-top:3px solid #9fdcbf}
@@ -3140,6 +3141,17 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
       <label class="tvUpConfirm" id="tvUpConfirmRow"><input type="checkbox" id="tvUpConfirm">الأرقام صحيحة لعقود اليوم — ارفع رغم التحذير</label>
       <button type="button" id="tvUpGo" class="tvUpGo" disabled>رفع اللقطة وتحديث الشاشة</button>
       <div class="tvUpPulls" id="tvUpPulls"><div class="hd">سحوبات اليوم — احذف أي سحب رُفع بالخطأ</div><div class="list" id="tvUpPullList"></div></div>
+    </div>
+  </div>
+  <div id="tvRevModal" class="tvUpModal">
+    <div class="tvUpCard">
+      <div class="tvUpHead"><b>شاشة الإيرادات — تسجيل الدخول</b><button type="button" id="tvRevClose" aria-label="إغلاق">✕</button></div>
+      <div class="tvUpAuth" style="display:grid">
+        <input type="text" id="tvRevUser" placeholder="اسم المستخدم" autocomplete="username">
+        <input type="password" id="tvRevPass" placeholder="كلمة المرور" autocomplete="current-password">
+      </div>
+      <div class="tvUpMsg" id="tvRevMsg"></div>
+      <button type="button" id="tvRevGo" class="tvUpGo">دخول</button>
     </div>
   </div>
 </div>
@@ -8988,7 +9000,7 @@ function tvGaugeHtml(name,prog,prodHtml,opt){
       <div class="gNums">
         <div class="gPct" style="color:${col}">${prog.pct!=null?prog.pct+"%":"—"}</div>
         <div class="gWhen">${opt.when!=null?opt.when:prog.tgt?"من المطلوب حتى اليوم":""}</div>
-        <div class="gSub">${opt.sub!=null?opt.sub:prog.tgt?`<span>المحقق <b>${F(prog.ytd)}</b></span><span>المستهدف <b>${F(prog.tgt)}</b></span>`:`<span>المحقق <b>${F(prog.ytd)}</b></span>`}</div>
+        <div class="gSub">${opt.sub!=null?opt.sub:prog.tgt?`<span>المحقق <b>${F(prog.ytd)}</b></span>${prog.tgtToDate!=null&&!opt.money?`<span>المطلوب <b>${F(prog.tgtToDate)}</b></span><span>المستهدف <b>${F(prog.tgt)}</b></span>`:`<span>المستهدف <b>${F(prog.tgt)}</b></span>`}`:`<span>المحقق <b>${F(prog.ytd)}</b></span>`}</div>
       </div>
     </div>
     <span class="tvStatus ${st}">${stTxt}</span>
@@ -9074,10 +9086,12 @@ function tvYearProg(rows,target,ctx,adj){
   const runRate=ytd/daysDone, reqDaily=tgt?Math.max(0,tgt-ytd)/daysLeft:null;
   const deficit=tgt?Math.round(tgt*frac-ytd):null;
   const expPct=tgt?Math.round(frac*100):null;
-  return {ytd,tgt,pct,yearPct,pacePct,expPct,qPct,qLbl,need,runRate,reqDaily,deficit,status:tvPaceStatus(pct)};
+  const tgtToDate=tgt?Math.round(tgt*frac):null;
+  return {ytd,tgt,tgtToDate,pct,yearPct,pacePct,expPct,qPct,qLbl,need,runRate,reqDaily,deficit,status:tvPaceStatus(pct)};
 }
 
 const tvGood={};
+let tvLastSig=null, tvLastChange="";
 /* تاريخ "حتى" لحساب المسار: يوم آخر رفع لملف التخصيص (عقوده حتى اليوم السابق للرفع) */
 function tvAsOfDate(R,now){
   const src=(R.dests&&R.dests.ok&&R.dests.as_of)||(R.sync&&R.sync[0]&&R.sync[0].last_synced_at)||null;
@@ -9106,7 +9120,7 @@ async function loadTvDashboard(){
     prodYtd: sbCall("get_tv_products",{p_from:`${curY}-01-01`,p_to:tvLocalDate(now)}),
     prodPeriod: (()=>{ const r=tvAllocRange(now); return sbCall("get_tv_products",{p_from:r.from,p_to:r.to}); })(),
     banks: (()=>{ const r=tvAllocRange(now); return sbCall("get_tv_banks",{p_from:r.from,p_to:r.to}); })(),
-    revenue: sbCall("get_tv_revenue",{p_year:curY,p_month:curM}),
+    revenue: tvRevCreds ? sbCall("get_tv_revenue",{p_user:tvRevCreds.u,p_pass:tvRevCreds.p,p_year:curY,p_month:curM}) : Promise.resolve(null),
     sector: sbCall("get_sector_type_sales",{p_year:lastMY,p_month:lastM}),
     pricing:sbCall("get_sector_avail_pricing",{}),
     market: sbSelect("market_price_stats",{select:"*"}),
@@ -9133,6 +9147,9 @@ async function loadTvDashboard(){
     if(s.status==="fulfilled"&&s.value!=null){ R[k]=s.value; tvGood[gk(k)]=s.value; }
     else { R[k]=tvGood[gk(k)]!==undefined?tvGood[gk(k)]:null; if(s.status==="rejected") errs.push(k+": "+((s.reason&&s.reason.message)||s.reason)); } });
   if(fc){ Object.assign(R,tvFileSeries(fc,curY,curM)); R.fc=Object.assign({},fc,{_y:curY,_m:curM}); }
+  /* حساب الإيرادات رُفض (تغيّرت كلمة المرور مثلاً): خروج من شاشة الإيرادات */
+  if(R.revenue&&R.revenue.auth===false){ tvRevCreds=null; delete tvGood.revenue; R.revenue=null; if(tvMetric==="rev") tvSetMetric("cnt",true); }
+  if(!tvRevCreds) R.revenue=null;
   tvModeCache={}; tvModeCache[tvLeadMode]={period:R.period,prodPeriod:R.prodPeriod,banks:R.banks};
   R.periodMode=tvLeadMode;
 
@@ -9141,10 +9158,30 @@ async function loadTvDashboard(){
   const offline=errs.length===keys.length;
   const liveErr=settled[keys.indexOf("live")].status==="rejected" ? String((settled[keys.indexOf("live")].reason||{}).message||"") : "";
   const ctx={curY,curM,lastM,lastMY,monthEndDay,dayOfMonth:now.getDate(),todayStr:tvLocalDate(now),offline,liveErr,asOf:tvAsOfDate(R,now)};
-  tvLastR=R; tvLastCtx=ctx;
-  tvRenderAll();
-  renderTvPage2(R,ctx);
-  requestAnimationFrame(()=>{ tvRedrawCharts($("tvPage"+tvPage)); if(tvPage===1){ tvSetupLeadScroll(); tvSetupDestScroll(); } });
+  /* الأرقام لا تتغيّر إلا بتغيّر البيانات نفسها: بصمة لكل مصدر — إن تطابقت مع آخر عرض لا يُعاد الرسم إطلاقاً،
+     وإن تغيّرت يُكتب أسفل الشاشة أي مصدر تغيّر ومتى */
+  const L0=R.live&&R.live.ok&&!R.live.empty?R.live:null;
+  const sig={
+    day:ctx.todayStr, asOf:+ctx.asOf,
+    alloc:JSON.stringify([fc&&fc.months,fc&&fc.days,R.sync&&R.sync[0]&&R.sync[0].last_synced_at]),
+    live:JSON.stringify(L0?[L0.latest_at,L0.latest,L0.first_at]:null),
+    targets:JSON.stringify(R.targets&&R.targets.scopes),
+    rev:JSON.stringify(R.revenue&&R.revenue.ok?[R.revenue.sectors,R.revenue.params_as_of,R.revenue.value_as_of]:null),
+    other:JSON.stringify([R.dests&&R.dests.as_of,R.prodYtd&&R.prodYtd.rows]),
+  };
+  const prevSig=tvLastSig; tvLastSig=sig;
+  const changed=!prevSig?Object.keys(sig):Object.keys(sig).filter(k=>sig[k]!==prevSig[k]);
+  const told=prevSig?changed.filter(k=>!(k==="rev"&&(prevSig.rev==="null"||sig.rev==="null"))):[];
+  if(told.length){
+    const why={live:`سحب جديد من داشبورد NHC${L0?` (${tvTime(L0.latest_at)})`:""}`,alloc:"ملف تخصيص جديد",targets:"تحديث المستهدفات",rev:"تحديث بيانات الإيرادات",day:"بداية يوم جديد",asOf:"ملف تخصيص جديد",other:"تحديث بيانات الملف"};
+    tvLastChange=`آخر تغيّر بالأرقام ${now.toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}: ${[...new Set(told.map(k=>why[k]))].join("، ")}`;
+  }
+  if(!prevSig||changed.length){
+    tvLastR=R; tvLastCtx=ctx;
+    tvRenderAll();
+    renderTvPage2(R,ctx);
+    requestAnimationFrame(()=>{ tvRedrawCharts($("tvPage"+tvPage)); if(tvPage===1){ tvSetupLeadScroll(); tvSetupDestScroll(); } });
+  }
 
   const live=R.live, upd=$("tvUpdated");
   tvLastLive=(live&&live.ok&&!live.empty)?live:null;
@@ -9168,6 +9205,7 @@ async function loadTvDashboard(){
   /* عقود السنة بقطاع غير معروف تدخل الإجمالي فقط لا المناطق — تنبيه ظاهر بعددها وقيمها */
   const unmN=unm.reduce((a,u)=>a+Number(u.cnt||0),0);
   $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+(errs.length?` · بعض البيانات من آخر تحديث ناجح`:"")
+    +(tvLastChange?` · ${tvLastChange}`:"")
     +(unmN?` · ⚠ ${fmt(unmN)} عقد بقطاع غير معروف (${unm.slice(0,2).map(u=>`«${u.v}»`).join("، ")}) — أعد رفع ملف التخصيص`:"");
 }
 
@@ -9343,13 +9381,31 @@ function tvMoney(n){ n=Number(n)||0; const a=Math.abs(n);
   if(a>=1e6) return (n/1e6).toFixed(a>=1e8?0:1).replace(/\.0$/,"")+" مليون";
   if(a>=1e3) return Math.round(n/1e3)+" ألف";
   return String(Math.round(n)); }
-let tvMetric=(()=>{ const q=tvParam("metric"); if(q==="rev"||q==="cnt") return q; try{ return localStorage.getItem("tv_metric")==="rev"?"rev":"cnt"; }catch(e){ return "cnt"; } })();
+/* شاشة الإيرادات بتسجيل دخول فقط (أي مستخدم فعّال بالتطبيق)، ولا تُفتح تلقائياً أبداً: الشاشة تبدأ دائماً
+   بالعقود، وبيانات الدخول بذاكرة الصفحة فقط — تُنسى عند إعادة التحميل */
+let tvMetric="cnt", tvRevCreds=null;
 function tvSetMetric(v,init){
+  if(v==="rev"&&!tvRevCreds){ tvRevOpen(); return; }
   tvMetric=v==="rev"?"rev":"cnt";
-  try{ localStorage.setItem("tv_metric",tvMetric); }catch(e){}
   $("tvMetricSeg").querySelectorAll("button[data-v]").forEach(b=>b.classList.toggle("on",b.dataset.v===tvMetric));
   document.documentElement.classList.toggle("tvRev",tvMetric==="rev");
   if(!init) tvRenderAll();
+}
+function tvRevOpen(){ $("tvRevModal").classList.add("on"); $("tvRevMsg").innerHTML=""; setTimeout(()=>$("tvRevUser").focus(),60); }
+function tvRevClose(){ $("tvRevModal").classList.remove("on"); $("tvRevPass").value=""; }
+async function tvRevLogin(){
+  const u=$("tvRevUser").value.trim(), p=$("tvRevPass").value, m=$("tvRevMsg");
+  if(!u||!p){ m.className="tvUpMsg err"; m.textContent="أدخل اسم المستخدم وكلمة المرور"; return; }
+  $("tvRevGo").disabled=true; m.className="tvUpMsg"; m.textContent="جارٍ التحقق…";
+  try{
+    const now=new Date(); let r;
+    try{ r=await sbCall("get_tv_revenue",{p_user:u,p_pass:p,p_year:now.getFullYear(),p_month:now.getMonth()+1}); }
+    catch(e){ throw new Error("تعذّر الاتصال — تأكد من الإنترنت ومن تشغيل tv_revenue.sql على القاعدة"); }
+    if(!r||!r.ok) throw new Error((r&&r.msg)||"بيانات دخول غير صحيحة");
+    tvRevCreds={u,p}; tvGood.revenue=r; if(tvLastR) tvLastR.revenue=r;
+    tvRevClose(); tvSetMetric("rev");
+  }catch(e){ m.className="tvUpMsg err"; m.textContent=e.message||String(e); $("tvRevPass").value=""; }
+  $("tvRevGo").disabled=false;
 }
 /* صفقات السوق منذ بداية السنة (منصة سهيل، market_price_stats) لقطاع أو للإجمالي */
 function tvMarketDeals(rows,sec){
@@ -9853,6 +9909,9 @@ function startTvMode(){
     if(g.dataset.sec) tvSetRegion(g.dataset.sec); else if(g.dataset.all) tvSetRegion(null); });
   $("tvRegionChip").onclick=()=>tvSetRegion(null);
   $("tvMetricSeg").querySelectorAll("button[data-v]").forEach(b=>b.onclick=()=>tvSetMetric(b.dataset.v));
+  $("tvRevGo").onclick=tvRevLogin; $("tvRevClose").onclick=tvRevClose;
+  $("tvRevPass").addEventListener("keydown",e=>{ if(e.key==="Enter") tvRevLogin(); });
+  $("tvRevModal").addEventListener("click",e=>{ if(e.target.id==="tvRevModal") tvRevClose(); });
   tvSetMetric(tvMetric,true);
   document.addEventListener("keydown",e=>{
     if(e.key==="ArrowLeft"||e.key==="ArrowRight"){ tvPinnedPage=tvPage===1?2:1; tvStartRotation(); }

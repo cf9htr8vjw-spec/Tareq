@@ -68,8 +68,8 @@ create table if not exists tv_project_value (
 );
 alter table tv_project_value add column if not exists first_date date;  -- أول عقد بالمشروع (لتمييز المشروع الجديد)
 alter table tv_project_value enable row level security;
+-- بيانات الإيراد لا تُقرأ مباشرة (بلا سياسة قراءة) — فقط عبر get_tv_revenue بعد التحقق من المستخدم
 drop policy if exists tv_project_value_read on tv_project_value;
-create policy tv_project_value_read on tv_project_value for select using (true);
 
 -- معاملات الإيراد من جدول الإيرادات المرفوع: نسبة الدفعة النقدية لكل مشروع، والمستبعد، ولقطة أرقام الجدول للتحقق
 create table if not exists tv_rev_params (
@@ -86,7 +86,6 @@ create table if not exists tv_rev_params (
 create index if not exists tv_rev_params_norm_idx on tv_rev_params(norm);
 alter table tv_rev_params enable row level security;
 drop policy if exists tv_rev_params_read on tv_rev_params;
-create policy tv_rev_params_read on tv_rev_params for select using (true);
 
 -- مفتاح مطابقة أسماء المشاريع بين جدول الإيرادات وملف التخصيص: بلا مسافات وشرطات و«NHC»
 create or replace function tv_rev_key(p text)
@@ -334,7 +333,9 @@ as $$
 $$;
 
 -- ---------- الإيراد المستحق والإنجاز المالي (منهجية الجدول) ----------
-create or replace function get_tv_revenue(p_year int, p_month int)
+-- دالة داخلية بلا صلاحية تنفيذ عامة؛ الشاشة تستدعي get_tv_revenue(المستخدم، كلمة المرور، ...) أدناه
+drop function if exists get_tv_revenue(int, int);
+create or replace function tv_revenue_data(p_year int, p_month int)
 returns jsonb
 language sql
 stable
@@ -485,4 +486,24 @@ as $$
       from pm where unmatched and excl and value > 0), '[]'::jsonb),
     'new_projects', coalesce((select jsonb_agg(project_name order by project_name) from pm where unmatched and not excl), '[]'::jsonb)
   );
+$$;
+revoke all on function tv_revenue_data(int, int) from public;
+do $$ begin
+  execute 'revoke all on function tv_revenue_data(int, int) from anon, authenticated';
+exception when undefined_object then null; end $$;
+
+-- شاشة الإيرادات: بحساب مستخدم فعّال بالتطبيق (اسم المستخدم وكلمة المرور) — تُتحقق كل مرة
+create or replace function get_tv_revenue(p_user text, p_pass text, p_year int, p_month int)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path to 'public', 'extensions'
+as $$
+begin
+  if not exists (select 1 from app_users where username = p_user and pass_hash = crypt(p_pass, pass_hash) and is_active) then
+    return jsonb_build_object('ok', false, 'auth', false, 'msg', 'بيانات دخول غير صحيحة');
+  end if;
+  return tv_revenue_data(p_year, p_month);
+end;
 $$;
