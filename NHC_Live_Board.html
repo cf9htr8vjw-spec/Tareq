@@ -951,7 +951,10 @@ async function loadTvDashboard(){
     + (unm.length?` · قيم قطاع بالملف لم تُعرف (حُسبت ${fc.source==="file"?"غير محدد":"بقطاع التطبيق"}): ${unm.slice(0,4).map(u=>`«${u.v}» ${fmt(u.cnt)}`).join("، ")}`:"");
   /* بلا ملاحظات مصادر — فقط وقت تحديث الشاشة، وتنبيه قصير إن فشل جزء (والمعروض آخر بيانات ناجحة) */
   void srcNote; void memoNote; void mkM;
-  $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+(errs.length?` · بعض البيانات من آخر تحديث ناجح`:"");
+  /* عقود السنة بقطاع غير معروف تدخل الإجمالي فقط لا المناطق — تنبيه ظاهر بعددها وقيمها */
+  const unmN=unm.reduce((a,u)=>a+Number(u.cnt||0),0);
+  $("tvSource").textContent=`تحديث الشاشة: ${new Date().toLocaleTimeString("ar-SA-u-ca-gregory",{hour:"2-digit",minute:"2-digit"})}`+(errs.length?` · بعض البيانات من آخر تحديث ناجح`:"")
+    +(unmN?` · ⚠ ${fmt(unmN)} عقد بقطاع غير معروف (${unm.slice(0,2).map(u=>`«${u.v}»`).join("، ")}) — أعد رفع ملف التخصيص`:"");
 }
 
 function tvOfflineMsg(){
@@ -1729,9 +1732,20 @@ function tvAllocAggregate(rows,appNameOf){
   const priceKey=resolveHeaderKey(rows,["سعر العقد","قيمة العقد","مبلغ العقد","contract_price","contract price","contract_value","contract value","contract_amount"],[["عقد","contract"],["سعر","قيمة","مبلغ","price","value","amount"]]);
   const bankKey=resolveHeaderKey(rows,["اسم البنك","البنك","البنك المنفذ","البنك المنفّذ","الجهة التمويلية","جهة التمويل","bank","bank_name","bank name","financing_bank"],[["بنك","bank","مصرف","تمويل","financ"]]);
   const num=v=>{ if(v==null||v==="") return NaN; if(typeof v==="number") return v; return Number(String(v).replace(/[,\s٬]/g,"").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d))); };
+  /* قطاع الصف: عمود «القطاع» إن عُرف (أوسط/غربي/شرقي)، وإلا قطاع المشروع نفسه من بقية صفوفه، وإلا قطاع
+     مدينته من بقية الملف — فلا تسقط عقود من عدّادات المناطق إن جاء القطاع فارغاً أو بصيغة أخرى لبعض الصفوف */
+  const secOk=v=>{ const n=tvSecNorm(v); return TV_SECTORS.includes(n)?n:null; };
+  const pSec=new Map(), cSec=new Map(), vote=(m,k,v)=>{ if(!k) return; const o=m.get(k)||{}; o[v]=(o[v]||0)+1; m.set(k,o); };
+  for(const row of rows){ const sn=secOk(row["القطاع"]); if(sn){ vote(pSec,S(row.project_name),sn); vote(cSec,S(row["المدينة"]),sn); } }
+  const top=o=>o?Object.entries(o).sort((a,b)=>b[1]-a[1])[0][0]:null;
+  let secFixed=0, secUnknown=0;
+  const secOf=row=>{ const raw=S(row["القطاع"]); if(secOk(raw)) return raw;
+    const f=top(pSec.get(S(row.project_name)))||top(cSec.get(S(row["المدينة"])));
+    if(S(row["حالة الحجز"])==="عقد"){ if(f) secFixed++; else secUnknown++; }
+    return f||raw; };
   for(const row of rows){
     const st=S(row["حالة الحجز"]), pn=S(row.project_name);
-    const sector=S(row["القطاع"]), dest=S(row["الضاحية"]), code=S(row.project_code), dev=S(row.developer_name), kind=dev==="NHC"?"nhc":"other";
+    const sector=secOf(row), dest=S(row["الضاحية"]), code=S(row.project_code), dev=S(row.developer_name), kind=dev==="NHC"?"nhc":"other";
     if(pn){
       const sk=[pn,code,dest,sector,kind,st].join("\u0001");
       let e=stat.get(sk);
@@ -1772,7 +1786,7 @@ function tvAllocAggregate(rows,appNameOf){
     return Object.assign(e,{app_name:appNameOf?appCache.get(e.project_name):null}); });
   const value=[...val.entries()].map(([k,v])=>{ const [project_name,project_code,sector,kind]=k.split("\u0001");
     return {project_name,project_code,sector,kind,cnt:v.cnt,fin_sum:v.fs,fin_n:v.fn,cash_sum:v.cs,cash_n:v.cn,first_date:v.fd}; });
-  return {contracts,status,banks:bankKey?banks:null,value:bankKey?value:null,priceKey,bankKey,contractsYear,noDate,rows:rows.length};
+  return {contracts,status,banks:bankKey?banks:null,value:bankKey?value:null,priceKey,bankKey,contractsYear,noDate,secFixed,secUnknown,rows:rows.length};
 }
 /* رفع التجميع: call(fn,body) يضيف بيانات الأدمن (adminCall بالتطبيق، أو sbCall مع بيانات الدخول بالشاشة) */
 async function tvAllocUpload(agg,call,onStatus){
@@ -1937,7 +1951,7 @@ async function tvUpHandleFile(file){
       const agg=tvAllocAggregate(r.rows,null);
       if(!agg.contracts.length&&!agg.status.length) throw new Error("لم أتعرّف على أعمدة ملف التخصيص (project_name، حالة الحجز، تاريخ توقيع العقد…)");
       tvUpAlloc=agg;
-      tvUpMsg(`<b>ملف التخصيص</b> · الورقة «${r.sheet}» · <b>${fmt(r.rows.length)}</b> صف<br>عقود ${new Date().getFullYear()}: <b>${fmt(agg.contractsYear)}</b>${agg.noDate?` · ${fmt(agg.noDate)} بلا تاريخ توقيع`:""}<br>سعر العقد: ${agg.priceKey?`«${agg.priceKey}»`:"غير موجود — عمود price"} · البنك: ${agg.bankKey?`«${agg.bankKey}»`:"غير موجود — لا يُحسب الإيراد"}${agg.value?(()=>{ const V=agg.value.filter(v=>v.kind==="nhc"), f=V.reduce((x,v)=>x+v.fin_n,0), c=V.reduce((x,v)=>x+v.cash_n,0), sm=V.reduce((x,v)=>x+v.fin_sum+v.cash_sum,0); return `<br>للإيراد — عقود NHC التراكمية: ممول بنكياً <b>${fmt(f)}</b> · نقدي <b>${fmt(c)}</b> · القيمة ${tvMoney(sm)}`; })():""}`);
+      tvUpMsg(`<b>ملف التخصيص</b> · الورقة «${r.sheet}» · <b>${fmt(r.rows.length)}</b> صف<br>عقود ${new Date().getFullYear()}: <b>${fmt(agg.contractsYear)}</b>${agg.noDate?` · ${fmt(agg.noDate)} بلا تاريخ توقيع`:""}${agg.secFixed?`<br>عقود بقطاع فارغ أو غير معروف بالملف: <b>${fmt(agg.secFixed)}</b> — أُخذ قطاعها من مشروعها/مدينتها`:""}${agg.secUnknown?` · <b style="color:#C2491E">${fmt(agg.secUnknown)}</b> بلا قطاع`:""}<br>سعر العقد: ${agg.priceKey?`«${agg.priceKey}»`:"غير موجود — عمود price"} · البنك: ${agg.bankKey?`«${agg.bankKey}»`:"غير موجود — لا يُحسب الإيراد"}${agg.value?(()=>{ const V=agg.value.filter(v=>v.kind==="nhc"), f=V.reduce((x,v)=>x+v.fin_n,0), c=V.reduce((x,v)=>x+v.cash_n,0), sm=V.reduce((x,v)=>x+v.fin_sum+v.cash_sum,0); return `<br>للإيراد — عقود NHC التراكمية: ممول بنكياً <b>${fmt(f)}</b> · نقدي <b>${fmt(c)}</b> · القيمة ${tvMoney(sm)}`; })():""}`);
       tvUpUpdateGo(); return;
     }
     const res=await liveReadFile(file);
