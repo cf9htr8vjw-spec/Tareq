@@ -6308,6 +6308,7 @@ async function processSyncFile(){
     <div class="cresrow"><span class="cl">وحدات ستُرسَل لمرآة التخصيص الكاملة</span><span class="cv">${fmt(mirrorRows.length)}</span></div>
     <div class="cresrow"><span class="cl">عقود ${new Date().getFullYear()} لشاشة الداشبورد (حالة الحجز = عقد، كل الملف)</span><span class="cv">${fmt(tvContracts)}${tvNoDate?` · ${fmt(tvNoDate)} عقد بلا تاريخ توقيع`:""}</span></div>
     <div class="cresrow"><span class="cl">عمود سعر العقد (متوسط سعر المباع بالشاشة)</span><span class="cv">${tvPriceKey?`«${tvPriceKey}»`:"غير موجود — يُستخدم عمود price"}</span></div>
+    <div class="cresrow"><span class="cl">القنوات والموظفون (لشاشة الداشبورد)</span><span class="cv">${tvAgg.chanKey?`«${tvAgg.chanKey}»`:"لا عمود قنوات"} · ${tvAgg.empKey?`«${tvAgg.empKey}» · ${fmt(new Set((tvAgg.employees||[]).map(e=>e.employee)).size)} موظفاً`:"لا عمود موظفين"}</span></div>
     <div class="cresrow"><span class="cl">عمود البنك المنفّذ (لشاشة الداشبورد)</span><span class="cv">${tvBankKey?`«${tvBankKey}» · ${fmt(new Set(tvBankRows.map(r=>r.bank).filter(Boolean)).size)} بنكاً`:"غير موجود بالملف"}</span></div>
     <div class="cresrow"><span class="cl">عمود رمز الوحدة (unit_code) بالملف</span><span class="cv">${unitCodeKey?`تم التعرّف عليه ("${unitCodeKey}")`:"لم يُعثر عليه بالملف"}</span></div>
     ${unitCodeKey?`<div class="cresrow"><span class="cl">وحدات معها رمز فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.unit_code).length)}</span></div>`:""}
