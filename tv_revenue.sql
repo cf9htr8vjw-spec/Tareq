@@ -507,3 +507,104 @@ begin
   return tv_revenue_data(p_year, p_month);
 end;
 $$;
+
+-- ---------- تفصيل الإيراد لكل مشروع (للتدقيق في Supabase SQL editor) ----------
+-- select * from tv_revenue_breakdown('الأوسط');   — نفس حساب الشاشة سطراً بسطر، مع المستبعد وسببه
+create or replace function tv_revenue_breakdown(p_sector text)
+returns table(project text, app_name text, table_row text, status text, contracts bigint,
+              bank_value_m numeric, cash_value_m numeric, cash_pct numeric,
+              bank_due_m numeric, cash_due_m numeric, due_m numeric, table_due_m numeric)
+language sql
+stable
+security definer
+set search_path to 'public'
+as $$
+  with params as (select * from tv_rev_params where not is_region),
+  apps as (
+    select project_name, max(app_name) as app from (
+      select project_name, app_name from tv_project_app
+      union all select project_name, app_name from tv_unit_status where app_name is not null
+    ) x group by 1
+  ),
+  names0 as (
+    select v.project_name, min(v.first_date) as first_date, sum(v.fin_sum + v.cash_sum) as value
+    from tv_project_value v where v.kind = 'nhc' group by 1
+    union all
+    select distinct d.project_name, null::date, 0 from tv_contract_daily d
+    where d.kind = 'nhc' and d.project_name <> '' and not exists (select 1 from tv_project_value v where v.project_name = d.project_name)
+  ),
+  names as (
+    select n.project_name, a.app, n.first_date, n.value, tv_rev_key(n.project_name) as k1, tv_rev_key(a.app) as k2
+    from names0 n left join apps a using (project_name)
+  ),
+  pk as (select p.*, tv_rev_key(p.name) as k from params p),
+  -- لكل مشروع بملف التخصيص: صفّه بجدول الإيرادات — الاسم أو اسم التطبيق: مطابق، ثم بلا مسافات/شرطات/NHC،
+  -- ثم أحدهما يحوي الآخر (الأطول أولاً)
+  cand as (
+    select n.project_name, p.name, p.excluded, p.cash_pct,
+           case when p.norm in (tv_norm_name(n.project_name), tv_norm_name(n.app)) then 0
+                when p.k in (n.k1, n.k2) then 1 else 2 end as rk, length(p.k) as kl
+    from names n join pk p on p.k is not null and (
+      p.norm in (tv_norm_name(n.project_name), tv_norm_name(n.app)) or p.k in (n.k1, n.k2)
+      or (length(p.k) >= 4 and ((n.k1 is not null and length(n.k1) >= 4 and (strpos(n.k1, p.k) > 0 or strpos(p.k, n.k1) > 0))
+                             or (n.k2 is not null and length(n.k2) >= 4 and (strpos(n.k2, p.k) > 0 or strpos(p.k, n.k2) > 0)))))
+  ),
+  best as (
+    select distinct on (project_name) project_name, name, excluded, cash_pct from cand
+    order by project_name, rk, kl desc, excluded desc
+  ),
+  pas as (select max(as_of) as d from tv_rev_params),
+  -- المستبعد: مستبعد بالجدول، أو دانية، أو غير مطابق للجدول وله عقود قبل تاريخه (مشروع قديم اسمه مختلف —
+  -- الجدول يشمل كل المشاريع العاملة حتى تاريخه). غير المطابق الجديد (أول عقد بعد تاريخ الجدول) يُحسب بمتوسط قطاعه
+  -- الدانيات داخل النطاق دائماً (حتى لو «مستبعدة» بجدول الإيرادات)؛ نسبتها النقدية صفر — لا دفعة مقدمة نقدية
+  -- لها بجدول الإيرادات (إيرادها من التمويل البنكي فقط)
+  pm0 as (
+    select n.*, b.name as pname, b.excluded as b_excl, b.cash_pct as b_pct,
+           (tv_norm_name(n.project_name) like '%دانيه%' or coalesce(tv_norm_name(n.app), '') like '%دانيه%'
+            or coalesce(tv_norm_name(b.name), '') like '%دانيه%') as danyat
+    from names n left join best b using (project_name)
+  ),
+  pm as (
+    select project_name, app, value, pname, danyat,
+           coalesce(b_pct, case when danyat then 0 end) as cash_pct,
+           ((coalesce(b_excl, false) and not danyat)
+            or (pname is null and not danyat and (select d from pas) is not null and first_date is not null and first_date <= (select d from pas))) as excl,
+           (pname is null) as unmatched
+    from pm0
+  ),
+  -- متوسط نسبة الدفعة النقدية لكل قطاع (بالأوزان) للمشاريع غير الموجودة بالجدول
+  secdef as (
+    select sector, sum(cash_due) / nullif(sum(cum_value - coalesce(bank_due, 0) / 0.2), 0) as pct
+    from params where not excluded and cash_pct is not null group by sector
+  ),
+  alldef as (
+    select sum(cash_due) / nullif(sum(cum_value - coalesce(bank_due, 0) / 0.2), 0) as pct
+    from params where not excluded and cash_pct is not null
+  ),
+  rows as (
+    select v.project_name, pm.app, pm.pname, pm.excl, pm.danyat, pm.unmatched,
+           sum(v.cnt) as cnt, sum(v.fin_sum) as fin, sum(v.cash_sum) as cash,
+           max(coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10)) as cpct
+    from tv_project_value v join pm using (project_name)
+    left join secdef sd on sd.sector = tv_region(nullif(v.sector, ''), null)
+    where v.kind = 'nhc' and tv_region(nullif(v.sector, ''), null) = p_sector
+    group by 1, 2, 3, 4, 5, 6
+  )
+  select r.project_name, r.app, r.pname,
+         case when r.excl and r.unmatched then 'خارج الحساب: قديم ولا يطابق جدول الإيرادات'
+              when r.excl then 'خارج الحساب: مستبعد بجدول الإيرادات'
+              when r.danyat then 'محسوب (دانية: بنكي فقط)'
+              when r.unmatched then 'محسوب بمتوسط المنطقة (مشروع جديد)'
+              else 'محسوب' end,
+         r.cnt, round(r.fin / 1e6, 1), round(r.cash / 1e6, 1), round(r.cpct, 3),
+         case when r.excl then 0 else round(r.fin * 0.2 / 1e6, 1) end,
+         case when r.excl then 0 else round(r.cash * r.cpct / 1e6, 1) end,
+         case when r.excl then 0 else round((r.fin * 0.2 + r.cash * r.cpct) / 1e6, 1) end,
+         round((select coalesce(p.cash_due, 0) + coalesce(p.bank_due, 0) from tv_rev_params p where p.name = r.pname) / 1e6, 1)
+  from rows r
+  order by r.excl, (r.fin * 0.2 + r.cash * r.cpct) desc;
+$$;
+revoke all on function tv_revenue_breakdown(text) from public;
+do $$ begin
+  execute 'revoke all on function tv_revenue_breakdown(text) from anon, authenticated';
+exception when undefined_object then null; end $$;
