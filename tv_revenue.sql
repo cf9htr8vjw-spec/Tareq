@@ -32,6 +32,7 @@ create table if not exists tv_project_value (
   updated_at timestamptz not null default now(),
   primary key (project_name, project_code, sector, kind)
 );
+alter table tv_project_value add column if not exists first_date date;  -- أول عقد بالمشروع (لتمييز المشروع الجديد)
 alter table tv_project_value enable row level security;
 drop policy if exists tv_project_value_read on tv_project_value;
 create policy tv_project_value_read on tv_project_value for select using (true);
@@ -52,6 +53,15 @@ create index if not exists tv_rev_params_norm_idx on tv_rev_params(norm);
 alter table tv_rev_params enable row level security;
 drop policy if exists tv_rev_params_read on tv_rev_params;
 create policy tv_rev_params_read on tv_rev_params for select using (true);
+
+-- مفتاح مطابقة أسماء المشاريع بين جدول الإيرادات وملف التخصيص: بلا مسافات وشرطات و«NHC»
+create or replace function tv_rev_key(p text)
+returns text
+language sql
+immutable
+as $$
+  select nullif(regexp_replace(lower(coalesce(tv_norm_name(p), '')), '(nhc|[[:space:]\-–—·_.,()]+)', '', 'g'), '')
+$$;
 
 create or replace function admin_load_tv_rev(p_admin text, p_pass text, p_rows jsonb)
 returns jsonb
@@ -121,10 +131,11 @@ begin
       updated_at = now();
   elsif p_table = 'value' then
     if p_reset then delete from tv_project_value where true; end if;
-    insert into tv_project_value (project_name, project_code, sector, kind, cnt, fin_sum, fin_n, cash_sum, cash_n)
+    insert into tv_project_value (project_name, project_code, sector, kind, cnt, fin_sum, fin_n, cash_sum, cash_n, first_date)
     select btrim(r->>'project_name'), coalesce(btrim(r->>'project_code'), ''), coalesce(btrim(r->>'sector'), ''), coalesce(r->>'kind', 'other'),
            sum((r->>'cnt')::int), sum(coalesce(nullif(r->>'fin_sum', '')::numeric, 0)), sum(coalesce(nullif(r->>'fin_n', '')::int, 0)),
-           sum(coalesce(nullif(r->>'cash_sum', '')::numeric, 0)), sum(coalesce(nullif(r->>'cash_n', '')::int, 0))
+           sum(coalesce(nullif(r->>'cash_sum', '')::numeric, 0)), sum(coalesce(nullif(r->>'cash_n', '')::int, 0)),
+           min(nullif(r->>'first_date', '')::date)
     from jsonb_array_elements(p_rows) r
     where nullif(btrim(r->>'project_name'), '') is not null
     group by 1, 2, 3, 4
@@ -132,6 +143,7 @@ begin
       cnt = tv_project_value.cnt + excluded.cnt,
       fin_sum = tv_project_value.fin_sum + excluded.fin_sum, fin_n = tv_project_value.fin_n + excluded.fin_n,
       cash_sum = tv_project_value.cash_sum + excluded.cash_sum, cash_n = tv_project_value.cash_n + excluded.cash_n,
+      first_date = least(tv_project_value.first_date, excluded.first_date),
       updated_at = now();
   elsif p_table = 'status' then
     if p_reset then
@@ -302,19 +314,42 @@ as $$
       union all select project_name, app_name from tv_unit_status where app_name is not null
     ) x group by 1
   ),
-  names as (
-    select distinct v.project_name, a.app from tv_project_value v left join apps a using (project_name) where v.kind = 'nhc'
-    union
-    select distinct d.project_name, a.app from tv_contract_daily d left join apps a using (project_name)
-    where d.kind = 'nhc' and d.project_name <> ''
+  names0 as (
+    select v.project_name, min(v.first_date) as first_date, sum(v.fin_sum + v.cash_sum) as value
+    from tv_project_value v where v.kind = 'nhc' group by 1
+    union all
+    select distinct d.project_name, null::date, 0 from tv_contract_daily d
+    where d.kind = 'nhc' and d.project_name <> '' and not exists (select 1 from tv_project_value v where v.project_name = d.project_name)
   ),
-  -- لكل مشروع بملف التخصيص: صفّه بجدول الإيرادات (بالاسم أو باسم التطبيق)
+  names as (
+    select n.project_name, a.app, n.first_date, n.value, tv_rev_key(n.project_name) as k1, tv_rev_key(a.app) as k2
+    from names0 n left join apps a using (project_name)
+  ),
+  pk as (select p.*, tv_rev_key(p.name) as k from params p),
+  -- لكل مشروع بملف التخصيص: صفّه بجدول الإيرادات — الاسم أو اسم التطبيق: مطابق، ثم بلا مسافات/شرطات/NHC،
+  -- ثم أحدهما يحوي الآخر (الأطول أولاً)
+  cand as (
+    select n.project_name, p.name, p.excluded, p.cash_pct,
+           case when p.norm in (tv_norm_name(n.project_name), tv_norm_name(n.app)) then 0
+                when p.k in (n.k1, n.k2) then 1 else 2 end as rk, length(p.k) as kl
+    from names n join pk p on p.k is not null and (
+      p.norm in (tv_norm_name(n.project_name), tv_norm_name(n.app)) or p.k in (n.k1, n.k2)
+      or (length(p.k) >= 4 and ((n.k1 is not null and length(n.k1) >= 4 and (strpos(n.k1, p.k) > 0 or strpos(p.k, n.k1) > 0))
+                             or (n.k2 is not null and length(n.k2) >= 4 and (strpos(n.k2, p.k) > 0 or strpos(p.k, n.k2) > 0)))))
+  ),
+  best as (
+    select distinct on (project_name) project_name, name, excluded, cash_pct from cand
+    order by project_name, rk, kl desc, excluded desc
+  ),
+  pas as (select max(as_of) as d from tv_rev_params),
+  -- المستبعد: مستبعد بالجدول، أو دانية، أو غير مطابق للجدول وله عقود قبل تاريخه (مشروع قديم اسمه مختلف —
+  -- الجدول يشمل كل المشاريع العاملة حتى تاريخه). غير المطابق الجديد (أول عقد بعد تاريخ الجدول) يُحسب بمتوسط قطاعه
   pm as (
-    select distinct on (n.project_name) n.project_name, p.name as pname, coalesce(p.excluded, false) as p_excl, p.cash_pct,
-           (coalesce(p.excluded, false) or tv_norm_name(n.project_name) like '%دانيه%' or coalesce(tv_norm_name(n.app), '') like '%دانيه%') as excl
-    from names n
-    left join params p on p.norm in (tv_norm_name(n.project_name), tv_norm_name(n.app))
-    order by n.project_name, p.excluded desc nulls last, p.cash_pct nulls last
+    select n.project_name, n.app, n.value, b.name as pname, b.cash_pct,
+           (coalesce(b.excluded, false) or tv_norm_name(n.project_name) like '%دانيه%' or coalesce(tv_norm_name(n.app), '') like '%دانيه%'
+            or (b.name is null and (select d from pas) is not null and n.first_date is not null and n.first_date <= (select d from pas))) as excl,
+           (b.name is null) as unmatched
+    from names n left join best b using (project_name)
   ),
   -- متوسط نسبة الدفعة النقدية لكل قطاع (بالأوزان) للمشاريع غير الموجودة بالجدول
   secdef as (
@@ -395,6 +430,10 @@ as $$
     'unmatched', coalesce((
       select jsonb_agg(p.name order by p.name) from params p
       where not p.excluded and not exists (select 1 from pm where pm.pname = p.name)
-    ), '[]'::jsonb)
+    ), '[]'::jsonb),
+    -- مشاريع NHC بملف التخصيص لم تُطابق الجدول: القديمة خارج الحساب، والجديدة بمتوسط قطاعها
+    'dropped', coalesce((select jsonb_agg(jsonb_build_object('project', project_name, 'value', value) order by value desc)
+      from pm where unmatched and excl and value > 0), '[]'::jsonb),
+    'new_projects', coalesce((select jsonb_agg(project_name order by project_name) from pm where unmatched and not excl), '[]'::jsonb)
   );
 $$;

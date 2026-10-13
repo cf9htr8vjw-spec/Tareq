@@ -1757,6 +1757,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvHead .tvMetricSeg button{font-size:15px!important;padding:3px 14px!important}
 .tvHead .tvMetricSeg button[data-v="rev"].on{background:#B87516;border-color:#B87516}
 .tvRev .tvLeadRow{grid-template-columns:28px 1fr 62px 46px 62px 86px}
+#tvRevNote{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8a5a12;font-weight:700;text-align:center}
 .tvRev .tvLeadRow .b .rv{color:#8a5a12;font-size:14.5px;font-weight:800;white-space:nowrap}
 .tvRev .tvGauge .gNums .gSub{font-size:11px;letter-spacing:-.2px}
 .tvRev .tvGauge .gNums .gPct{font-size:29px}
@@ -3123,7 +3124,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
     </div>
   </div>
 
-  <div class="tvFoot"><span id="tvUpdated"></span><span id="tvSource"></span></div>
+  <div class="tvFoot"><span id="tvUpdated"></span><span id="tvRevNote"></span><span id="tvSource"></span></div>
   <button type="button" id="tvUpBtn" class="tvUpBtn">⬆ رفع ملف</button>
   <div id="tvUpModal" class="tvUpModal">
     <div class="tvUpCard">
@@ -9505,6 +9506,11 @@ function tvRenderGauges(R,ctx){
   }
   $("tvGauges").innerHTML=g;
   $("tvGauges").classList.toggle("filtered",!!tvRegion);
+  /* وضع الإيرادات: مشاريع NHC بملف التخصيص لم تُطابق جدول الإيرادات — القديمة خارج الحساب، والجديدة بمتوسط قطاعها */
+  const rn=$("tvRevNote"), RVn=tvMetric==="rev"&&R.revenue&&R.revenue.ok?R.revenue:null;
+  if(rn){ const dr=(RVn&&RVn.dropped)||[], nw=(RVn&&RVn.new_projects)||[];
+    rn.textContent=RVn&&(dr.length||nw.length)?[dr.length?`خارج حساب الإيراد (لم تُطابق جدول الإيرادات): ${dr.slice(0,4).map(d=>d.project).join("، ")}${dr.length>4?` و${dr.length-4} غيرها`:""}`:"",
+      nw.length?`مشاريع جديدة بمتوسط منطقتها: ${nw.slice(0,3).join("، ")}${nw.length>3?` و${nw.length-3} غيرها`:""}`:""].filter(Boolean).join(" · "):""; }
   return progs;
 }
 
@@ -9953,7 +9959,8 @@ function tvAllocAggregate(rows,appNameOf){
       if(bankKey){ const ben=S(row["نوع المستفيدين"]);
         rp=num(ben==="المستفيدين"?row.moh_price:row.price); if(!(rp>=10000)) rp=num(row.price); if(!(rp>=10000)) rp=num(priceKey?row[priceKey]:NaN);
         cash=tvIsCashBank(row[bankKey]);
-        const vk=[pn,code,sector,kind].join("\u0001"), v=val.get(vk)||{cnt:0,fs:0,fn:0,cs:0,cn:0}; v.cnt++;
+        const vk=[pn,code,sector,kind].join("\u0001"), v=val.get(vk)||{cnt:0,fs:0,fn:0,cs:0,cn:0,fd:null}; v.cnt++;
+        const vd=tvAllocDate(row["تاريخ توقيع العقد"]); if(vd&&(!v.fd||vd<v.fd)) v.fd=vd;
         if(rp>=10000){ if(cash){ v.cs+=rp; v.cn++; } else { v.fs+=rp; v.fn++; } }
         val.set(vk,v); }
       const cd=tvAllocDate(row["تاريخ توقيع العقد"]);
@@ -9978,7 +9985,7 @@ function tvAllocAggregate(rows,appNameOf){
   const status=[...stat.values()].map(e=>{ if(appNameOf&&!appCache.has(e.project_name)) appCache.set(e.project_name,appNameOf(e.project_name));
     return Object.assign(e,{app_name:appNameOf?appCache.get(e.project_name):null}); });
   const value=[...val.entries()].map(([k,v])=>{ const [project_name,project_code,sector,kind]=k.split("\u0001");
-    return {project_name,project_code,sector,kind,cnt:v.cnt,fin_sum:v.fs,fin_n:v.fn,cash_sum:v.cs,cash_n:v.cn}; });
+    return {project_name,project_code,sector,kind,cnt:v.cnt,fin_sum:v.fs,fin_n:v.fn,cash_sum:v.cs,cash_n:v.cn,first_date:v.fd}; });
   return {contracts,status,banks:bankKey?banks:null,value:bankKey?value:null,priceKey,bankKey,contractsYear,noDate,rows:rows.length};
 }
 /* رفع التجميع: call(fn,body) يضيف بيانات الأدمن (adminCall بالتطبيق، أو sbCall مع بيانات الدخول بالشاشة) */
