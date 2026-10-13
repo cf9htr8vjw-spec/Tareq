@@ -84,6 +84,9 @@ create table if not exists tv_rev_params (
   updated_at timestamptz not null default now()
 );
 create index if not exists tv_rev_params_norm_idx on tv_rev_params(norm);
+-- من ورقة «إيراد 2026 والتحصيل» (صفوف المناطق): مستهدف إيراد السنة والمستحق من عقود السنة بالجدول
+alter table tv_rev_params add column if not exists target_year numeric;
+alter table tv_rev_params add column if not exists due_year numeric;
 alter table tv_rev_params enable row level security;
 drop policy if exists tv_rev_params_read on tv_rev_params;
 
@@ -113,11 +116,12 @@ begin
     return jsonb_build_object('ok', false, 'msg', 'غير مصرح — تحقق من بيانات الدخول وصلاحية الإدمن');
   end if;
   delete from tv_rev_params where true;
-  insert into tv_rev_params (name, norm, sector, is_region, excluded, cash_pct, cum_value, cash_due, bank_due, target_cum, as_of)
+  insert into tv_rev_params (name, norm, sector, is_region, excluded, cash_pct, cum_value, cash_due, bank_due, target_cum, as_of, target_year, due_year)
   select distinct on (btrim(r->>'name')) btrim(r->>'name'), coalesce(tv_norm_name(r->>'name'), btrim(r->>'name')),
          nullif(btrim(r->>'sector'), ''), coalesce((r->>'is_region')::boolean, false), coalesce((r->>'excluded')::boolean, false),
          nullif(r->>'cash_pct', '')::numeric, nullif(r->>'cum_value', '')::numeric, nullif(r->>'cash_due', '')::numeric,
-         nullif(r->>'bank_due', '')::numeric, nullif(r->>'target_cum', '')::numeric, nullif(r->>'as_of', '')::date
+         nullif(r->>'bank_due', '')::numeric, nullif(r->>'target_cum', '')::numeric, nullif(r->>'as_of', '')::date,
+         nullif(r->>'target_year', '')::numeric, nullif(r->>'due_year', '')::numeric
   from jsonb_array_elements(p_rows) r
   where nullif(btrim(r->>'name'), '') is not null
   order by btrim(r->>'name');
@@ -437,7 +441,28 @@ as $$
            b.target_year
     from tgt_db b full join tgt_tbl t using (sec) left join tgt_dan dn on dn.sec = coalesce(b.sec, t.sec)
   ),
-  secs as (select sec from ach union select sec from tg),
+  -- ---- سنة p_year فقط (ما تعرضه الشاشة): المستحق من عقود السنة ÷ مستهدف إيراد السنة ----
+  -- مستهدف السنة: من ورقة «إيراد 2026 والتحصيل» بآخر جدول مرفوع (تشمل الدانيات)، وإلا dashboard_targets
+  tgy_tbl as (
+    select sector as sec, sum(target_year) as target_year from tv_rev_params
+    where is_region and target_year is not null group by 1
+  ),
+  tgy as (
+    select coalesce(b.sec, t.sec) as sec,
+           case when exists(select 1 from tgy_tbl) then t.target_year else b.target_year end as target_year
+    from tgt_db b full join tgy_tbl t using (sec)
+  ),
+  achy as (
+    select tv_region(nullif(d.sector, ''), null) as sec, sum(d.cnt) as cnt, sum(d.fin_sum + d.cash_sum) as value,
+           sum(d.fin_sum * 0.2) as bank_due,
+           sum(d.cash_sum * coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10)) as cash_due
+    from tv_contract_daily d join pm using (project_name)
+    left join secdef sd on sd.sector = tv_region(nullif(d.sector, ''), null)
+    where d.kind = 'nhc' and not pm.excl
+      and d.contract_date >= make_date(p_year, 1, 1) and d.contract_date < make_date(p_year + 1, 1, 1)
+    group by 1
+  ),
+  secs as (select sec from ach union select sec from tg union select sec from achy union select sec from tgy),
   d as (
     select tv_region(nullif(d.sector, ''), null) as sec, d.contract_date,
            d.fin_sum * 0.2 + d.cash_sum * coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10) as due
@@ -456,12 +481,15 @@ as $$
     'sectors', coalesce((
       select jsonb_object_agg(s.sec, jsonb_build_object(
         'cnt', coalesce(a.cnt, 0), 'value', coalesce(a.value, 0), 'cash_due', coalesce(a.cash_due, 0), 'bank_due', coalesce(a.bank_due, 0),
-        'due', coalesce(a.cash_due, 0) + coalesce(a.bank_due, 0), 'target_cum', t.target_cum, 'target_year', t.target_year))
-      from secs s left join ach a using (sec) left join tg t using (sec)
+        'due', coalesce(a.cash_due, 0) + coalesce(a.bank_due, 0), 'target_cum', t.target_cum, 'target_year', t.target_year,
+        'y_cnt', coalesce(y.cnt, 0), 'y_value', coalesce(y.value, 0), 'y_cash_due', coalesce(y.cash_due, 0), 'y_bank_due', coalesce(y.bank_due, 0),
+        'y_due', coalesce(y.cash_due, 0) + coalesce(y.bank_due, 0), 'y_target', ty.target_year))
+      from secs s left join ach a using (sec) left join tg t using (sec) left join achy y using (sec) left join tgy ty using (sec)
     ), '{}'::jsonb),
     -- لقطة أرقام الجدول المرفوع (صفوف المناطق) للتحقق
     'table', coalesce((select jsonb_agg(jsonb_build_object('name', name, 'sector', sector, 'cum_value', cum_value,
-        'cash_due', cash_due, 'bank_due', bank_due, 'target_cum', target_cum)) from tv_rev_params where is_region), '[]'::jsonb),
+        'cash_due', cash_due, 'bank_due', bank_due, 'target_cum', target_cum, 'target_year', target_year, 'due_year', due_year))
+        from tv_rev_params where is_region), '[]'::jsonb),
     -- نسبة الدفعة النقدية المطبّقة لكل مشروع NHC (لعمود الإيراد بجدول المشاريع) — null = مستبعد
     'pct', coalesce((
       select jsonb_object_agg(pm.project_name, case when pm.excl then null
@@ -510,9 +538,11 @@ $$;
 
 -- ---------- تفصيل الإيراد لكل مشروع (للتدقيق في Supabase SQL editor) ----------
 -- select * from tv_revenue_breakdown('الأوسط');   — نفس حساب الشاشة سطراً بسطر، مع المستبعد وسببه
+drop function if exists tv_revenue_breakdown(text);
 create or replace function tv_revenue_breakdown(p_sector text)
-returns table(project text, app_name text, table_row text, status text, contracts bigint,
-              bank_value_m numeric, cash_value_m numeric, cash_pct numeric,
+returns table(project text, app_name text, table_row text, status text, cash_pct numeric,
+              y2026_contracts bigint, y2026_bank_value_m numeric, y2026_cash_value_m numeric, y2026_due_m numeric,
+              contracts bigint, bank_value_m numeric, cash_value_m numeric,
               bank_due_m numeric, cash_due_m numeric, due_m numeric, table_due_m numeric)
 language sql
 stable
@@ -589,6 +619,13 @@ as $$
     left join secdef sd on sd.sector = tv_region(nullif(v.sector, ''), null)
     where v.kind = 'nhc' and tv_region(nullif(v.sector, ''), null) = p_sector
     group by 1, 2, 3, 4, 5, 6
+  ),
+  yr as (
+    select d.project_name, sum(d.cnt) as cnt, sum(d.fin_sum) as fin, sum(d.cash_sum) as cash
+    from tv_contract_daily d
+    where d.kind = 'nhc' and tv_region(nullif(d.sector, ''), null) = p_sector
+      and d.contract_date >= date_trunc('year', current_date)::date
+    group by 1
   )
   select r.project_name, r.app, r.pname,
          case when r.excl and r.unmatched then 'خارج الحساب: قديم ولا يطابق جدول الإيرادات'
@@ -596,13 +633,16 @@ as $$
               when r.danyat then 'محسوب (دانية: بنكي فقط)'
               when r.unmatched then 'محسوب بمتوسط المنطقة (مشروع جديد)'
               else 'محسوب' end,
-         r.cnt, round(r.fin / 1e6, 1), round(r.cash / 1e6, 1), round(r.cpct, 3),
+         round(r.cpct, 3),
+         coalesce(y.cnt, 0), round(coalesce(y.fin, 0) / 1e6, 1), round(coalesce(y.cash, 0) / 1e6, 1),
+         case when r.excl then 0 else round((coalesce(y.fin, 0) * 0.2 + coalesce(y.cash, 0) * r.cpct) / 1e6, 1) end,
+         r.cnt, round(r.fin / 1e6, 1), round(r.cash / 1e6, 1),
          case when r.excl then 0 else round(r.fin * 0.2 / 1e6, 1) end,
          case when r.excl then 0 else round(r.cash * r.cpct / 1e6, 1) end,
          case when r.excl then 0 else round((r.fin * 0.2 + r.cash * r.cpct) / 1e6, 1) end,
          round((select coalesce(p.cash_due, 0) + coalesce(p.bank_due, 0) from tv_rev_params p where p.name = r.pname) / 1e6, 1)
-  from rows r
-  order by r.excl, (r.fin * 0.2 + r.cash * r.cpct) desc;
+  from rows r left join yr y using (project_name)
+  order by r.excl, (coalesce(y.fin, 0) * 0.2 + coalesce(y.cash, 0) * r.cpct) desc, (r.fin * 0.2 + r.cash * r.cpct) desc;
 $$;
 revoke all on function tv_revenue_breakdown(text) from public;
 do $$ begin

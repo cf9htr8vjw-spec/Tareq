@@ -9025,7 +9025,7 @@ function tvGaugeHtml(name,prog,prodHtml,opt){
       <div class="gNums">
         <div class="gPct" style="color:${col}">${prog.pct!=null?prog.pct+"%":"—"}</div>
         <div class="gWhen">${opt.when!=null?opt.when:prog.tgt?"من المطلوب حتى اليوم":""}</div>
-        <div class="gSub">${opt.sub!=null?opt.sub:prog.tgt?`<span>المحقق <b>${F(prog.ytd)}</b></span>${prog.tgtToDate!=null&&!opt.money?`<span>المطلوب <b>${F(prog.tgtToDate)}</b></span><span>المستهدف <b>${F(prog.tgt)}</b></span>`:`<span>المستهدف <b>${F(prog.tgt)}</b></span>`}`:`<span>المحقق <b>${F(prog.ytd)}</b></span>`}</div>
+        <div class="gSub">${opt.sub!=null?opt.sub:prog.tgt?`<span>المحقق <b>${F(prog.ytd)}</b></span>${prog.tgtToDate!=null?`<span>المطلوب <b>${F(prog.tgtToDate)}</b></span><span>المستهدف <b>${F(prog.tgt)}</b></span>`:`<span>المستهدف <b>${F(prog.tgt)}</b></span>`}`:`<span>المحقق <b>${F(prog.ytd)}</b></span>`}</div>
       </div>
     </div>
     <span class="tvStatus ${st}">${stTxt}</span>
@@ -9621,17 +9621,17 @@ function tvRenderGauges(R,ctx){
   /* وضع الإيرادات: نفس العدّادات بالريال — المستحق من عقود السنة (ملف التخصيص حتى آخر رفع) مقابل مستهدف
      الإيراد بالمذكرات. عقود اليوم اللحظية بلا أسعار فلا تدخل. progs تبقى بالعقود (للمطلوب يومياً بالشاشة) */
   if(tvMetric==="rev"){
-    /* الإنجاز المالي (منهجية جدول الإيرادات): الإيراد المستحق الآن التراكمي (نقدي بنسبة جدول دفعات المشروع
-       + بنكي 20% وافي) ÷ مستهدف المذكرة التراكمي ≤ السنة */
+    /* إيرادات سنة 2026 (منهجية ورقة «إيراد 2026 والتحصيل»): المستحق من عقود السنة (بنكي 20% وافي + نقدي بنسبة
+       جدول دفعات المشروع) مقابل مستهدف إيراد السنة بالمذكرات — والنسبة من المطلوب حتى اليوم (نفس مسار العقود:
+       43% من السنة بالربع الرابع)، مع المطلوب حتى اليوم ومستهدف السنة ظاهرين */
     const RV=R.revenue&&R.revenue.ok?R.revenue:null, S=(RV&&RV.sectors)||{};
     const ready=!!(RV&&RV.has_value&&RV.has_params);
     const sumK=(keys,k)=>keys.reduce((a,x)=>a+(Number((S[x]||{})[k])||0),0);
-    const mk=keys=>{ const due=sumK(keys,"due"), tg=sumK(keys,"target_cum"), pct=tg&&ready?Math.round(due/tg*1000)/10:null;
-      return {prog:{ytd:due,tgt:tg||null,pct,status:tvPaceStatus(pct),yearPct:pct,deficit:tg-due},
-        pctTxt:pct, cash:sumK(keys,"cash_due"), bank:sumK(keys,"bank_due"), tg}; };
-    const opt=(x,o)=>Object.assign({money:true,when:`الإنجاز المالي التراكمي`,
-      note:!RV?"شغّل tv_revenue.sql على القاعدة":!RV.has_params?"ارفع جدول الإيرادات":!RV.has_value?"ارفع ملف التخصيص من جديد"
-        :x.pctTxt>=100?`تجاوز المستهدف التراكمي ✓`:`ناقص ${tvMoney(Math.max(0,x.tg-x.prog.ytd))} عن المستهدف`,
+    const mk=keys=>{ const due=sumK(keys,"y_due"), tg=sumK(keys,"y_target");
+      const prog=tvYearProg(ready?[{period:`${ctx.curY}-01`,cnt:due}]:[],ready&&tg?tg:null,ctx);
+      return {prog, cash:sumK(keys,"y_cash_due"), bank:sumK(keys,"y_bank_due")}; };
+    const opt=(x,o)=>Object.assign({money:true,
+      note:!RV?"شغّل tv_revenue.sql على القاعدة":!RV.has_params?"ارفع جدول الإيرادات":!RV.has_value?"ارفع ملف التخصيص من جديد":null,
       run:ready?`<div class="gRun">نقدي <b>${tvMoney(x.cash)}</b> · بنكي <b>${tvMoney(x.bank)}</b></div>`:""},o);
     const all=mk(Object.keys(S));
     g=tvGaugeHtml("NHC — الإجمالي",all.prog,gp(r=>r.kind==="nhc",null),opt(all,{all:true}));
@@ -10334,7 +10334,22 @@ function tvRevParse(wb){
     const pct=!excl&&cd!=null&&cashVal>0?Math.max(0,Math.min(1,cd/cashVal)):null;
     out.push({name:nm,sector:sec,is_region:false,excluded:excl,cash_pct:pct,cum_value:v,cash_due:cd,bank_due:bd,target_cum:tg,as_of:asOf});
   }
-  return out.length?{sheet:name,rows:out,asOf}:null;
+  /* ورقة «إيراد 2026 والتحصيل»: لكل منطقة مستهدف إيراد السنة والمستحق من عقود السنة — أساس عرض الشاشة (سنة 2026) */
+  const yName=wb.SheetNames.find(n=>/إيراد\s*\d{4}/.test(n));
+  let year=null;
+  if(yName){
+    const Y=XLSX.utils.sheet_to_json(wb.Sheets[yName],{header:1,defval:null});
+    const yi=Y.findIndex(r=>(r||[]).some(c=>/مستهدف الإيراد\s*\d{4}/.test(String(c||""))));
+    if(yi>=0){
+      const YH=Y[yi].map(c=>String(c||"").replace(/\s+/g," ").trim());
+      const cTy=YH.findIndex(h=>/مستهدف الإيراد\s*\d{4}$/.test(h)), cDy=YH.findIndex(h=>/إجمالي الإيراد المستحق/.test(h));
+      const ym=(YH[cTy]||"").match(/(\d{4})/); year=ym?+ym[1]:null;
+      for(const r of Y.slice(yi+1)){ const nm=String((r&&r[0])||"").trim(); if(!TV_REV_REGION[nm]) continue;
+        const reg=out.find(o=>o.is_region&&o.name==="منطقة · "+nm);
+        if(reg){ reg.target_year=cTy>=0?N(r[cTy]):null; reg.due_year=cDy>=0?N(r[cDy]):null; } }
+    }
+  }
+  return out.length?{sheet:name,rows:out,asOf,year,yearSheet:yName||null}:null;
 }
 async function tvUpReadAlloc(file){
   const WANT=["project_name","حالة الحجز","price","unit_type","developer_name","القطاع"];
@@ -10356,7 +10371,7 @@ async function tvUpHandleFile(file){
         tvUpRev=rv; $("tvUpAtRow").style.display="none";
         const reg=rv.rows.filter(r=>r.is_region), pj=rv.rows.filter(r=>!r.is_region), ex=pj.filter(r=>r.excluded);
         const sum=k=>reg.reduce((a,r)=>a+(Number(r[k])||0),0), due=sum("cash_due")+sum("bank_due"), tg=sum("target_cum");
-        tvUpMsg(`<b>جدول الإيرادات</b> · الورقة «${rv.sheet}»${rv.asOf?` · حتى ${rv.asOf.split("-").reverse().join("/")}`:""}<br><b>${fmt(pj.length-ex.length)}</b> مشروعاً (${fmt(ex.length)} مستبعد) · قيمة العقود ${tvMoney(sum("cum_value"))}<br>المستحق الآن <b>${tvMoney(due)}</b> (نقدي ${tvMoney(sum("cash_due"))} · بنكي ${tvMoney(sum("bank_due"))}) · المستهدف التراكمي ${tvMoney(tg)}${tg?` · الإنجاز المالي <b>${Math.round(due/tg*1000)/10}%</b>`:""}`);
+        tvUpMsg(`<b>جدول الإيرادات</b> · الورقة «${rv.sheet}»${rv.asOf?` · حتى ${rv.asOf.split("-").reverse().join("/")}`:""}<br><b>${fmt(pj.length-ex.length)}</b> مشروعاً (${fmt(ex.length)} مستبعد) · قيمة العقود ${tvMoney(sum("cum_value"))}${rv.year?`<br>${rv.year}: المستحق من عقود السنة <b>${tvMoney(sum("due_year"))}</b> · مستهدف إيراد السنة ${tvMoney(sum("target_year"))}${sum("target_year")?` · <b>${Math.round(sum("due_year")/sum("target_year")*1000)/10}%</b> من مستهدف السنة`:""}`:`<br><span style="color:#C2491E">لم أجد ورقة «إيراد 2026 والتحصيل» — مستهدف السنة من المذكرات</span>`}<br>تراكمي: المستحق الآن ${tvMoney(due)} · المستهدف التراكمي ${tvMoney(tg)}`);
         tvUpUpdateGo(); return;
       }
     }
