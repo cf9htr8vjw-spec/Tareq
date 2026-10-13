@@ -1,21 +1,87 @@
 -- ============================================================
--- SalesPlace — شاشة المبيعات: الإيرادات (المستهدف والمحقق)
+-- SalesPlace — شاشة المبيعات: الإيرادات (المستهدف والمحقق) — منهجية جدول «المستهدف والمحقق حسب
+-- مذكرات الاستثمار (الإيرادات والتحصيل)»
 -- ============================================================
--- • المستهدف: عمود revenue بجدول dashboard_targets (مذكرات الاستثمار — صف «إيرادات تطوير وحدات
---   سكنية» بالخطة بالسنوات)، مجموعاً لكل قطاع.
--- • المحقق: الإيراد المستحق من عقود السنة (ملف التخصيص) — نفس منهجية العروض:
---     عقد ممول بنكياً  → قيمة العقد كاملة (الدفعة الأولى + مبلغ التمويل)
---     عقد شراء نقدي   → الدفعة الأولى من قيمة العقد (النسبة تُطبَّق بالشاشة، 10% افتراضياً)
---   لذلك يُحفظ لكل يوم × مشروع × قطاع × نوع مجموع قيمة العقود الممولة والنقدية منفصلين.
+-- • الإيراد المستحق الآن (تراكمي، كل العقود منذ بداية المشروع):
+--     عقود التمويل البنكي × 20% (الدفعة المقدمة في وافي)
+--   + عقود الشراء النقدي × نسبة جدول دفعات المشروع
+--   السعر: moh_price للمستفيدين و price لغير المستفيدين (ملف التخصيص).
+-- • نسبة جدول الدفعات لكل مشروع تُشتق من آخر جدول إيرادات مرفوع (ورقة «المناطق والمشاريع»):
+--     المستحق النقدي ÷ (قيمة العقود − المستحق البنكي ÷ 20%)
+--   مشروع غير موجود بالجدول يأخذ متوسط منطقته. المشاريع «المستبعدة» بالجدول (المباعة والدانيات) خارج النطاق.
+-- • الإنجاز المالي = الإيراد المستحق التراكمي ÷ مستهدف المذكرة التراكمي ≤ السنة (dashboard_targets.revenue).
 --
--- يتطلّب: tv_board_upload.sql مُشغَّلاً قبله. شغّل هذا الملف مرة واحدة، ثم ارفع ملف التخصيص من
--- جديد (من الشاشة أو التطبيق) ليُملأ عمودا التمويل والنقد. آمن لإعادة التشغيل.
+-- يتطلّب: tv_board_upload.sql مُشغَّلاً قبله. شغّل هذا الملف مرة واحدة، ثم من الشاشة («⬆ رفع ملف»):
+-- ارفع جدول الإيرادات (الإكسل) مرة، ثم ملف التخصيص. آمن لإعادة التشغيل.
 -- ============================================================
 
 alter table tv_contract_daily add column if not exists fin_sum  numeric not null default 0;  -- قيمة العقود الممولة بنكياً
 alter table tv_contract_daily add column if not exists fin_n    integer not null default 0;
 alter table tv_contract_daily add column if not exists cash_sum numeric not null default 0;  -- قيمة عقود الشراء النقدي
 alter table tv_contract_daily add column if not exists cash_n   integer not null default 0;
+
+-- القيمة التراكمية لعقود كل مشروع (كل العقود حتى آخر رفع لملف التخصيص) — ممول بنكياً / نقدي
+create table if not exists tv_project_value (
+  project_name text not null,
+  project_code text not null default '',
+  sector text not null default '',
+  kind text not null default 'other',
+  cnt integer not null default 0,
+  fin_sum numeric not null default 0, fin_n integer not null default 0,
+  cash_sum numeric not null default 0, cash_n integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (project_name, project_code, sector, kind)
+);
+alter table tv_project_value enable row level security;
+drop policy if exists tv_project_value_read on tv_project_value;
+create policy tv_project_value_read on tv_project_value for select using (true);
+
+-- معاملات الإيراد من جدول الإيرادات المرفوع: نسبة الدفعة النقدية لكل مشروع، والمستبعد، ولقطة أرقام الجدول للتحقق
+create table if not exists tv_rev_params (
+  name text primary key,
+  norm text not null,
+  sector text,
+  is_region boolean not null default false,
+  excluded boolean not null default false,
+  cash_pct numeric,
+  cum_value numeric, cash_due numeric, bank_due numeric, target_cum numeric,
+  as_of date,
+  updated_at timestamptz not null default now()
+);
+create index if not exists tv_rev_params_norm_idx on tv_rev_params(norm);
+alter table tv_rev_params enable row level security;
+drop policy if exists tv_rev_params_read on tv_rev_params;
+create policy tv_rev_params_read on tv_rev_params for select using (true);
+
+create or replace function admin_load_tv_rev(p_admin text, p_pass text, p_rows jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path to 'public', 'extensions'
+as $$
+declare
+  v_is_admin boolean;
+  v_count int;
+begin
+  select is_admin into v_is_admin from app_users
+    where username = p_admin and pass_hash = crypt(p_pass, pass_hash) and is_active
+    limit 1;
+  if v_is_admin is not true then
+    return jsonb_build_object('ok', false, 'msg', 'غير مصرح — تحقق من بيانات الدخول وصلاحية الإدمن');
+  end if;
+  delete from tv_rev_params where true;
+  insert into tv_rev_params (name, norm, sector, is_region, excluded, cash_pct, cum_value, cash_due, bank_due, target_cum, as_of)
+  select distinct on (btrim(r->>'name')) btrim(r->>'name'), coalesce(tv_norm_name(r->>'name'), btrim(r->>'name')),
+         nullif(btrim(r->>'sector'), ''), coalesce((r->>'is_region')::boolean, false), coalesce((r->>'excluded')::boolean, false),
+         nullif(r->>'cash_pct', '')::numeric, nullif(r->>'cum_value', '')::numeric, nullif(r->>'cash_due', '')::numeric,
+         nullif(r->>'bank_due', '')::numeric, nullif(r->>'target_cum', '')::numeric, nullif(r->>'as_of', '')::date
+  from jsonb_array_elements(p_rows) r
+  where nullif(btrim(r->>'name'), '') is not null
+  order by btrim(r->>'name');
+  get diagnostics v_count = row_count;
+  return jsonb_build_object('ok', true, 'msg', 'حُفظ '||v_count||' صفاً', 'count', v_count);
+end;
+$$;
 
 -- ---------- رفع الجدولين على دفعات (الأولى تمسح القديم) — يتطلّب صلاحية أدمن فعلية ----------
 create or replace function admin_load_tv_alloc(p_admin text, p_pass text, p_table text, p_rows jsonb, p_reset boolean)
@@ -52,6 +118,20 @@ begin
       price_n = tv_contract_daily.price_n + excluded.price_n,
       fin_sum = tv_contract_daily.fin_sum + excluded.fin_sum, fin_n = tv_contract_daily.fin_n + excluded.fin_n,
       cash_sum = tv_contract_daily.cash_sum + excluded.cash_sum, cash_n = tv_contract_daily.cash_n + excluded.cash_n,
+      updated_at = now();
+  elsif p_table = 'value' then
+    if p_reset then delete from tv_project_value where true; end if;
+    insert into tv_project_value (project_name, project_code, sector, kind, cnt, fin_sum, fin_n, cash_sum, cash_n)
+    select btrim(r->>'project_name'), coalesce(btrim(r->>'project_code'), ''), coalesce(btrim(r->>'sector'), ''), coalesce(r->>'kind', 'other'),
+           sum((r->>'cnt')::int), sum(coalesce(nullif(r->>'fin_sum', '')::numeric, 0)), sum(coalesce(nullif(r->>'fin_n', '')::int, 0)),
+           sum(coalesce(nullif(r->>'cash_sum', '')::numeric, 0)), sum(coalesce(nullif(r->>'cash_n', '')::int, 0))
+    from jsonb_array_elements(p_rows) r
+    where nullif(btrim(r->>'project_name'), '') is not null
+    group by 1, 2, 3, 4
+    on conflict (project_name, project_code, sector, kind) do update set
+      cnt = tv_project_value.cnt + excluded.cnt,
+      fin_sum = tv_project_value.fin_sum + excluded.fin_sum, fin_n = tv_project_value.fin_n + excluded.fin_n,
+      cash_sum = tv_project_value.cash_sum + excluded.cash_sum, cash_n = tv_project_value.cash_n + excluded.cash_n,
       updated_at = now();
   elsif p_table = 'status' then
     if p_reset then
@@ -204,5 +284,117 @@ as $$
         'rev_missing_units', pc.rev_missing_units, 'rev_missing_projects', pc.rev_missing_projects))
       from sc join pc using (scope)
     ), '{}'::jsonb)
+  );
+$$;
+
+-- ---------- الإيراد المستحق والإنجاز المالي (منهجية الجدول) ----------
+create or replace function get_tv_revenue(p_year int, p_month int)
+returns jsonb
+language sql
+stable
+security definer
+set search_path to 'public'
+as $$
+  with params as (select * from tv_rev_params where not is_region),
+  apps as (
+    select project_name, max(app_name) as app from (
+      select project_name, app_name from tv_project_app
+      union all select project_name, app_name from tv_unit_status where app_name is not null
+    ) x group by 1
+  ),
+  names as (
+    select distinct v.project_name, a.app from tv_project_value v left join apps a using (project_name) where v.kind = 'nhc'
+    union
+    select distinct d.project_name, a.app from tv_contract_daily d left join apps a using (project_name)
+    where d.kind = 'nhc' and d.project_name <> ''
+  ),
+  -- لكل مشروع بملف التخصيص: صفّه بجدول الإيرادات (بالاسم أو باسم التطبيق)
+  pm as (
+    select distinct on (n.project_name) n.project_name, p.name as pname, coalesce(p.excluded, false) as p_excl, p.cash_pct,
+           (coalesce(p.excluded, false) or tv_norm_name(n.project_name) like '%دانيه%' or coalesce(tv_norm_name(n.app), '') like '%دانيه%') as excl
+    from names n
+    left join params p on p.norm in (tv_norm_name(n.project_name), tv_norm_name(n.app))
+    order by n.project_name, p.excluded desc nulls last, p.cash_pct nulls last
+  ),
+  -- متوسط نسبة الدفعة النقدية لكل قطاع (بالأوزان) للمشاريع غير الموجودة بالجدول
+  secdef as (
+    select sector, sum(cash_due) / nullif(sum(cum_value - coalesce(bank_due, 0) / 0.2), 0) as pct
+    from params where not excluded and cash_pct is not null group by sector
+  ),
+  alldef as (
+    select sum(cash_due) / nullif(sum(cum_value - coalesce(bank_due, 0) / 0.2), 0) as pct
+    from params where not excluded and cash_pct is not null
+  ),
+  v as (
+    select tv_region(nullif(v.sector, ''), null) as sec, v.project_name, v.cnt, v.fin_sum, v.cash_sum,
+           coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10) as cpct, pm.pname
+    from tv_project_value v join pm using (project_name)
+    left join secdef sd on sd.sector = tv_region(nullif(v.sector, ''), null)
+    where v.kind = 'nhc' and not pm.excl
+  ),
+  ach as (
+    select coalesce(sec, 'غير محدد') as sec, sum(cnt) as cnt, sum(fin_sum + cash_sum) as value,
+           sum(cash_sum * cpct) as cash_due, sum(fin_sum * 0.2) as bank_due
+    from v group by 1
+  ),
+  -- المستهدف التراكمي: من آخر جدول إيرادات مرفوع (صفوف المناطق) إن وُجد، وإلا من dashboard_targets
+  tgt_tbl as (
+    select sector as sec, sum(target_cum) as target_cum from tv_rev_params
+    where is_region and target_cum is not null group by 1
+  ),
+  tgt_db as (
+    select coalesce(tv_region(sector, null), 'غير محدد') as sec,
+           sum(revenue) filter (where year <= p_year) as target_cum, sum(revenue) filter (where year = p_year) as target_year
+    from dashboard_targets where scope = 'nhc' group by 1
+  ),
+  tg as (
+    select coalesce(b.sec, t.sec) as sec,
+           case when exists(select 1 from tgt_tbl) then t.target_cum else b.target_cum end as target_cum, b.target_year
+    from tgt_db b full join tgt_tbl t using (sec)
+  ),
+  secs as (select sec from ach union select sec from tg),
+  d as (
+    select tv_region(nullif(d.sector, ''), null) as sec, d.contract_date,
+           d.fin_sum * 0.2 + d.cash_sum * coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10) as due
+    from tv_contract_daily d join pm using (project_name)
+    left join secdef sd on sd.sector = tv_region(nullif(d.sector, ''), null)
+    where d.kind = 'nhc' and not pm.excl
+      and d.contract_date >= make_date(p_year, 1, 1) and d.contract_date < make_date(p_year + 1, 1, 1)
+  )
+  select jsonb_build_object(
+    'ok', true,
+    'has_params', exists(select 1 from params),
+    'has_value', exists(select 1 from tv_project_value),
+    'target_src', case when exists(select 1 from tv_rev_params where is_region and target_cum is not null) then 'table' else 'targets' end,
+    'params_as_of', (select max(as_of) from tv_rev_params),
+    'value_as_of', (select max(updated_at) from tv_project_value),
+    'sectors', coalesce((
+      select jsonb_object_agg(s.sec, jsonb_build_object(
+        'cnt', coalesce(a.cnt, 0), 'value', coalesce(a.value, 0), 'cash_due', coalesce(a.cash_due, 0), 'bank_due', coalesce(a.bank_due, 0),
+        'due', coalesce(a.cash_due, 0) + coalesce(a.bank_due, 0), 'target_cum', t.target_cum, 'target_year', t.target_year))
+      from secs s left join ach a using (sec) left join tg t using (sec)
+    ), '{}'::jsonb),
+    -- لقطة أرقام الجدول المرفوع (صفوف المناطق) للتحقق
+    'table', coalesce((select jsonb_agg(jsonb_build_object('name', name, 'sector', sector, 'cum_value', cum_value,
+        'cash_due', cash_due, 'bank_due', bank_due, 'target_cum', target_cum)) from tv_rev_params where is_region), '[]'::jsonb),
+    -- نسبة الدفعة النقدية المطبّقة لكل مشروع NHC (لعمود الإيراد بجدول المشاريع) — null = مستبعد
+    'pct', coalesce((
+      select jsonb_object_agg(pm.project_name, case when pm.excl then null
+             else coalesce(pm.cash_pct, (select pct from alldef), 0.10) end) from pm
+    ), '{}'::jsonb),
+    'sec_pct', coalesce((select jsonb_object_agg(sector, pct) from secdef where sector is not null), '{}'::jsonb),
+    'months', coalesce((
+      select jsonb_agg(jsonb_build_object('m', mo, 'sector', sec, 'due', due))
+      from (select extract(month from contract_date)::int as mo, sec, sum(due) as due from d group by 1, 2) x
+    ), '[]'::jsonb),
+    'days', coalesce((
+      select jsonb_agg(jsonb_build_object('d', dd, 'sector', sec, 'due', due))
+      from (select extract(day from contract_date)::int as dd, sec, sum(due) as due from d
+            where extract(month from contract_date)::int = p_month group by 1, 2) y
+    ), '[]'::jsonb),
+    'unmatched', coalesce((
+      select jsonb_agg(p.name order by p.name) from params p
+      where not p.excluded and not exists (select 1 from pm where pm.pname = p.name)
+    ), '[]'::jsonb)
   );
 $$;
