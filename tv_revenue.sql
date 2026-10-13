@@ -471,6 +471,29 @@ as $$
     group by 1
   ),
   secs as (select sec from ach union select sec from tg union select sec from achy union select sec from tgy),
+  -- تفصيل لكل مشروع NHC لسنة p_year (لجدول التفصيل بالشاشة): عقود السنة، المستحق بنكي/نقدي، مستهدف إيراد
+  -- السنة للمشروع ومستحقه بجدول الإيرادات (ورقة السنة) للمقارنة
+  projy as (
+    select d.project_name, mode() within group (order by tv_region(nullif(d.sector, ''), null)) as sec,
+           sum(d.cnt) as cnt, sum(d.fin_sum) as fin, sum(d.cash_sum) as cash
+    from tv_contract_daily d
+    where d.kind = 'nhc' and d.contract_date >= make_date(p_year, 1, 1) and d.contract_date < make_date(p_year + 1, 1, 1)
+    group by 1
+  ),
+  pvsec as (
+    select project_name, mode() within group (order by tv_region(nullif(sector, ''), null)) as sec
+    from tv_project_value where kind = 'nhc' group by 1
+  ),
+  plist as (
+    select pm.project_name, coalesce(py.sec, pv.sec, sp.sector) as sec, pm.pname, pm.danyat, pm.unmatched,
+           coalesce(py.cnt, 0) as cnt, coalesce(py.fin, 0) as fin, coalesce(py.cash, 0) as cash,
+           coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10) as cpct,
+           sp.y_bank_due, sp.y_cash_due, sp.target_year as p_target
+    from pm left join projy py using (project_name) left join pvsec pv using (project_name)
+    left join tv_rev_params sp on sp.name = pm.pname and not sp.is_region
+    left join secdef sd on sd.sector = coalesce(py.sec, pv.sec, sp.sector)
+    where not pm.excl
+  ),
   d as (
     select tv_region(nullif(d.sector, ''), null) as sec, d.contract_date,
            d.fin_sum * 0.2 + d.cash_sum * coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10) as due
@@ -512,6 +535,13 @@ as $$
       select jsonb_agg(jsonb_build_object('d', dd, 'sector', sec, 'due', due))
       from (select extract(day from contract_date)::int as dd, sec, sum(due) as due from d
             where extract(month from contract_date)::int = p_month group by 1, 2) y
+    ), '[]'::jsonb),
+    'projects', coalesce((
+      select jsonb_agg(jsonb_build_object('project', project_name, 'table_name', pname, 'sector', sec, 'danyat', danyat, 'new', unmatched,
+        'cnt', cnt, 'value', fin + cash, 'bank_due', fin * 0.2, 'cash_due', cash * cpct, 'due', fin * 0.2 + cash * cpct, 'cash_pct', cpct,
+        'target', p_target, 'sheet_due', case when y_bank_due is null and y_cash_due is null then null else coalesce(y_bank_due, 0) + coalesce(y_cash_due, 0) end)
+        order by fin * 0.2 + cash * cpct desc)
+      from plist where cnt > 0 or coalesce(p_target, 0) > 0
     ), '[]'::jsonb),
     'unmatched', coalesce((
       select jsonb_agg(p.name order by p.name) from params p

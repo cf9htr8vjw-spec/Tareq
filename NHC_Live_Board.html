@@ -327,6 +327,19 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvER .w{font-size:12.5px;color:#767368;overflow:hidden;text-overflow:ellipsis}
 .tvER b{font-size:16px;color:#0B4332;text-align:center}
 .tvER.top b{color:#007a54}
+/* تفصيل الإيرادات لكل مشروع (وضع الإيرادات) — صف بعرض الشريط كاملاً */
+.tvDestHd.one,.tvDestTrack.one{grid-template-columns:1fr}
+.tvRev .tvBandSeg{display:none}
+.tvRR{display:grid;grid-template-columns:minmax(0,1.7fr) .55fr .9fr .9fr 1.15fr .9fr .9fr .7fr .9fr;gap:10px;align-items:center;height:26px;border-bottom:1px solid #F0ECE2;font-size:14px;white-space:nowrap;text-align:center}
+.tvRR.h{height:20px;font-size:12px;color:#767368;font-weight:700;border-bottom:2px solid #E7E1D3}
+.tvRR .n{font-weight:800;color:#0B4332;overflow:hidden;text-overflow:ellipsis;text-align:start}
+.tvRR .n small{font-size:11px;color:#8a5a12;background:#FBF1E1;border-radius:99px;padding:0 6px;margin-inline-start:5px}
+.tvRR .n em{font-style:normal;font-size:11px;color:#C97F2E;font-weight:800;margin-inline-start:5px}
+.tvRR b{color:#8a5a12;font-size:15px}
+.tvRR i{font-style:normal;font-size:11.5px;color:#767368}
+.tvRR .p{font-weight:800;border-radius:99px;padding:0 7px;font-size:12.5px;justify-self:center}
+.tvRR .p.good{background:#E1F5EC;color:#007a54}.tvRR .p.bad{background:#FBE5DC;color:#C2491E}.tvRR .p.none{color:#B9B1A0}
+.tvRR .s{color:#767368}
 /* زر العقود/الإيرادات بالعنوان، وعمود الإيراد بجدول المشاريع */
 .tvHead .tvMetricSeg{margin-inline-start:14px}
 .tvHead .tvMetricSeg button{font-size:15px!important;padding:3px 14px!important}
@@ -1306,7 +1319,30 @@ function tvRenderEmployees(R,ctx){
 }
 function tvRenderBand(R,ctx){
   $("tvBandSeg").querySelectorAll("button[data-v]").forEach(b=>b.classList.toggle("on",b.dataset.v===tvBandView));
-  if(tvBandView==="dest") tvRenderDests(R,ctx); else tvRenderEmployees(R,ctx);
+  const rev=tvMetric==="rev";
+  $("tvDestTrack").classList.toggle("one",rev); $("tvDestHd").classList.toggle("one",rev);
+  if(rev) tvRenderRevDetail(R,ctx); else if(tvBandView==="dest") tvRenderDests(R,ctx); else tvRenderEmployees(R,ctx);
+}
+/* ---------- وضع الإيرادات: تفصيل لكل مشروع NHC (عقود السنة) مكان الوجهات/الموظفين — يتبع المنطقة المختارة.
+   المستحق = قيمة العقود الممولة × 20% + النقدية × نسبة جدول دفعات المشروع؛ «بالجدول» = المستحق بجدول الإيرادات
+   المرفوع (ورقة السنة) لنفس المشروع، للمقارنة ---------- */
+function tvRenderRevDetail(R,ctx){
+  const RV=R.revenue&&R.revenue.ok?R.revenue:null, region=ctx.region||null, regSfx=region?` · ${tvRegionLabel(region)}`:"";
+  const tbl=RV&&RV.params_as_of?String(RV.params_as_of).split("-").reverse().join("/"):"";
+  $("tvDestTitle").innerHTML=`تفصيل الإيرادات — عقود ${ctx.curY}${regSfx} <small>· المستحق = البنكي × 20% + النقدي × نسبة جدول دفعات المشروع${tbl?` · «بالجدول» = جدول الإيرادات حتى ${tbl}`:""}</small>`;
+  const tr=$("tvDestTrack"); delete tr.dataset.base;
+  const empty=msg=>{ $("tvDestHd").innerHTML=""; $("tvDestTot").textContent=""; tr.innerHTML=`<div class="tvEmpty" style="font-size:16px;padding:8px">${msg}</div>`; };
+  if(region==="dev") return empty("الإيراد لمشاريع NHC فقط");
+  if(!RV||!Array.isArray(RV.projects)) return empty("شغّل tv_revenue.sql (النسخة الأخيرة) على القاعدة");
+  const list=RV.projects.filter(p=>!region||tvSecNorm(p.sector)===region);
+  if(!list.length) return empty("لا مشاريع — ارفع جدول الإيرادات ثم ملف التخصيص");
+  const sum=list.reduce((a,p)=>a+Number(p.due||0),0), tg=list.reduce((a,p)=>a+Number(p.target||0),0);
+  $("tvDestTot").textContent=`${fmt(list.length)} مشروعاً · المستحق ${tvMoney(sum)}${tg?` من مستهدف ${tvMoney(tg)}`:""}`;
+  $("tvDestHd").innerHTML=`<div class="tvRR h"><span>المشروع</span><span>عقود ${ctx.curY}</span><span>قيمة العقود</span><span>بنكي (20%)</span><span>نقدي (النسبة)</span><span>المستحق</span><span>مستهدف السنة</span><span>من مستهدف السنة</span><span>بالجدول</span></div>`;
+  const M=v=>v?tvMoney(v):"—";
+  tr.innerHTML=list.map(p=>{ const due=Number(p.due||0), t=Number(p.target||0), pc=t?Math.round(due/t*100):null;
+      const tag=p.danyat?`<small>دانية</small>`:p.new?`<small>جديد</small>`:"";
+      return `<div class="tvRR"><span class="n">${p.project}${tag}${!region&&TV_SECTORS.includes(tvSecNorm(p.sector))?`<em>${tvSecNorm(p.sector)}</em>`:""}</span><span>${fmt(p.cnt||0)}</span><span>${M(p.value)}</span><span>${M(p.bank_due)}</span><span>${M(p.cash_due)} <i>${Math.round(Number(p.cash_pct||0)*1000)/10}%</i></span><b>${M(due)}</b><span>${M(t)}</span><span class="p ${pc==null?"none":pc>=TV_GOOD_PCT?"good":"bad"}">${pc!=null?pc+"%":"—"}</span><span class="s">${p.sheet_due!=null?M(p.sheet_due):"—"}</span></div>`; }).join("");
 }
 /* المتاح من ملف التخصيص: على المنصة ولدى المطور، لكل من NHC والمطورين */
 function tvAvailGrid(R,L){
@@ -1351,9 +1387,10 @@ function tvSetupDestScroll(){
   if(tr.dataset.base){ tr.innerHTML=tr.dataset.base; delete tr.dataset.base; }
   if(!wrap.clientHeight) return;
   if(tr.scrollHeight>wrap.clientHeight+4){
-    const rowsN=Math.ceil(tr.children.length/3);
-    /* عدد العناصر زوجي لكل نسخة حتى تبقى الأعمدة الثلاثة متراصّة عند التكرار */
-    const pad=(3-tr.children.length%3)%3;
+    const cols=Math.max(1,(getComputedStyle(tr).gridTemplateColumns||"").split(" ").filter(Boolean).length);
+    const rowsN=Math.ceil(tr.children.length/cols);
+    /* عدد العناصر مضاعف لعدد الأعمدة لكل نسخة حتى تبقى الأعمدة متراصّة عند التكرار */
+    const pad=(cols-tr.children.length%cols)%cols;
     tr.dataset.base=tr.innerHTML;
     const blank=`<div class="${(tr.firstElementChild&&tr.firstElementChild.classList[0])||"tvDR"}"></div>`.repeat(pad);
     tr.innerHTML=tr.dataset.base+blank+tr.dataset.base+blank;
@@ -2088,7 +2125,7 @@ function tvRevParse(wb){
           const reg=out.find(o=>o.is_region&&o.name==="منطقة · "+nm);
           if(reg){ reg.target_year=cTy>=0?N(r[cTy]):null; reg.due_year=cDy>=0?N(r[cDy]):null; } continue; }
         /* أرقام المشروع لسنة الورقة (للتدقيق بدالة tv_revenue_breakdown): قيمة العقود والمستحق البنكي والنقدي */
-        const yv={y_value:cVy>=0?N(r[cVy]):null,y_bank_due:cBy>=0?N(r[cBy]):null,y_cash_due:cCy>=0?N(r[cCy]):null};
+        const yv={y_value:cVy>=0?N(r[cVy]):null,y_bank_due:cBy>=0?N(r[cBy]):null,y_cash_due:cCy>=0?N(r[cCy]):null,target_year:cTy>=0?N(r[cTy]):null};
         if(yv.y_value==null) continue;
         const pj=out.find(o=>!o.is_region&&o.name===nm);
         if(pj) Object.assign(pj,yv); else out.push(Object.assign({name:nm,sector:ysec,is_region:false,excluded:false,cash_pct:null,cum_value:null,cash_due:null,bank_due:null,target_cum:null,as_of:asOf,year_only:true},yv)); }
