@@ -87,6 +87,11 @@ create index if not exists tv_rev_params_norm_idx on tv_rev_params(norm);
 -- من ورقة «إيراد 2026 والتحصيل» (صفوف المناطق): مستهدف إيراد السنة والمستحق من عقود السنة بالجدول
 alter table tv_rev_params add column if not exists target_year numeric;
 alter table tv_rev_params add column if not exists due_year numeric;
+-- أرقام كل مشروع بورقة السنة (للتدقيق فقط): قيمة عقود السنة والمستحق البنكي والنقدي منها
+alter table tv_rev_params add column if not exists y_value numeric;
+alter table tv_rev_params add column if not exists y_bank_due numeric;
+alter table tv_rev_params add column if not exists y_cash_due numeric;
+alter table tv_rev_params add column if not exists year_only boolean not null default false;
 alter table tv_rev_params enable row level security;
 drop policy if exists tv_rev_params_read on tv_rev_params;
 
@@ -116,12 +121,15 @@ begin
     return jsonb_build_object('ok', false, 'msg', 'غير مصرح — تحقق من بيانات الدخول وصلاحية الإدمن');
   end if;
   delete from tv_rev_params where true;
-  insert into tv_rev_params (name, norm, sector, is_region, excluded, cash_pct, cum_value, cash_due, bank_due, target_cum, as_of, target_year, due_year)
+  insert into tv_rev_params (name, norm, sector, is_region, excluded, cash_pct, cum_value, cash_due, bank_due, target_cum, as_of, target_year, due_year,
+                             y_value, y_bank_due, y_cash_due, year_only)
   select distinct on (btrim(r->>'name')) btrim(r->>'name'), coalesce(tv_norm_name(r->>'name'), btrim(r->>'name')),
          nullif(btrim(r->>'sector'), ''), coalesce((r->>'is_region')::boolean, false), coalesce((r->>'excluded')::boolean, false),
          nullif(r->>'cash_pct', '')::numeric, nullif(r->>'cum_value', '')::numeric, nullif(r->>'cash_due', '')::numeric,
          nullif(r->>'bank_due', '')::numeric, nullif(r->>'target_cum', '')::numeric, nullif(r->>'as_of', '')::date,
-         nullif(r->>'target_year', '')::numeric, nullif(r->>'due_year', '')::numeric
+         nullif(r->>'target_year', '')::numeric, nullif(r->>'due_year', '')::numeric,
+         nullif(r->>'y_value', '')::numeric, nullif(r->>'y_bank_due', '')::numeric, nullif(r->>'y_cash_due', '')::numeric,
+         coalesce((r->>'year_only')::boolean, false)
   from jsonb_array_elements(p_rows) r
   where nullif(btrim(r->>'name'), '') is not null
   order by btrim(r->>'name');
@@ -541,7 +549,10 @@ $$;
 drop function if exists tv_revenue_breakdown(text);
 create or replace function tv_revenue_breakdown(p_sector text)
 returns table(project text, app_name text, table_row text, status text, cash_pct numeric,
-              y2026_contracts bigint, y2026_bank_value_m numeric, y2026_cash_value_m numeric, y2026_due_m numeric,
+              y2026_contracts bigint, y2026_bank_value_m numeric, y2026_cash_value_m numeric,
+              y2026_bank_due_m numeric, y2026_cash_due_m numeric, y2026_due_m numeric,
+              till_sheet_value_m numeric, till_sheet_bank_due_m numeric, till_sheet_cash_due_m numeric, till_sheet_due_m numeric,
+              sheet_value_m numeric, sheet_bank_due_m numeric, sheet_cash_due_m numeric, sheet_due_m numeric,
               contracts bigint, bank_value_m numeric, cash_value_m numeric,
               bank_due_m numeric, cash_due_m numeric, due_m numeric, table_due_m numeric)
 language sql
@@ -621,7 +632,10 @@ as $$
     group by 1, 2, 3, 4, 5, 6
   ),
   yr as (
-    select d.project_name, sum(d.cnt) as cnt, sum(d.fin_sum) as fin, sum(d.cash_sum) as cash
+    select d.project_name, sum(d.cnt) as cnt, sum(d.fin_sum) as fin, sum(d.cash_sum) as cash,
+           -- حتى تاريخ جدول الإيرادات (للمقارنة المباشرة بأرقام الورقة)
+           sum(d.fin_sum) filter (where d.contract_date <= (select max(as_of) from tv_rev_params)) as fin_a,
+           sum(d.cash_sum) filter (where d.contract_date <= (select max(as_of) from tv_rev_params)) as cash_a
     from tv_contract_daily d
     where d.kind = 'nhc' and tv_region(nullif(d.sector, ''), null) = p_sector
       and d.contract_date >= date_trunc('year', current_date)::date
@@ -635,13 +649,21 @@ as $$
               else 'محسوب' end,
          round(r.cpct, 3),
          coalesce(y.cnt, 0), round(coalesce(y.fin, 0) / 1e6, 1), round(coalesce(y.cash, 0) / 1e6, 1),
+         case when r.excl then 0 else round(coalesce(y.fin, 0) * 0.2 / 1e6, 1) end,
+         case when r.excl then 0 else round(coalesce(y.cash, 0) * r.cpct / 1e6, 1) end,
          case when r.excl then 0 else round((coalesce(y.fin, 0) * 0.2 + coalesce(y.cash, 0) * r.cpct) / 1e6, 1) end,
+         round((coalesce(y.fin_a, 0) + coalesce(y.cash_a, 0)) / 1e6, 1),
+         case when r.excl then 0 else round(coalesce(y.fin_a, 0) * 0.2 / 1e6, 1) end,
+         case when r.excl then 0 else round(coalesce(y.cash_a, 0) * r.cpct / 1e6, 1) end,
+         case when r.excl then 0 else round((coalesce(y.fin_a, 0) * 0.2 + coalesce(y.cash_a, 0) * r.cpct) / 1e6, 1) end,
+         round(sp.y_value / 1e6, 1), round(sp.y_bank_due / 1e6, 1), round(sp.y_cash_due / 1e6, 1),
+         round((coalesce(sp.y_bank_due, 0) + coalesce(sp.y_cash_due, 0)) / 1e6, 1),
          r.cnt, round(r.fin / 1e6, 1), round(r.cash / 1e6, 1),
          case when r.excl then 0 else round(r.fin * 0.2 / 1e6, 1) end,
          case when r.excl then 0 else round(r.cash * r.cpct / 1e6, 1) end,
          case when r.excl then 0 else round((r.fin * 0.2 + r.cash * r.cpct) / 1e6, 1) end,
          round((select coalesce(p.cash_due, 0) + coalesce(p.bank_due, 0) from tv_rev_params p where p.name = r.pname) / 1e6, 1)
-  from rows r left join yr y using (project_name)
+  from rows r left join yr y using (project_name) left join tv_rev_params sp on sp.name = r.pname
   order by r.excl, (coalesce(y.fin, 0) * 0.2 + coalesce(y.cash, 0) * r.cpct) desc, (r.fin * 0.2 + r.cash * r.cpct) desc;
 $$;
 revoke all on function tv_revenue_breakdown(text) from public;

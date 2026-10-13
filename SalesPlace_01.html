@@ -10343,10 +10343,18 @@ function tvRevParse(wb){
     if(yi>=0){
       const YH=Y[yi].map(c=>String(c||"").replace(/\s+/g," ").trim());
       const cTy=YH.findIndex(h=>/مستهدف الإيراد\s*\d{4}$/.test(h)), cDy=YH.findIndex(h=>/إجمالي الإيراد المستحق/.test(h));
+      const cVy=YH.findIndex(h=>/قيمة العقود/.test(h)), cBy=YH.findIndex(h=>/التمويل البنكي/.test(h)), cCy=YH.findIndex(h=>/الدفعة المقدمة/.test(h));
       const ym=(YH[cTy]||"").match(/(\d{4})/); year=ym?+ym[1]:null;
-      for(const r of Y.slice(yi+1)){ const nm=String((r&&r[0])||"").trim(); if(!TV_REV_REGION[nm]) continue;
-        const reg=out.find(o=>o.is_region&&o.name==="منطقة · "+nm);
-        if(reg){ reg.target_year=cTy>=0?N(r[cTy]):null; reg.due_year=cDy>=0?N(r[cDy]):null; } }
+      let ysec=null;
+      for(const r of Y.slice(yi+1)){ const nm=String((r&&r[0])||"").trim(); if(!nm||/^(إجمالي|الإجمالي|منه)/.test(nm)) continue;
+        if(TV_REV_REGION[nm]){ ysec=TV_REV_REGION[nm];
+          const reg=out.find(o=>o.is_region&&o.name==="منطقة · "+nm);
+          if(reg){ reg.target_year=cTy>=0?N(r[cTy]):null; reg.due_year=cDy>=0?N(r[cDy]):null; } continue; }
+        /* أرقام المشروع لسنة الورقة (للتدقيق بدالة tv_revenue_breakdown): قيمة العقود والمستحق البنكي والنقدي */
+        const yv={y_value:cVy>=0?N(r[cVy]):null,y_bank_due:cBy>=0?N(r[cBy]):null,y_cash_due:cCy>=0?N(r[cCy]):null};
+        if(yv.y_value==null) continue;
+        const pj=out.find(o=>!o.is_region&&o.name===nm);
+        if(pj) Object.assign(pj,yv); else out.push(Object.assign({name:nm,sector:ysec,is_region:false,excluded:false,cash_pct:null,cum_value:null,cash_due:null,bank_due:null,target_cum:null,as_of:asOf,year_only:true},yv)); }
     }
   }
   return out.length?{sheet:name,rows:out,asOf,year,yearSheet:yName||null}:null;
