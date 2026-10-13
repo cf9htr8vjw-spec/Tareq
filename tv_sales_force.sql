@@ -1,0 +1,105 @@
+-- ============================================================
+-- SalesPlace — شاشة المبيعات: قنوات البيع وأداء الموظفين (من أعمدة ملف التخصيص الجديدة)
+-- ============================================================
+-- أعمدة الملف: «القنوات» (مركز بيع / مبيعات الرقمية / مبيعات الهاتف / البيع المباشر …)،
+-- «موقع العمل»، «Employee Name». تُجمَّع لعقود الملف (حالة الحجز = عقد) لكل يوم توقيع × قطاع المشروع
+-- × NHC/مطور — فتتبع فترة جدول المشاريع بالشاشة (اليوم / أمس / الأسبوع / الشهر / السنة) وتصفية المنطقة.
+--
+-- يتطلّب: tv_file_counts.sql (tv_region). شغّل هذا الملف مرة واحدة ثم ارفع ملف التخصيص. آمن لإعادة التشغيل.
+-- ============================================================
+
+create table if not exists tv_channel_daily (
+  contract_date date not null,
+  sector text not null default '',
+  kind text not null default 'other',
+  channel text not null default '',          -- فارغ = غير مذكور
+  cnt integer not null,
+  updated_at timestamptz not null default now(),
+  primary key (contract_date, sector, kind, channel)
+);
+alter table tv_channel_daily enable row level security;
+drop policy if exists tv_channel_daily_read on tv_channel_daily;
+create policy tv_channel_daily_read on tv_channel_daily for select using (true);
+
+create table if not exists tv_employee_daily (
+  contract_date date not null,
+  sector text not null default '',
+  kind text not null default 'other',
+  employee text not null,
+  work_location text not null default '',
+  cnt integer not null,
+  updated_at timestamptz not null default now(),
+  primary key (contract_date, sector, kind, employee, work_location)
+);
+alter table tv_employee_daily enable row level security;
+drop policy if exists tv_employee_daily_read on tv_employee_daily;
+create policy tv_employee_daily_read on tv_employee_daily for select using (true);
+
+-- رفع على دفعات (الأولى تمسح القديم) — يتطلّب صلاحية أدمن فعلية
+create or replace function admin_load_tv_force(p_admin text, p_pass text, p_table text, p_rows jsonb, p_reset boolean)
+returns jsonb
+language plpgsql
+security definer
+set search_path to 'public', 'extensions'
+as $$
+declare
+  v_is_admin boolean;
+  v_count int;
+begin
+  select is_admin into v_is_admin from app_users
+    where username = p_admin and pass_hash = crypt(p_pass, pass_hash) and is_active
+    limit 1;
+  if v_is_admin is not true then
+    return jsonb_build_object('ok', false, 'msg', 'غير مصرح — تحقق من بيانات الدخول وصلاحية الإدمن');
+  end if;
+
+  if p_table = 'channels' then
+    if p_reset then delete from tv_channel_daily where true; end if;
+    insert into tv_channel_daily (contract_date, sector, kind, channel, cnt)
+    select (r->>'contract_date')::date, coalesce(btrim(r->>'sector'), ''), coalesce(r->>'kind', 'other'),
+           coalesce(btrim(r->>'channel'), ''), sum((r->>'cnt')::int)
+    from jsonb_array_elements(p_rows) r
+    where nullif(r->>'contract_date', '') is not null
+    group by 1, 2, 3, 4
+    on conflict (contract_date, sector, kind, channel) do update set cnt = tv_channel_daily.cnt + excluded.cnt, updated_at = now();
+  elsif p_table = 'employees' then
+    if p_reset then delete from tv_employee_daily where true; end if;
+    insert into tv_employee_daily (contract_date, sector, kind, employee, work_location, cnt)
+    select (r->>'contract_date')::date, coalesce(btrim(r->>'sector'), ''), coalesce(r->>'kind', 'other'),
+           btrim(r->>'employee'), coalesce(btrim(r->>'work'), ''), sum((r->>'cnt')::int)
+    from jsonb_array_elements(p_rows) r
+    where nullif(r->>'contract_date', '') is not null and nullif(btrim(r->>'employee'), '') is not null
+    group by 1, 2, 3, 4, 5
+    on conflict (contract_date, sector, kind, employee, work_location) do update set cnt = tv_employee_daily.cnt + excluded.cnt, updated_at = now();
+  else
+    return jsonb_build_object('ok', false, 'msg', 'جدول غير معروف');
+  end if;
+  get diagnostics v_count = row_count;
+  return jsonb_build_object('ok', true, 'msg', 'حُفظ '||v_count||' صفاً', 'count', v_count);
+end;
+$$;
+
+-- القنوات والموظفون لفترة — بقطاع المشروع المطبَّع (للتصفية حسب المنطقة) و NHC/مطور
+create or replace function get_tv_force(p_from date, p_to date)
+returns jsonb
+language sql
+stable
+security definer
+set search_path to 'public'
+as $$
+  select jsonb_build_object(
+    'ok', true, 'from', p_from, 'to', p_to,
+    'has_channels', exists(select 1 from tv_channel_daily where channel <> ''),
+    'has_employees', exists(select 1 from tv_employee_daily),
+    'channels', coalesce((
+      select jsonb_agg(jsonb_build_object('sector', sec, 'kind', kind, 'channel', channel, 'cnt', c))
+      from (select tv_region(nullif(sector, ''), null) as sec, kind, channel, sum(cnt) as c
+            from tv_channel_daily where contract_date between p_from and p_to group by 1, 2, 3) x
+    ), '[]'::jsonb),
+    'employees', coalesce((
+      select jsonb_agg(jsonb_build_object('sector', sec, 'kind', kind, 'employee', employee, 'work', work_location, 'cnt', c))
+      from (select tv_region(nullif(sector, ''), null) as sec, kind, employee, work_location, sum(cnt) as c
+            from tv_employee_daily where contract_date between p_from and p_to group by 1, 2, 3, 4) y
+    ), '[]'::jsonb)
+  );
+$$;
