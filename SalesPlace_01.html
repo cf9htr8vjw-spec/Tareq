@@ -1851,6 +1851,78 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvRev .tvGauge .gNums .gSub{font-size:11px;letter-spacing:-.2px}
 .tvRev .tvGauge .gNums .gPct{font-size:29px}
 .tvRev .tvGauge .gNums .gSub b{font-size:12.5px}
+/* ===== نسخة الجوال (html.tvMob): عمودية، تبويبات أسفل الشاشة، نفس العناصر والبيانات ===== */
+.tvLayoutBtn{border:1.5px solid #E7E1D3;background:#fff;border-radius:99px;padding:1px 10px;font-size:15px;cursor:pointer;margin-inline-start:8px;line-height:1.5}
+.tvMobNav{display:none}
+html.tvMob,html.tvMob body{overflow:auto!important;height:auto!important;background:#F4F1E9}
+html.tvMob #tvView{position:relative!important;width:100%!important;height:auto!important;min-height:100vh;transform:none!important;overflow:visible!important;
+  padding:0 10px calc(88px + env(safe-area-inset-bottom))!important;display:block!important}
+html.tvMob #tvView .mHide{display:none!important}
+html.tvMob .tvHead{flex-wrap:wrap;gap:6px 8px;position:sticky;top:0;z-index:6;background:#F4F1E9;padding:calc(8px + env(safe-area-inset-top)) 0 6px;margin:0}
+html.tvMob .tvTitle{font-size:19px;flex:1;min-width:0}
+html.tvMob .tvTitle .tvLive{font-size:12px}
+html.tvMob .tvMetricSeg,html.tvMob .tvPageDots,html.tvMob #tvLeadPause,html.tvMob #tvLeadScrollBtn,html.tvMob #tvBandPause{display:none!important}
+html.tvMob .tvClock{font-size:12px;order:5;width:100%;text-align:start}
+html.tvMob .tvRegionChip{font-size:13px;padding:2px 10px}
+html.tvMob .tvTape{margin:4px 0 10px;border-radius:12px;height:auto}
+html.tvMob .tvTapeInner{font-size:15px!important}
+html.tvMob .tvPage,html.tvMob #tvPage1.on,html.tvMob #tvPage2{display:block!important}
+html.tvMob .tvMain,html.tvMob .tvBody,html.tvMob .tvKpis,html.tvMob .tvCharts,html.tvMob .tvSide,html.tvMob .tvGrid{display:flex!important;flex-direction:column;gap:10px;height:auto!important;min-height:0!important;grid-template-columns:none!important}
+html.tvMob #tvPage1>*{margin-bottom:10px}
+html.tvMob .tvGauges{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:2px 4px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+html.tvMob .tvGauges::-webkit-scrollbar{display:none}
+html.tvMob .tvGauge{flex:0 0 86%;scroll-snap-align:center}
+html.tvMob .tvKpiPair{display:grid!important;grid-template-columns:1fr 1fr;gap:10px}
+html.tvMob .tvTile,html.tvMob .tvScope,html.tvMob .tvCard{height:auto!important;min-height:0!important}
+html.tvMob .tvCard{padding:10px 12px}
+html.tvMob .tvCardTitle{flex-wrap:wrap;gap:4px 8px;font-size:15px;line-height:1.35}
+html.tvMob .tvCardTitle small{font-size:11.5px}
+html.tvMob .tvCardTitle .tot{font-size:18px}
+html.tvMob .tvChart{height:210px!important;flex:none!important}
+html.tvMob .tvSide>.tvCard{display:flex!important;flex-direction:column;height:auto!important}
+html.tvMob .tvSide>.tvCard>.tvCardTitle{order:-2}
+html.tvMob .tvSide .tvProd,html.tvMob .tvSide .tvBanks,html.tvMob .tvSide .tvChan{order:-1;margin-bottom:8px}
+html.tvMob .tvLeadWrap{height:auto!important;max-height:none!important;overflow:visible!important;flex:none!important}
+html.tvMob .tvLeadRow{grid-template-columns:20px minmax(0,1fr) 54px 38px 56px!important;gap:6px;font-size:13.5px}
+html.tvMob .tvLeadRow>:nth-child(6){display:none}
+html.tvMob .tvLeadRow .pj{font-size:15px!important}
+html.tvMob .tvLeadRow .n{font-size:19px!important}
+html.tvMob .tvSeg{flex-wrap:wrap;margin-inline-start:0}
+html.tvMob .tvProd .ch.pr{grid-template-columns:62px 1fr 40px 34px 56px 46px}
+html.tvMob .tvBanks .ch,html.tvMob .tvChan .ch{grid-template-columns:96px 1fr 42px 36px}
+html.tvMob .tvDests{border-radius:16px;padding:10px 10px 12px}
+html.tvMob .tvDests .tvCardTitle{font-size:15px}
+html.tvMob .tvDestWrap{height:auto!important;overflow:hidden!important}
+html.tvMob .tvDestHd,html.tvMob .tvDestTrack{grid-template-columns:1fr!important}
+html.tvMob .tvDestHd>:not(:first-child){display:none}
+html.tvMob .tvDR{grid-template-columns:1fr 1fr;font-size:12.5px;gap:3px 8px;height:auto;padding:5px 0}
+html.tvMob .tvDR .n{grid-column:1/-1}
+html.tvMob .tvDR .a,html.tvMob .tvDR.h>:last-child{grid-column:1/-1;text-align:start}
+html.tvMob .tvDR.h>*{white-space:normal}
+html.tvMob .tvDR.h{height:auto;font-size:11px}
+html.tvMob .tvDR.h>:first-child{display:none}
+html.tvMob .tvDR .m .p{font-size:11px;padding:0 5px}
+html.tvMob .tvER{grid-template-columns:24px minmax(0,1fr) 92px 40px}
+html.tvMob .tvPMm{margin-bottom:12px}
+html.tvMob .tvPMm .t{color:#d9a441;font-weight:800;font-size:15px;padding:4px 0}
+html.tvMob .tvPMm .r{display:grid;grid-template-columns:minmax(0,1.5fr) .6fr 1.3fr .9fr .7fr;gap:5px;align-items:center;min-height:28px;border-bottom:1px solid #1c2632;font-size:12.5px;color:#c5d0dc;text-align:center}
+html.tvMob .tvPMm .r.h{color:#8b98a9;font-size:11px;font-weight:700}
+html.tvMob .tvPMm .r .n{text-align:start;color:#e8eef5;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.tvMob .tvPMm .r b{color:#e8eef5;font-size:14px}
+html.tvMob .tvPMm .r .m{color:#8b98a9}
+html.tvMob .tvPMm i{font-style:normal;font-size:11px}
+html.tvMob .tvPMm i.up{color:#3fd18b}html.tvMob .tvPMm i.dn{color:#ff7a59}
+html.tvMob .tvPriceBox{height:230px}
+html.tvMob .tvPType{margin-inline-start:0}
+html.tvMob .tvFoot{flex-wrap:wrap;font-size:11px;margin-top:6px;gap:4px 10px}
+html.tvMob .tvUpBtn{bottom:calc(78px + env(safe-area-inset-bottom))!important;left:10px!important;font-size:13px!important;padding:6px 12px!important}
+html.tvMob .tvMobNav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:4100;background:rgba(255,255,255,.97);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border-top:1px solid #E7E1D3;padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 18px rgba(11,67,50,.08)}
+.tvMobNav button{flex:1;border:0;background:none;font-family:inherit;font-size:11.5px;font-weight:800;color:#8a877c;display:flex;flex-direction:column;align-items:center;gap:3px;padding:3px 0;cursor:pointer}
+.tvMobNav button i{font-style:normal;font-size:19px;line-height:1;filter:grayscale(1);opacity:.7}
+.tvMobNav button.on{color:#0B4332}
+.tvMobNav button.on i{filter:none;opacity:1}
+html.tvMob .tvKingdomRow,html.tvMob .tvSectorRow{display:grid!important;grid-template-columns:1fr!important;gap:8px;height:auto!important}
 /* print-only report header/footer — invisible on screen */
 #printHead{display:none}
 #printFoot{display:none}
@@ -3148,14 +3220,15 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
     <span class="tvRegionChip" id="tvRegionChip" title="العودة للمملكة"></span>
     <div class="tvPageDots" id="tvPageDots"><i class="on"></i><i></i></div>
     <div class="tvClock" id="tvClock"></div>
+    <button type="button" class="tvLayoutBtn" id="tvLayoutBtn" title="التبديل بين تصميم الجوال وتصميم التلفزيون">📺</button>
   </div>
   <div class="tvTape"><div class="tvTapeInner" id="tvTape"></div></div>
 
   <div class="tvPage on" id="tvPage1">
     <div class="tvMain">
-      <div class="tvGauges" id="tvGauges"></div>
+      <div class="tvGauges" id="tvGauges" data-mt="today"></div>
       <div class="tvBody">
-        <div class="tvKpis">
+        <div class="tvKpis" data-mt="today">
           <div class="tvTile main" id="tvKpiContracts"></div>
           <div class="tvKpiPair">
             <div class="tvTile" id="tvKpiBookings"></div>
@@ -3165,22 +3238,22 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
           <div class="tvScope" id="tvScopeDev"></div>
         </div>
         <div class="tvCharts">
-          <div class="tvCard">
+          <div class="tvCard" data-mt="charts">
             <div class="tvCardTitle" id="tvMonthlyTitle">العقود الموقّعة شهرياً</div>
             <div class="tvChart" id="tvMonthlyChart"></div>
           </div>
-          <div class="tvCard">
+          <div class="tvCard" data-mt="charts">
             <div class="tvCardTitle" id="tvDailyTitle">العقود يومياً</div>
             <div class="tvChart" id="tvDailyChart"></div>
           </div>
-          <div class="tvCard">
+          <div class="tvCard" data-mt="today">
             <div class="tvCardTitle" id="tvTimelineTitle">حركة العقود اليوم حسب الوقت</div>
             <div class="tvChart" id="tvTimelineChart"></div>
           </div>
         </div>
       </div>
     </div>
-    <div class="tvSide">
+    <div class="tvSide" data-mt="projects">
       <div class="tvCard">
         <div class="tvCardTitle"><span id="tvLeadTitle">عقود اليوم حسب المشروع</span><span class="tvSeg" id="tvLeadSeg"><button type="button" data-m="today">اليوم</button><button type="button" data-m="yesterday">أمس</button><button type="button" data-m="week">الأسبوع</button><button type="button" data-m="month">الشهر</button><button type="button" data-m="year">السنة</button><button type="button" id="tvLeadPause" class="tvPause" title="إيقاف تقليب الفترات (كل دقيقة)">← ❚❚</button><button type="button" id="tvLeadScrollBtn" class="tvPause" title="إيقاف تحريك القائمة">↕ ❚❚</button></span><span class="tot" id="tvLeadTot"></span></div>
         <div class="tvLeadRow hd" id="tvLeadHd"></div>
@@ -3190,7 +3263,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
         <div class="tvChan" id="tvLeadChan"></div>
       </div>
     </div>
-    <div class="tvDests">
+    <div class="tvDests" data-mt="market">
       <div class="tvCardTitle"><span id="tvDestTitle">الوجهات</span><span class="tvSeg tvBandSeg" id="tvBandSeg"><button type="button" data-v="price">قيمة العقود</button><button type="button" data-v="prod">المنتجات والسوق</button><button type="button" data-v="emp">أداء الموظفين</button><button type="button" data-v="dest">الوجهات</button></span><button type="button" id="tvBandPause" class="tvBandPause" title="إيقاف حركة الشريط">❚❚</button><span class="tot" id="tvDestTot"></span></div>
       <div class="tvDestHd" id="tvDestHd"></div>
       <div class="tvDestWrap"><div class="tvDestTrack" id="tvDestTrack"></div></div>
@@ -3198,7 +3271,7 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
     </div>
   </div>
 
-  <div class="tvPage" id="tvPage2">
+  <div class="tvPage" id="tvPage2" data-mt="regions">
     <div class="tvGrid">
       <div class="tvCard">
         <div class="tvCardTitle">بتاريخ اليوم من ملف التخصيص — حجوزات · استصناع · عقود <small>يتحدّث مرة يومياً مع رفع ملف التخصيص، لا لحظياً</small></div>
@@ -3216,6 +3289,13 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
   </div>
 
   <div class="tvFoot"><span id="tvUpdated"></span><span id="tvRevNote"></span><span id="tvSource"></span></div>
+  <nav class="tvMobNav" id="tvMobNav">
+    <button type="button" data-tab="today"><i>◉</i>اليوم</button>
+    <button type="button" data-tab="projects"><i>☰</i>المشاريع</button>
+    <button type="button" data-tab="charts"><i>📈</i>المنحنيات</button>
+    <button type="button" data-tab="market"><i>◧</i>السوق والفريق</button>
+    <button type="button" data-tab="regions"><i>◎</i>المناطق</button>
+  </nav>
   <button type="button" id="tvUpBtn" class="tvUpBtn">⬆ رفع ملف</button>
   <div id="tvUpModal" class="tvUpModal">
     <div class="tvUpCard">
@@ -9016,6 +9096,8 @@ function tvDrawChart(el, labels, series, opts){
     svg+=`<line x1="${padX}" x2="${W-padX}" y1="${ry}" y2="${ry}" stroke="${rc}" stroke-width="2" stroke-dasharray="7 5"/>`;
     const rw=opts.refLine.w||118;
     svg+=`<line x1="${W-padX-rw-22}" x2="${W-padX-rw-4}" y1="9" y2="9" stroke="${rc}" stroke-width="2" stroke-dasharray="5 4"/><text x="${W-padX-4}" y="13" direction="rtl" text-anchor="start" font-size="13" font-weight="800" fill="${rc}">${opts.refLine.label}</text>`; }
+  /* على الجوال: تخفيف أرقام النقاط وأسماء المحور عند ضيق المسافة (مع إبقاء آخر نقطة دائماً) */
+  const vEvery=tvMobile&&step?Math.max(1,Math.ceil(40/step)):0;
   series.forEach(s=>{
     const pts=s.values.map((v,i)=>[+X(i).toFixed(1),+Y(v).toFixed(1)]);
     const gid="tvg"+Math.random().toString(36).slice(2,8);
@@ -9028,16 +9110,17 @@ function tvDrawChart(el, labels, series, opts){
       const last=i===pts.length-1, v=Number(s.values[i])||0;
       svg+=`<circle cx="${x}" cy="${y}" r="${last?6:(n>20?2.6:4)}" fill="${last?s.color:"#fff"}" stroke="${s.color}" stroke-width="2.5"/>`;
       if(last && opts.pulseLast) svg+=`<circle cx="${x}" cy="${y}" r="6" fill="none" stroke="${s.color}" stroke-width="2"><animate attributeName="r" from="6" to="20" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" from=".85" to="0" dur="1.6s" repeatCount="indefinite"/></circle>`;
-      if(s.labels!==false && v){
+      if(s.labels!==false && v && (!vEvery||(pts.length-1-i)%vEvery===0)){
         const ly = s.labelBelow ? y+20 : y-10;
         svg+=`<text x="${x}" y="${ly}" text-anchor="middle" font-size="${s.valFont||opts.valFont||15}" font-weight="800" fill="${s.labelColor||"#0B4332"}">${(opts.fmtV||fmt)(v)}</text>`;
       }
     });
   });
-  const every=opts.labelEvery||1;
-  labels.forEach((l,i)=>{ if(i%every===0||i===n-1) svg+=`<text x="${X(i)}" y="${opts.subLabels?H-20:H-5}" text-anchor="middle" font-size="${opts.xFont||13}" fill="#767368">${l}</text>`; });
+  const every=tvMobile&&step?Math.max(opts.labelEvery||1,Math.ceil((opts.subLabels?52:30)/step)):(opts.labelEvery||1);
+  const showX=i=>tvMobile?((n-1-i)%every===0):(i%every===0||i===n-1);
+  labels.forEach((l,i)=>{ if(showX(i)) svg+=`<text x="${X(i)}" y="${opts.subLabels?H-20:H-5}" text-anchor="middle" font-size="${opts.xFont||13}" fill="#767368">${l}</text>`; });
   /* سطر ثانٍ تحت أسماء المحور (مثلاً المعدل اليومي لكل شهر)، بلون لكل قيمة */
-  if(opts.subLabels) opts.subLabels.forEach((sl,i)=>{ if(sl) svg+=`<text x="${X(i)}" y="${H-4}" text-anchor="middle" font-size="13" font-weight="800" fill="${sl.c||"#0B4332"}">${sl.t}</text>`; });
+  if(opts.subLabels) opts.subLabels.forEach((sl,i)=>{ if(sl&&showX(i)) svg+=`<text x="${X(i)}" y="${H-4}" text-anchor="middle" font-size="13" font-weight="800" fill="${sl.c||"#0B4332"}">${sl.t}</text>`; });
   el.innerHTML=svg+`</svg>`;
 }
 function tvRedrawCharts(root){
@@ -9118,6 +9201,7 @@ function tvSetupLeadScroll(){
   const inner=$("tvLeaders"), wrap=inner&&inner.parentElement; if(!wrap) return;
   inner.classList.remove("run");
   if(inner.dataset.base) inner.innerHTML=inner.dataset.base;
+  if(tvMobile){ delete inner.dataset.base; return; }   /* الجوال: القائمة كاملة بالتمرير العادي */
   if(!wrap.clientHeight) return;
   if(inner.scrollHeight>wrap.clientHeight+4){
     const rows=inner.children.length;
@@ -9397,7 +9481,7 @@ function tvSetLeadAuto(on){
 function tvStartLeadRotation(){
   if(tvLeadTimer) clearInterval(tvLeadTimer);
   tvSetLeadAuto(tvLeadAuto);
-  tvLeadTimer=setInterval(()=>{ if(!tvLeadAuto||tvPage!==1) return;
+  tvLeadTimer=setInterval(()=>{ if(!tvLeadAuto||tvPage!==1||tvMobile) return;
     const i=TV_LEAD_MODES.indexOf(tvLeadMode); tvSetLeadMode(TV_LEAD_MODES[(i+1)%TV_LEAD_MODES.length],true); },TV_LEAD_ROTATE_MS);
 }
 function tvRenderLead(R,ctx){
@@ -9578,7 +9662,7 @@ function tvSetBandAuto(on){
   const tr=$("tvDestTrack"); if(tr) tr.style.animationPlayState=on?"running":"paused";
 }
 function tvBandTick(){
-  if(!tvBandAuto||tvMetric==="rev"||tvPage!==1||!tvLastR) return;
+  if(!tvBandAuto||tvMetric==="rev"||tvPage!==1||!tvLastR||tvMobile) return;
   tvBandView=TV_BAND_VIEWS[(TV_BAND_VIEWS.indexOf(tvBandView)+1)%TV_BAND_VIEWS.length];
   tvRenderAll();
 }
@@ -9652,7 +9736,7 @@ function tvRenderPriceBand(R,ctx){
 function tvDrawPriceBox(){
   const box=$("tvPriceBox"), B=box&&box.__price; if(!B||!B.length||!box.clientWidth) return;
   if(tvPriceChart==="line") return tvDrawPriceLine(box,B);
-  const W=box.clientWidth, H=box.clientHeight||170, padL=150, padR=74, padT=10, padB=22;
+  const W=box.clientWidth, H=box.clientHeight||170, padL=tvMobile?10:150, padR=tvMobile?58:74, padT=10, padB=22;
   const lo0=Math.min(...B.map(b=>b.min)), hiMax=Math.max(...B.map(b=>b.max)), p75Max=Math.max(...B.map(b=>b.p75));
   const hi=Math.min(hiMax,Math.max(p75Max*2.2,lo0*1.5)), lo=Math.max(0,lo0-(hi-lo0)*.06), span=Math.max(1,hi-lo);
   const Y=v=>padT+(1-(Math.min(v,hi)-lo)/span)*(H-padT-padB);
@@ -9665,8 +9749,8 @@ function tvDrawPriceBox(){
     s+=`<text x="${W-padR+12}" y="${y+4}" text-anchor="start" font-size="12" fill="#8b98a9">${tvPriceShort(v)}</text>`; }
   const tot=B.reduce((a,b)=>a+b.n,0), avg=B.reduce((a,b)=>a+b.psum,0)/tot, ya=Y(avg);
   s+=`<line x1="${padL}" x2="${W-padR+4}" y1="${ya}" y2="${ya}" stroke="#d9a441" stroke-width="1.2" stroke-dasharray="6 4" opacity=".8"/>`;
-  s+=`<text x="${padL-8}" y="${ya+4}" text-anchor="start" direction="rtl" font-size="12.5" font-weight="700" fill="#d9a441">المتوسط ${tvPriceShort(avg)}</text>`;
-  const every=Math.max(1,Math.ceil(n/16));
+  s+=`<text ${tvMobile?`x="${padL+4}" text-anchor="end"`:`x="${padL-8}" text-anchor="start"`} y="${tvMobile?ya-6:ya+4}" direction="rtl" font-size="12.5" font-weight="700" fill="#d9a441">المتوسط ${tvPriceShort(avg)}</text>`;
+  const every=Math.max(1,Math.ceil(n/(tvMobile?6:16)));
   B.forEach((b,i)=>{ const x=X(i), up=i===0||b.p50>=B[i-1].p50, col=up?"#2fbf71":"#f05a3c";
     const yH=Y(b.max), yL=Y(b.min), y75=Y(b.p75), y25=Y(b.p25), y50=Y(b.p50);
     s+=`<line x1="${x}" x2="${x}" y1="${yH}" y2="${yL}" stroke="${col}" stroke-width="1.4"/>`;
@@ -9680,7 +9764,7 @@ function tvDrawPriceBox(){
 }
 /* منحنى خطي: متوسط سعر الوحدة لكل يوم/أسبوع بتدرّج أخضر، والمظلّل الخفيف بين الربع الأدنى والأعلى */
 function tvDrawPriceLine(box,B){
-  const W=box.clientWidth, H=box.clientHeight||170, padL=150, padR=74, padT=14, padB=22;
+  const W=box.clientWidth, H=box.clientHeight||170, padL=tvMobile?10:150, padR=tvMobile?58:74, padT=14, padB=22;
   const vals=B.flatMap(b=>[b.avg,b.p25,b.p75]), lo0=Math.min(...vals), hi0=Math.max(...vals), pad=(hi0-lo0)*.12||hi0*.05;
   const lo=Math.max(0,lo0-pad), hi=hi0+pad, span=Math.max(1,hi-lo);
   const Y=v=>padT+(1-(v-lo)/span)*(H-padT-padB), n=B.length;
@@ -9695,12 +9779,12 @@ function tvDrawPriceLine(box,B){
   s+=`<path d="M${B.map((b,i)=>`${X(i)},${Y(b.p75)}`).join(" L")} L${B.map((b,i)=>`${X(i)},${Y(b.p25)}`).reverse().join(" L")} Z" fill="${col}" opacity=".10"/>`;
   s+=`<path d="M${pts.map(p=>p.join(",")).join(" L")} L${pts[n-1][0]},${H-padB} L${pts[0][0]},${H-padB} Z" fill="url(#tvPg)"/>`;
   s+=`<path d="M${pts.map(p=>p.join(",")).join(" L")}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
-  const every=Math.max(1,Math.ceil(n/16));
+  const every=Math.max(1,Math.ceil(n/(tvMobile?6:16)));
   B.forEach((b,i)=>{ if(i%every===0||i===n-1){ const d=new Date(b.k+"T00:00:00"); s+=`<text x="${X(i)}" y="${H-6}" text-anchor="middle" font-size="11" fill="#8b98a9">${d.getDate()}/${d.getMonth()+1}</text>`; }
     s+=`<circle cx="${X(i)}" cy="${Y(b.avg)}" r="${n>30?1.8:2.6}" fill="${col}"><title>${b.k} · ${fmt(b.n)} عقد · المتوسط ${tvPriceShort(b.avg)} · أدنى ${tvPriceShort(b.min)} · أعلى ${tvPriceShort(b.max)}</title></circle>`; });
   const [lx,ly]=pts[n-1], last=B[n-1];
   s+=`<circle cx="${lx}" cy="${ly}" r="10" fill="${col}" opacity=".22"/><circle cx="${lx}" cy="${ly}" r="5" fill="${col}"/>`;
-  s+=`<text x="${padL-8}" y="${ly+5}" text-anchor="start" direction="rtl" font-size="14" font-weight="800" fill="${col}">${tvPriceShort(last.avg)}</text>`;
+  s+=`<text ${tvMobile?`x="${lx+12}" text-anchor="end"`:`x="${padL-8}" text-anchor="start"`} y="${tvMobile?ly-14:ly+5}" direction="rtl" font-size="14" font-weight="800" fill="${col}">${tvPriceShort(last.avg)}</text>`;
   box.innerHTML=s+`</svg>`;
 }
 /* المنتجات والسوق (انتقل من العدّادات): عقود السنة حسب المنتج ومتوسط سعر المباع، وسعر السوق وصفقاته (سهيل) لكل نطاق */
@@ -9712,6 +9796,12 @@ function tvRenderProdMarket(R,ctx){
   if(!PY){ $("tvDestHd").innerHTML=""; tr.innerHTML=`<div class="tvEmpty">لا بيانات منتجات بعد — ارفع ملف التخصيص</div>`; return; }
   const scopes=[["NHC — الإجمالي",r=>r.kind==="nhc",null],...TV_SECTORS.map(sec=>[`NHC ${sec}`,r=>r.kind==="nhc"&&tvSecNorm(r.sector)===sec,sec]),["المطورون",r=>r.kind!=="nhc",null]];
   const cols=["شقة","فيلا","تاون هاوس"];
+  /* الجوال: جدول مستقل لكل منتج (النطاقات صفوف) بدل جدول عريض */
+  if(tvMobile){ $("tvDestHd").innerHTML="";
+    const sc=scopes.map(([lbl,f,sec])=>[lbl,tvProdAgg(PY,f),tvMarketFor(PY,sec),MK?tvMarketDeals(MK,sec):null]);
+    tr.innerHTML=cols.map(t=>`<div class="tvPMm"><div class="t">${t}</div><div class="r h"><span>النطاق</span><span>عقود</span><span>متوسط المباع</span><span>السوق</span><span>صفقات</span></div>${sc.map(([lbl,a,mk,dl])=>{ const x=a[t], avg=x.pn?x.psum/x.pn:null, m=mk[t], diff=avg&&m?Math.round((avg/m-1)*100):null;
+      return `<div class="r"><span class="n">${lbl}</span><b>${fmt(x.cnt)}</b><span>${avg?tvPriceShort(avg):"—"}${diff!=null?` <i class="${diff>=0?"up":"dn"}">${diff>=0?"▲":"▼"}${Math.abs(diff)}%</i>`:""}</span><span class="m">${tvPriceShort(m)}</span><span class="m">${dl&&dl[t]?fmt(dl[t]):"—"}</span></div>`; }).join("")}</div>`).join("");
+    return; }
   $("tvDestHd").innerHTML=`<div class="tvPM h"><span>النطاق</span>${cols.map(t=>`<span class="g">${t}<small>عقود · متوسط المباع · السوق · صفقات</small></span>`).join("")}</div>`;
   tr.innerHTML=scopes.map(([lbl,f,sec])=>{ const a=tvProdAgg(PY,f), mk=tvMarketFor(PY,sec), dl=MK?tvMarketDeals(MK,sec):null;
     return `<div class="tvPM"><span class="n">${lbl}</span>${cols.map(t=>{ const x=a[t], avg=x.pn?x.psum/x.pn:null, m=mk[t], diff=avg&&m?Math.round((avg/m-1)*100):null;
@@ -9790,6 +9880,7 @@ function tvSetupDestScroll(){
   const tr=$("tvDestTrack"), wrap=tr&&tr.parentElement; if(!wrap) return;
   tr.classList.remove("run");
   if(tr.dataset.base){ tr.innerHTML=tr.dataset.base; delete tr.dataset.base; }
+  if(tvMobile) return;
   if(!wrap.clientHeight) return;
   if(tr.scrollHeight>wrap.clientHeight+4){
     const cols=Math.max(1,(getComputedStyle(tr).gridTemplateColumns||"").split(" ").filter(Boolean).length);
@@ -10187,7 +10278,33 @@ function tvPhonePortrait(){
   if(typeof window.orientation==="number") return window.orientation%180===0;
   return innerHeight>innerWidth;
 }
+/* ---------- نسخة الجوال: نفس عناصر الشاشة وبياناتها وحساباتها، بتصميم عمودي وتبويبات أسفل الشاشة (بلا إيرادات).
+   تُفتح تلقائياً على الهاتف (أصغر بُعد للشاشة ≤ 600)، أو بالرابط &m=1 / &m=0، أو بزر 📺 (يُحفظ بهذا الجهاز) ---------- */
+let tvMobile=false, tvMobTab=(()=>{ try{ return localStorage.getItem("tv_mtab")||"today"; }catch(e){ return "today"; } })();
+function tvWantMobile(){
+  const q=tvParam("m"); if(q==="1") return true; if(q==="0") return false;
+  let pref=null; try{ pref=localStorage.getItem("tv_layout"); }catch(e){}
+  if(pref==="tv") return false; if(pref==="m") return true;
+  return Math.min(screen.width,screen.height)<=600;
+}
+function tvSetMobile(on,save){
+  tvMobile=!!on;
+  if(save){ try{ localStorage.setItem("tv_layout",on?"m":"tv"); }catch(e){} }
+  document.documentElement.classList.toggle("tvMob",tvMobile);
+  const b=$("tvLayoutBtn"); if(b){ b.textContent=tvMobile?"📺":"📱"; b.title=tvMobile?"عرض التلفزيون":"عرض الجوال"; }
+  if(tvMobile){ if(tvMetric==="rev") tvSetMetric("cnt",true); tvSetMobTab(tvMobTab); }
+  tvFit();
+  if(tvLastR) tvRenderAll();
+}
+function tvSetMobTab(t){
+  tvMobTab=["today","projects","charts","market","regions"].includes(t)?t:"today";
+  try{ localStorage.setItem("tv_mtab",tvMobTab); }catch(e){}
+  document.querySelectorAll("#tvView [data-mt]").forEach(el=>el.classList.toggle("mHide",tvMobile&&el.dataset.mt!==tvMobTab));
+  document.querySelectorAll("#tvMobNav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tvMobTab));
+  if(tvMobile){ window.scrollTo(0,0); requestAnimationFrame(()=>{ tvRedrawCharts(document); tvDrawPriceBox(); }); }
+}
 function tvFit(){
+  if(tvMobile){ const v=$("tvView"); if(v) v.style.transform="none"; return; }
   const a=document.activeElement;
   if(a&&/input/i.test(a.tagName)&&$("tvUpModal").classList.contains("on")) return;
   const v=$("tvView");
@@ -10205,6 +10322,9 @@ function startTvMode(){
   ["splash","lock","app"].forEach(id=>{ const e=$(id); if(e) e.style.display="none"; });
   $("tvView").classList.add("on");
   document.documentElement.classList.add("tvMode");
+  tvSetMobile(tvWantMobile(),false);
+  $("tvLayoutBtn").onclick=()=>tvSetMobile(!tvMobile,true);
+  $("tvMobNav").querySelectorAll("button[data-tab]").forEach(b=>b.onclick=()=>tvSetMobTab(b.dataset.tab));
   tvFit(); window.addEventListener("resize",tvFit);
   if(screen.orientation&&screen.orientation.addEventListener) screen.orientation.addEventListener("change",()=>setTimeout(tvFit,150));
   /* الصفحة الثانية اختيارية: لا تقليب تلقائي إلا بـ &rotate=pages؛ النقاط أعلى الشاشة أو الأسهم للتنقل */

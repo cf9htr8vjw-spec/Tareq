@@ -63,11 +63,11 @@ tv = tv.replace(TV_SWITCH, "function isTvMode(){ return true; }")
 icons = "\n".join([line_starting('<link rel="apple-touch-icon"'), line_starting('<link rel="icon"')])
 fonts = "\n".join([line_starting('<link rel="preconnect" href="https://fonts.googleapis.com"'),
                    line_starting('<link href="https://fonts.googleapis.com/css2')])
-# بيان PWA خاص بالشاشة: اسم مختلف عن التطبيق، ويفتح بالعرض بملء الشاشة عند إضافته للشاشة الرئيسية
+# بيان PWA خاص بالشاشة: اسم مختلف عن التطبيق، ويفتح بملء الشاشة عند إضافته للشاشة الرئيسية (أفقي للتلفزيون، عمودي بتصميم الجوال)
 manifest = ('<link rel="manifest" href="data:application/manifest+json,'
             '%7B%22name%22%3A%22NHC%20%E2%80%94%20%D8%A7%D9%84%D9%85%D8%A8%D9%8A%D8%B9%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AD%D9%8A%D9%91%D8%A9%22'
             '%2C%22short_name%22%3A%22%D9%85%D8%A8%D9%8A%D8%B9%D8%A7%D8%AA%20NHC%22%2C%22lang%22%3A%22ar%22%2C%22dir%22%3A%22rtl%22'
-            '%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22fullscreen%22%2C%22orientation%22%3A%22landscape%22'
+            '%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22fullscreen%22%2C%22orientation%22%3A%22any%22'
             '%2C%22background_color%22%3A%22%23F4F1E9%22%2C%22theme_color%22%3A%22%230B4332%22%7D">')
 
 out = f"""<!DOCTYPE html>
