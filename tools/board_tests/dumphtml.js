@@ -57,6 +57,25 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
           channels:k?ch.flatMap(([c,n],i)=>secs.map((s,j)=>({sector:s,kind:j?'other':'nhc',channel:c,cnt:Math.round(n*k/(j+1)/3)}))):[],
           avail:[['الأوسط','nhc','شقة',420,30],['الأوسط','other','فيلا',310,80],['الغربي','nhc','شقة',200,0],['الغربي','other','تاون هاوس',45,12],['الشرقي','other','فيلا',90,40]].map(([sector,kind,type,platform,developer])=>({sector,kind,type,platform,developer})),
           employees:k?names.map((n,i)=>({sector:secs[i%3],kind:i%4?'other':'nhc',employee:n,work:works[i%5],cnt:Math.max(1,Math.round((40-i*1.6)*k/3))})):[]}; }
+      else if(fn==='get_tv_product_stats'){ if(process.env.NOPS) return route.fulfill({status:404,contentType:'application/json',body:'{"message":"Could not find the function get_tv_product_stats"}'});
+        const cols=['project','code','model','type','beds','developer','kind','sector','city','dest','avail_p','avail_d','reserved','contracts','c30','c90','cy','b30','months','pa_sum','pa_n','ps_sum','ps_n','moh_sum','moh_n','sz_sum','sz_n','sz_min','sz_max','sqa_p','sqa_s','sqs_p','sqs_s'];
+        const places=[['الأوسط','الرياض','خزام'],['الأوسط','الرياض','الفرسان'],['الأوسط','الرياض','سدايم'],['الغربي','جدة','الوريف'],['الغربي','مكة المكرمة','مكة هيلز'],['الغربي','المدينة المنورة','بوابة المدينة'],['الشرقي','الدمام','الدمام الجديدة'],['الشرقي','الخبر','الخبر الشمالية']];
+        const types=[['شقة',[2,3,4],[110,140,175],[650e3,820e3,980e3]],['فيلا',[4,5,6],[260,320,400],[1.4e6,1.75e6,2.3e6]],['تاون هاوس',[3,4],[180,220],[1.05e6,1.25e6]]];
+        let seed=7; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+        const rows=[];
+        places.forEach(([sec,city,dest],pi)=>{ for(let pj=0;pj<3;pj++){ const proj=`${dest} ${['بارك','ريزيدنس','جاردنز'][pj]}`, kind=pj===0?'nhc':'other', dev=kind==='nhc'?'NHC':['شركة روشن','دار الأركان','الماجدية'][pi%3];
+          types.forEach(([t,beds,szs,prs],ti)=>{ if(ti===2&&pj===2) return; beds.forEach((b,bi)=>{ ['A','B'].forEach((m,mi)=>{
+            const off=Math.round(20+rnd()*180), absr=Math.min(.98,Math.max(.12,(.35+.5*rnd())*(t==='شقة'&&b===3?1.25:t==='فيلا'&&b===6?.6:1)*(sec==='الأوسط'?1.1:.95)));
+            const sold=Math.round(off*absr), con=Math.round(sold*.8), res=sold-con, avail=off-sold, ap=Math.round(avail*.8), ad=avail-ap;
+            const cy=Math.round(con*(.3+.4*rnd())), mo=Array.from({length:12},(_,k)=>k<10?Math.round(cy/10*(0.6+0.8*rnd())):0), c90=mo[7]+mo[8]+mo[9], c30=mo[9];
+            const sz=szs[bi]*(0.93+0.14*rnd())+(mi?10:0), pr=prs[bi]*(0.9+0.25*rnd())*(sec==='الأوسط'?1.08:sec==='الشرقي'?.88:1);
+            rows.push([proj,'P'+pi+pj,m+(bi+1),t,b,dev,kind,sec,city,dest,ap,ad,res,con,c30,c90,cy,Math.round(res*.5),mo,
+              Math.round(pr*ap),ap,Math.round(pr*.97*con),con,Math.round(pr*.86*ap),ap,Math.round(sz*off),off,Math.round(sz*.95),Math.round(sz*1.05),Math.round(pr*ap),Math.round(sz*ap),Math.round(pr*.97*con),Math.round(sz*con)]); }); }); }); } });
+        body={ok:true,as_of:new Date().toISOString(),year:new Date().getFullYear(),cols,rows}; }
+      else if(fn==='get_tv_employee_months'){ const n=new Date().getMonth()+1;
+        body={ok:true,employee:q.p_employee,year:q.p_year,first_date:`${q.p_year}-01-01`,total:0,rank:3,employees:42,work:[{work:'الوسطى',cnt:30},{work:'مبيعات الهاتف',cnt:5}],
+          months:Array.from({length:12},(_,k)=>({m:k+1,cnt:k<n?Math.round(8+10*Math.abs(Math.sin(k*1.3))):0,team_avg:k<n?+(6+3*Math.abs(Math.cos(k))).toFixed(1):null,team_max:k<n?22+k:null}))};
+        body.total=body.months.reduce((a,m)=>a+m.cnt,0); }
       else if(fn==='get_tv_destinations'){ if(process.env.NODEST) return route.fulfill({status:404,contentType:'application/json',body:'{"message":"no fn"}'});
         const D=[['خزام','الأوسط',820,1460,1200,4100,950,210],['الفرسان','الأوسط',610,300,900,800,400,30],['سدايم','الأوسط',140,90,700,600,1200,0],['الوريف','الغربي',300,1450,794,3000,500,120],['مكة هيلز','الغربي',90,600,0,1500,300,40],['بوابة مكة','الغربي',0,700,0,2000,900,0],['الدمام الجديدة','الشرقي',120,800,600,2600,700,90],['الخبر الشمالية','الشرقي',30,200,0,900,200,10]];
         const NN=+(process.env.DESTN||8); while(D.length<NN){ const b=D[D.length%8]; D.push([b[0]+' '+D.length,b[1],b[2],b[3],b[4],b[5],b[6],b[7]]); } D.length=NN;

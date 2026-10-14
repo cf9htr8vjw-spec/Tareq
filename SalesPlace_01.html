@@ -2057,6 +2057,89 @@ html.tvMob #mApp{display:block;padding-bottom:calc(104px + env(safe-area-inset-b
 .mSheetItem{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:#F7F8FA;border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:15px;font-weight:700;color:var(--mink);text-align:start}
 .mSheetItem.on{background:var(--mgreenSoft);color:#067A55}
 .mSheetItem small{font-size:12px;color:var(--mmute);font-weight:600}
+/* تحليل المنتجات والنماذج */
+.mSeg.mScrollSeg{overflow-x:auto;scrollbar-width:none;justify-content:flex-start}
+.mSeg.mScrollSeg::-webkit-scrollbar{display:none}
+.mSeg.mScrollSeg button{flex:none;padding:6px 11px}
+.mPrm{padding:10px 14px}
+.mPrmHd{display:flex;justify-content:space-between;align-items:center;width:100%;border:0;background:none;padding:0;font-size:14.5px;color:var(--mink)}
+.mPrmHd span{font-size:12px;color:var(--mgreen);font-weight:700}
+.mChips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.mChips span{background:#F3F4F6;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:700;color:#4B5563}
+.mPrmBody{margin-top:10px;border-top:1px solid var(--mline);padding-top:10px}
+.mPrmG{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.mPrmG label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:700;color:var(--mmute)}
+.mPrmG select,.mPrmG input{font:inherit;font-size:14px;border:1px solid var(--mline);border-radius:10px;padding:7px 9px;background:#F7F8FA;color:var(--mink);width:100%}
+.mPrmL{font-size:11.5px;font-weight:700;color:var(--mmute);margin:10px 0 2px}
+.mK6{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0}
+.mK6>div{background:#F7F8FA;border-radius:12px;padding:7px 8px;min-width:0}
+.mK6 span{display:block;font-size:10.5px;color:var(--mmute);font-weight:700}
+.mK6 b{display:block;font-size:17px;font-weight:800;line-height:1.3;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mK6 small{display:block;font-size:10px;color:var(--mmute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mScat,.mBarsSvg{width:100%;height:auto;display:block}
+.mPgList .mPg{border-bottom:1px solid var(--mline);padding:10px 0;cursor:pointer}
+.mPgList .mPg:last-child{border-bottom:0}
+.mPg .t{display:flex;align-items:center;gap:8px}
+.mPg .t b{font-size:14.5px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mSpk{flex:none}
+.rec{flex:none;font-size:10.5px;font-weight:800;border-radius:99px;padding:1px 8px;white-space:nowrap}
+.rec.grow{background:#0B4332;color:#fff}.rec.good{background:var(--mgreenSoft);color:#067A55}.rec.bad{background:var(--mredSoft);color:#B5361B}.rec.none{background:#F3F4F6;color:var(--mmute)}
+.mPg .ab{display:flex;align-items:center;gap:8px;margin:6px 0 5px}
+.mPg .trk,.mDist .b{position:relative;flex:1;height:8px;border-radius:99px;background:#EEF0F3;overflow:hidden;direction:rtl}
+.mPg .trk i{display:block;height:100%;border-radius:99px}
+.mPg .trk b{position:absolute;top:0;width:2px;height:100%;background:#111827;opacity:.5}
+.mPg .pc{font-size:16px;font-weight:800;min-width:44px;text-align:start}
+.mPg .g{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:11.5px;color:var(--mmute)}
+.mPg .g b{color:var(--mink)}
+.mPg .s{font-size:11px;color:var(--mmute);margin-top:3px}
+.mBest{background:var(--mgreenSoft);color:#067A55;border-radius:10px;padding:6px 10px;font-size:12.5px;margin-bottom:8px}
+.mDist .r{display:grid;grid-template-columns:minmax(0,1.25fr) 1fr .8fr 40px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--mline);cursor:pointer}
+.mDist .r.h{font-size:10.5px;color:var(--mmute);font-weight:700;cursor:default;padding:2px 0}
+.mDist .r:last-child{border-bottom:0}
+.mDist .n{font-size:13px;font-weight:700;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mDist .n small{display:block;font-size:10.5px;color:var(--mmute);font-weight:600}
+.mDist .b{height:18px;border-radius:6px;overflow:visible;background:#F3F4F6}
+.mDist .b i{display:block;height:100%;border-radius:6px;opacity:.85}
+.mDist .b.av i{background:#9DB8D9}
+.mDist .b em{position:absolute;inset:0;display:flex;align-items:center;padding:0 6px;font-style:normal;font-size:11.5px;font-weight:800;color:#111827}
+.mDist .v{font-size:12px;font-weight:700;text-align:center}
+.mMd{border-bottom:1px solid var(--mline);padding:9px 0;cursor:pointer}
+.mMd:last-child{border-bottom:0}
+.mMd .t{display:flex;justify-content:space-between;gap:8px}
+.mMd .t>div:first-child{min-width:0}
+.mMd .t b{font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mMd .t small{display:block;font-size:11.5px;color:#4B5563}
+.mMd .t small.loc{color:var(--mmute);font-size:11px}
+.mMd .v{text-align:center;flex:none}.mMd .v b{font-size:18px}.mMd .v small{font-size:10px;color:var(--mmute)}
+.mMd .g{display:flex;flex-wrap:wrap;align-items:center;gap:3px 12px;font-size:11.5px;color:var(--mmute);margin-top:4px}
+.mMd .g b{color:var(--mink)}
+.mSheetCard.tall{max-height:90vh;overflow-y:auto;padding-top:0;-webkit-overflow-scrolling:touch}
+.mSheetBar{position:sticky;top:0;z-index:2;background:#fff;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 0 10px;border-bottom:1px solid var(--mline);margin-bottom:10px}
+.mSheetBar b{font-family:"Noto Kufi Arabic",sans-serif;font-size:16px;font-weight:700;line-height:1.35}
+.mSheetBar b small{display:block;font-family:"IBM Plex Sans Arabic",sans-serif;font-size:12px;color:var(--mmute);font-weight:600}
+.mClose{flex:none;width:32px;height:32px;border-radius:50%;border:0;background:#F3F4F6;color:#374151;font-size:14px}
+#mDetailBody{padding-bottom:6px}
+.mDetTop{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-bottom:8px}
+.mDetTop .pc{font-size:30px;font-weight:800;line-height:1}.mDetTop .pc small{font-size:11px;color:var(--mmute);font-weight:600;margin-inline-start:6px}
+.mDetTop .loc{width:100%;font-size:12px;color:#4B5563}
+.mSecT{font-family:"Noto Kufi Arabic",sans-serif;font-weight:700;font-size:14px;margin:14px 0 6px}
+.mSecT small{font-family:"IBM Plex Sans Arabic",sans-serif;font-size:11px;color:var(--mmute);font-weight:600}
+.mSpecs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.mSpecs div{background:#F7F8FA;border-radius:10px;padding:7px 8px;min-width:0}
+.mSpecs span{display:block;font-size:10.5px;color:var(--mmute);font-weight:700}
+.mSpecs b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mSpecs small{display:block;font-size:10px;color:var(--mmute)}
+.mStLg{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:11.5px;color:#4B5563;margin-bottom:4px}
+.mStLg span{display:flex;align-items:center;gap:4px}
+.mStLg span::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--c)}
+.mCmp .r,.mMonT .r{display:grid;grid-template-columns:1.3fr 1fr 1fr .8fr;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--mline);font-size:12.5px}
+.mCmp .r.h,.mMonT .r.h{font-size:10.5px;color:var(--mmute);font-weight:700;padding:3px 0}
+.mCmp .r>span:first-child{color:#4B5563;font-weight:700}
+.mCmp em{font-style:normal;font-weight:800;font-size:12px}
+.mMonT .r{grid-template-columns:1fr 1fr 1fr 1fr;text-align:center}
+.mMonT .r>span:first-child{text-align:start}
+html.tvMob #mApp{max-width:760px;margin:0 auto}
+.mBottom{max-width:760px;margin:0 auto}
 /* print-only report header/footer — invisible on screen */
 #printHead{display:none}
 #printFoot{display:none}
@@ -3486,7 +3569,7 @@ html.tvMob #mApp{display:block;padding-bottom:calc(104px + env(safe-area-inset-b
       </section>
       <section class="mPane" data-pane="analysis">
         <div class="mSticky">
-          <div class="mSeg" id="mAnSeg"><button type="button" data-an="prod">المنتجات</button><button type="button" data-an="banks">البنوك</button><button type="button" data-an="chan">القنوات</button><button type="button" data-an="emp">الموظفون</button><button type="button" data-an="dest">الوجهات</button><button type="button" data-an="market">السوق</button></div>
+          <div class="mSeg mScrollSeg" id="mAnSeg"><button type="button" data-an="prod">المنتجات الناجحة</button><button type="button" data-an="dist">السعر والمساحة</button><button type="button" data-an="models">النماذج</button><button type="button" data-an="emp">الموظفون</button><button type="button" data-an="banks">البنوك</button><button type="button" data-an="chan">القنوات</button><button type="button" data-an="dest">الوجهات</button><button type="button" data-an="market">السوق</button></div>
           <div class="mPills" id="mAnPeriod"><button type="button" data-m="today">اليوم</button><button type="button" data-m="yesterday">أمس</button><button type="button" data-m="week">الأسبوع</button><button type="button" data-m="month">الشهر</button><button type="button" data-m="year">السنة</button></div>
         </div>
         <div id="mAnBody"></div>
@@ -3505,6 +3588,7 @@ html.tvMob #mApp{display:block;padding-bottom:calc(104px + env(safe-area-inset-b
       </nav>
     </div>
     <div class="mSheet" id="mScopeSheet"><div class="mSheetCard"><div class="mSheetHd">النطاق</div><div id="mScopeList"></div></div></div>
+    <div class="mSheet" id="mDetailSheet"><div class="mSheetCard tall"><div class="mSheetBar"><b id="mDetailTitle"></b><button type="button" class="mClose" data-close="1" aria-label="إغلاق">✕</button></div><div id="mDetailBody"></div></div></div>
     <div class="mSheet" id="mMenuSheet"><div class="mSheetCard">
       <div class="mSheetHd">المزيد</div>
       <button type="button" class="mSheetItem" data-menu="refresh">⟳ تحديث البيانات الآن</button>
@@ -6692,6 +6776,7 @@ async function processSyncFile(){
     <div class="cresrow"><span class="cl">عقود ${new Date().getFullYear()} لشاشة الداشبورد (حالة الحجز = عقد، كل الملف)</span><span class="cv">${fmt(tvContracts)}${tvNoDate?` · ${fmt(tvNoDate)} عقد بلا تاريخ توقيع`:""}</span></div>
     <div class="cresrow"><span class="cl">عمود سعر العقد (متوسط سعر المباع بالشاشة)</span><span class="cv">${tvPriceKey?`«${tvPriceKey}»`:"غير موجود — يُستخدم عمود price"}</span></div>
     <div class="cresrow"><span class="cl">القنوات والموظفون (لشاشة الداشبورد)</span><span class="cv">${tvAgg.chanKey?`«${tvAgg.chanKey}»`:"لا عمود قنوات"} · ${tvAgg.empKey?`«${tvAgg.empKey}» · ${fmt(new Set((tvAgg.employees||[]).map(e=>e.employee)).size)} موظفاً`:"لا عمود موظفين"}</span></div>
+    <div class="cresrow"><span class="cl">تحليل المنتجات والنماذج (لشاشة الداشبورد)</span><span class="cv">${fmt((tvAgg.products||[]).length)} منتجاً/نموذجاً · النموذج: ${tvAgg.modelKey?`«${tvAgg.modelKey}»`:"غير موجود"} · الغرف: ${tvAgg.bedsKey?`«${tvAgg.bedsKey}»`:"غير موجود"} · المساحة: ${tvAgg.sizeKey?`«${tvAgg.sizeKey}»`:"غير موجود"}</span></div>
     <div class="cresrow"><span class="cl">عمود البنك المنفّذ (لشاشة الداشبورد)</span><span class="cv">${tvBankKey?`«${tvBankKey}» · ${fmt(new Set(tvBankRows.map(r=>r.bank).filter(Boolean)).size)} بنكاً`:"غير موجود بالملف"}</span></div>
     <div class="cresrow"><span class="cl">عمود رمز الوحدة (unit_code) بالملف</span><span class="cv">${unitCodeKey?`تم التعرّف عليه ("${unitCodeKey}")`:"لم يُعثر عليه بالملف"}</span></div>
     ${unitCodeKey?`<div class="cresrow"><span class="cl">وحدات معها رمز فعلي (من أصل ${fmt(mirrorRows.length)})</span><span class="cv">${fmt(mirrorRows.filter(r=>r.unit_code).length)}</span></div>`:""}
@@ -10564,7 +10649,8 @@ function tvPhonePortrait(){
 const M_TABS=["today","projects","charts","analysis","regions"];
 let tvMobile=false, tvMobTab=(()=>{ try{ const v=localStorage.getItem("tv_mtab"); return M_TABS.includes(v)?v:"today"; }catch(e){ return "today"; } })();
 let mInited=false, mCtx=null, mTopTab="n", mProjQ="", mProjSort="n", mShowAll=false, mTickerTimer=null, mTickerI=0, mTickerItems=[];
-let mAnView=(()=>{ try{ const v=localStorage.getItem("tv_an"); return ["prod","banks","chan","emp","dest","market"].includes(v)?v:"prod"; }catch(e){ return "prod"; } })();
+const M_AN_VIEWS=["prod","dist","models","emp","banks","chan","dest","market"];
+let mAnView=(()=>{ try{ const v=localStorage.getItem("tv_an"); return M_AN_VIEWS.includes(v)?v:"prod"; }catch(e){ return "prod"; } })();
 const M_SEC_COL={"الأوسط":"#C99A2E","الغربي":"#D9732A","الشرقي":"#2F6FA8","NHC":"#009C6D","المطورون":"#7B5BB5","all":"#0B4332","dev":"#7B5BB5"};
 const M_ICONS={
   projects:'<svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/><path d="M4 21h16"/></svg>',
@@ -10631,11 +10717,25 @@ function mInit(){
     const mo=e.target.closest("button[data-more]"); if(mo){ mShowAll=true; mRenderProjects(); return; }
     const tg=e.target.closest(".mTg[data-scope]"); if(tg){ mSetRegion(tg.dataset.scope===(tvRegion||"all")?"all":tg.dataset.scope); return; }
     const rg=e.target.closest("button[data-region]"); if(rg){ mSetRegion(rg.dataset.region); return; }
+    const cl=e.target.closest("[data-close]"); if(cl){ $("mDetailSheet").classList.remove("on"); return; }
+    const md=e.target.closest("[data-md]"); if(md){ mOpenModel(+md.dataset.md); return; }
+    const pg=e.target.closest("[data-pg]"); if(pg){ mOpenGroup(+pg.getAttribute("data-pg")); return; }
+    const em=e.target.closest("[data-emp]"); if(em){ mOpenEmp(+em.dataset.emp); return; }
+    const dm=e.target.closest("button[data-dim]"); if(dm){ mDistDim=dm.dataset.dim; try{ localStorage.setItem("tv_dim",mDistDim); }catch(x){} mRenderAnalysis(); return; }
+    const ms=e.target.closest("button[data-msort]"); if(ms){ mModelSort=ms.dataset.msort; ms.parentElement.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b===ms)); mRenderModelList(); return; }
+    const mc=e.target.closest("button[data-mclear]"); if(mc){ mModelQ=""; mRenderAnalysis(); return; }
+    const pt=e.target.closest("[data-prmtoggle]"); if(pt){ mPrmOpen=!mPrmOpen; mRenderAnalysis(); return; }
+    const pr=e.target.closest("[data-prmreset]"); if(pr){ mPrm=Object.assign({},M_PRM_DEF); mSavePrm(); mRenderAnalysis(); return; }
+    const ps=e.target.closest("button[data-prmset]"); if(ps){ const [k,v]=ps.dataset.prmset.split(":"); mPrm[k]=v==="true"?true:v==="false"?false:v; mSavePrm(); mRenderAnalysis(); return; }
   });
+  app.addEventListener("change",e=>{ const el=e.target.closest("[data-prm]"); if(!el) return; const k=el.dataset.prm; let v=el.value;
+    if(k==="thr") v=Math.min(100,Math.max(1,+v||M_PRM_DEF.thr)); else if(k==="minU") v=Math.max(1,+v||1); else if(["pmin","pmax","smin","smax"].includes(k)) v=v===""?"":String(Math.max(0,+v||0));
+    mPrm[k]=v; mSavePrm(); mRenderAnalysis(); });
+  app.addEventListener("input",e=>{ if(e.target.id!=="mModelQ") return; mModelQ=e.target.value; e.target.parentElement.classList.toggle("has",!!mModelQ); mRenderModelList(); });
   const q=$("mProjQ");
   q.addEventListener("input",()=>{ mProjQ=q.value.trim(); q.parentElement.classList.toggle("has",!!mProjQ); mRenderProjects(); });
   $("mProjClear").onclick=()=>{ q.value=""; mProjQ=""; q.parentElement.classList.remove("has"); mRenderProjects(); };
-  $("mQuick").innerHTML=[["projects","","المشاريع","projects","#E3F6EE","#067A55"],["analysis","prod","المنتجات","prod","#FFF3D6","#9A6B12"],["analysis","banks","البنوك","banks","#E1EEFA","#235A8A"],["analysis","chan","القنوات","chan","#EFEAF9","#6B4FA8"],
+  $("mQuick").innerHTML=[["projects","","المشاريع","projects","#E3F6EE","#067A55"],["analysis","prod","المنتجات الناجحة","prod","#FFF3D6","#9A6B12"],["analysis","banks","البنوك","banks","#E1EEFA","#235A8A"],["analysis","chan","القنوات","chan","#EFEAF9","#6B4FA8"],
     ["analysis","emp","الموظفون","emp","#FDE7D9","#A5471A"],["analysis","dest","الوجهات","dest","#E3F6EE","#067A55"],["charts","price","قيمة العقود","price","#0f1720","#2fbf71"],["regions","","المناطق","regions","#F3F4F6","#374151"]]
     .map(([pane,sub,lbl,ic,bg,c])=>`<button type="button" data-go="${pane}" data-mg="${sub}" style="--bgc:${bg};--c:${c}"><i>${M_ICONS[ic]}</i>${lbl}</button>`).join("");
 }
@@ -10756,19 +10856,21 @@ function mRenderCharts(){
 function mRenderAnalysis(){
   if(!mCtx) return; const {R,ctx}=mCtx, v=mAnView;
   $("mAnSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.an===v));
-  const per=$("mAnPeriod"); per.style.display=(v==="dest"||v==="market")?"none":""; per.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.m===tvLeadMode));
+  const per=$("mAnPeriod"); per.style.display=["dest","market","prod","dist","models"].includes(v)?"none":""; per.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.m===tvLeadMode));
+  if(["prod","dist","models"].includes(v)) mLoadPS();
   const lbl=TV_LEAD_LBL[tvLeadMode], regSfx=ctx.region?` · ${tvRegionLabel(ctx.region)}`:"";
   const bars=(rows,c)=>`<div class="mBars">${rows.map(r=>`<div class="r${r.na?" na":""}"><span class="n">${r.n}${r.sub?`<small>${r.sub}</small>`:""}</span><span class="bar"><i style="width:${r.pc?Math.max(2,r.pc):0}%;background:${c}"></i></span><span class="v"><b>${fmt(r.v)}</b>${Math.round(r.pc)}%</span></div>`).join("")}</div>`;
   const noFile=`لا عقود بملف التخصيص لهذه الفترة${tvLeadMode==="today"?" — تظهر بعد رفع ملف اليوم":""}`;
   let h="";
-  if(v==="prod"){ const D=tvProdData(R);
-    h=`<div class="mCard"><div class="mCardHd"><b>حسب المنتج — ${lbl}${regSfx}</b><span>${D.ok?fmt(D.total)+" عقد":""}</span></div>${D.ok?(D.total?bars(D.rows.map(r=>({n:r.t,sub:`متوسط المباع ${r.avg?tvPriceShort(r.avg):"—"}${r.avail!=null?` · متاح الآن ${fmt(r.avail)}`:""}`,v:r.cnt,pc:r.pc})),"#C97F2E"):`<div class="mEmpty">${noFile}</div>`):`<div class="mEmpty">ارفع ملف التخصيص</div>`}<div class="mNote">المتاح = على المنصة + لدى المطور، رصيد آخر ملف تخصيص (لا يتبع الفترة)</div></div>`; }
+  if(v==="prod") h=mRenderProducts(ctx);
+  else if(v==="dist") h=mRenderDist(ctx);
+  else if(v==="models") h=mRenderModels(ctx);
   else if(v==="banks"){ const D=tvBankData(R);
     h=`<div class="mCard"><div class="mCardHd"><b>البنوك المنفّذة — ${lbl}${regSfx}</b><span>${D.ok?`${fmt(D.tot)} عقد ممول${D.none?` · نقدي ${fmt(D.none)}`:""}`:""}</span></div>${D.ok?(D.list.length?bars(D.list.slice(0,10).map(([b,c])=>({n:tvBankLabel(b),v:c,pc:D.tot?c/D.tot*100:0})),"#2F6FA8"):`<div class="mEmpty">لا عقود ممولة بهذه الفترة</div>`):`<div class="mEmpty">${D.msg||"ارفع ملف التخصيص"}</div>`}<div class="mNote">كل قيمة بعمود البنك بملف التخصيص بنك/برنامج مستقل (مثلاً «الأهلي — التمويل البديل» منفصل عن «الأهلي»)</div></div>`; }
   else if(v==="chan"){ const D=tvChanData(R);
     h=`<div class="mCard"><div class="mCardHd"><b>قنوات البيع — ${lbl}${regSfx}</b><span>${D.ok&&D.tot?fmt(D.tot)+" عقد":""}</span></div>${D.ok&&D.tot?bars([...D.list.map(([n,c])=>({n,v:c,pc:c/D.tot*100})),...(D.na?[{n:"غير مذكورة",v:D.na,pc:D.na/D.tot*100,na:true}]:[])],"#009C6D"):`<div class="mEmpty">${D.msg}</div>`}</div>`; }
-  else if(v==="emp"){ const D=tvEmpData(R);
-    h=`<div class="mCard"><div class="mCardHd"><b>أداء الموظفين — ${lbl}${regSfx}</b><span>${D.ok&&D.list.length?`${fmt(D.list.length)} موظفاً · ${fmt(D.sum)} عقد${D.noEmp?` · بلا موظف ${fmt(D.noEmp)}`:""}`:""}</span></div><div class="mList">${D.ok&&D.list.length?D.list.map((e,i)=>`<div class="mRow"><span class="rk${i<3?" m"+(i+1):""}">${i+1}</span><div><div class="nm">${e.n}</div><div class="dv">${e.work}</div></div><div class="val"><b>${fmt(e.c)}</b><small>${D.sum?Math.round(e.c/D.sum*100):0}% من العقود</small></div></div>`).join(""):`<div class="mEmpty">${D.msg}</div>`}</div></div>`; }
+  else if(v==="emp"){ const D=tvEmpData(R); mEmpCur=D.list||[];
+    h=`<div class="mCard"><div class="mCardHd"><b>أداء الموظفين — ${lbl}${regSfx}</b><span>${D.ok&&D.list.length?`${fmt(D.list.length)} موظفاً · ${fmt(D.sum)} عقد${D.noEmp?` · بلا موظف ${fmt(D.noEmp)}`:""}`:""}</span></div><div class="mList">${D.ok&&D.list.length?D.list.map((e,i)=>`<div class="mRow" data-emp="${i}" style="cursor:pointer"><span class="rk${i<3?" m"+(i+1):""}">${i+1}</span><div><div class="nm">${e.n}</div><div class="dv">${e.work}</div></div><div class="val"><b>${fmt(e.c)}</b><small>${D.sum?Math.round(e.c/D.sum*100):0}% من العقود</small></div></div>`).join(""):`<div class="mEmpty">${D.msg}</div>`}</div></div>`; }
   else if(v==="dest"){ const D=tvDestData(R,ctx);
     const chip=(a,t)=>{ const pc=D.pct(a,t); return `<span class="p ${pc==null?"none":pc>=TV_GOOD_PCT?"good":"bad"}">${pc!=null?pc+"%":"—"}</span>`; };
     h=`<div class="mCard"><div class="mCardHd"><b>الوجهات — عقود ${ctx.curY}${regSfx}</b><span>${D.rows.length?fmt(D.rows.length)+" وجهة":""}</span></div>${D.asOf?`<div class="mNote">حتى آخر تحديث للتخصيص (${D.asOf.toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})}) · النسبة مقابل المستهدف حتى ذلك التاريخ · أخضر من ${TV_GOOD_PCT}%</div>`:""}${D.rows.length?D.rows.map(r=>{ const sec=tvSecNorm(r.sector), nh=Number(r.nhc)||0, nt=Number(r.nhc_target)||0, dv=Number(r.dev)||0, dt=Number(r.dev_target)||0;
@@ -10779,7 +10881,291 @@ function mRenderAnalysis(){
       const sc=scopes.map(([l,f,sec])=>[l.replace("NHC — الإجمالي","NHC الكل"),tvProdAgg(PY,f),tvMarketFor(PY,sec),MK?tvMarketDeals(MK,sec):null]);
       h=`<div class="mCard"><div class="mCardHd"><b>المنتجات والسوق — عقود ${ctx.curY}</b><span>السوق: سهيل${PY.market_month?` (${tvMonthName(PY.market_month)})`:""}</span></div>${TV_PRODUCTS.map(t=>`<div class="mMk"><div class="t">${t}</div><div class="r h"><span>النطاق</span><span>عقود</span><span>متوسط المباع</span><span>السوق</span><span>صفقات</span></div>${sc.map(([l,a,mk,dl])=>{ const x=a[t], avg=x.pn?x.psum/x.pn:null, m=mk[t], diff=avg&&m?Math.round((avg/m-1)*100):null;
         return `<div class="r"><span class="n">${l}</span><b>${fmt(x.cnt)}</b><span>${avg?tvPriceShort(avg):"—"}${diff!=null?` <i class="${diff>=0?"up":"dn"}">${diff>=0?"▲":"▼"}${Math.abs(diff)}%</i>`:""}</span><span>${tvPriceShort(m)}</span><span>${dl&&dl[t]?fmt(dl[t]):"—"}</span></div>`; }).join("")}</div>`).join("")}<div class="mNote">▲▼ متوسط سعر المباع عندنا مقابل سعر السوق · الصفقات: صفقات السوق منذ بداية السنة</div></div>`; } }
-  $("mAnBody").innerHTML=h;
+  $("mAnBody").innerHTML=h+(v==="emp"&&mEmpCur.length?`<div class="mNote" style="text-align:center">اضغط اسم الموظف لأدائه كل شهر بالسنة</div>`:"");
+  if(v==="models") mRenderModelList();
+}
+/* ---------- تحليل المنتجات والنماذج (tv_product_analytics.sql) — بالجوال، تبويب «التحليل» ----------
+   المنتج = نوع الوحدة × عدد الغرف (ومعه شريحة المساحة أو السعر حسب المعيار). المطروح = عقود + حجوزات + متاح (منصة ولدى المطور)؛
+   المسحوب = عقود + حجوزات (أو العقود فقط بالمعيار)؛ نسبة السحب = المسحوب ÷ المطروح؛ الحركة = عقود شهرياً (آخر 30/90 يوماً أو السنة)؛
+   أشهر التصريف = المتاح ÷ الحركة. «ناجح» = نسبة السحب ≥ الحد ومطروح ≥ الحد الأدنى للوحدات (المعايير تُحفظ بهذا الجهاز). */
+const M_PRM_DEF={type:"all",beds:"all",city:"all",kind:"all",pmin:"",pmax:"",smin:"",smax:"",thr:60,minU:20,res:true,mv:"90",grp:"tb"};
+let mPrm=(()=>{ try{ return Object.assign({},M_PRM_DEF,JSON.parse(localStorage.getItem("tv_prm")||"{}")); }catch(e){ return Object.assign({},M_PRM_DEF); } })();
+let mPS=null, mPSAt=0, mPSFailAt=0, mPSLoading=false, mPSErr="", mDistDim=(()=>{ try{ return localStorage.getItem("tv_dim")||"price"; }catch(e){ return "price"; } })();
+let mModelQ="", mModelSort="abs", mPrmOpen=false, mGroupsCur=[], mModelsCur=[], mEmpCur=[], mDetailRows=[];
+const M_MON=["ينا","فبر","مار","أبر","ماي","يون","يول","أغس","سبت","أكت","نوف","ديس"];
+function mSavePrm(){ try{ localStorage.setItem("tv_prm",JSON.stringify(mPrm)); }catch(e){} }
+async function mLoadPS(force){
+  if(mPSLoading) return; if(mPS&&!force&&Date.now()-mPSAt<6e5) return;
+  if(!force&&mPSErr&&Date.now()-mPSFailAt<6e4) return;   /* فشل حديث (الملف غير مشغّل مثلاً): لا إعادة محاولة فورية */
+  mPSLoading=true;
+  try{ const r=await sbCall("get_tv_product_stats",{}); if(!r||!r.ok) throw new Error("استجابة فارغة");
+    const C=r.cols; mPS={asOf:r.as_of,year:r.year,rows:(r.rows||[]).map(a=>{ const o={}; C.forEach((c,i)=>o[c]=a[i]);
+      ["avail_p","avail_d","reserved","contracts","c30","c90","cy","b30","pa_sum","pa_n","ps_sum","ps_n","moh_sum","moh_n","sz_sum","sz_n","sqa_p","sqa_s","sqs_p","sqs_s","beds"].forEach(k=>o[k]=Number(o[k])||0);
+      if(o.beds===0&&a[C.indexOf("beds")]==null) o.beds=-1; o.months=(o.months||[]).map(Number); o.sector=tvSecNorm(o.sector); return o; })};
+    mPSAt=Date.now(); mPSErr=""; }
+  catch(e){ mPSErr=String((e&&e.message)||e); mPSFailAt=Date.now(); }
+  mPSLoading=false; if(tvMobile&&mInited) mRenderAnalysis();
+}
+const mUnitPrice=r=>r.pa_n?r.pa_sum/r.pa_n:r.ps_n?r.ps_sum/r.ps_n:null;
+const mUnitSize=r=>r.sz_n?r.sz_sum/r.sz_n:null;
+const mUnitSqm=r=>r.sqa_s?r.sqa_p/r.sqa_s:r.sqs_s?r.sqs_p/r.sqs_s:null;
+function mBedsLbl(b){ return b<0?"غرف غير مذكورة":b===1?"غرفة":b===2?"غرفتان":`${b} غرف`; }
+function mScopeOk(r){ return tvRegion==="dev"?r.kind!=="nhc":tvRegion?r.sector===tvRegion:true; }
+function mPSRows(o){
+  if(!mPS) return [];
+  const P=mPrm, pmin=(+P.pmin||0)*1000, pmax=P.pmax?(+P.pmax)*1000:Infinity, smin=+P.smin||0, smax=P.smax?+P.smax:Infinity;
+  return mPS.rows.filter(r=>{
+    if(!mScopeOk(r)) return false;
+    if(P.kind!=="all"&&r.kind!==P.kind) return false;
+    if(P.type!=="all"&&r.type!==P.type) return false;
+    if(P.beds!=="all"){ const b=+P.beds; if(b>=6?r.beds<6:r.beds!==b) return false; }
+    if(P.city!=="all"&&r.city!==P.city) return false;
+    if(P.pmin||P.pmax){ const p=mUnitPrice(r); if(p==null||p<pmin||p>pmax) return false; }
+    if(P.smin||P.smax){ const s=mUnitSize(r); if(s==null||s<smin||s>smax) return false; }
+    return !(o&&o.f)||o.f(r); });
+}
+function mAgg(rows){
+  const a={n:rows.length,ap:0,ad:0,res:0,con:0,c30:0,c90:0,cy:0,b30:0,months:Array(12).fill(0),pa:0,pan:0,ps:0,psn:0,moh:0,mohn:0,sz:0,szn:0,szmin:null,szmax:null,qap:0,qas:0,qsp:0,qss:0,proj:new Set(),rows};
+  rows.forEach(r=>{ a.ap+=r.avail_p; a.ad+=r.avail_d; a.res+=r.reserved; a.con+=r.contracts; a.c30+=r.c30; a.c90+=r.c90; a.cy+=r.cy; a.b30+=r.b30;
+    (r.months||[]).forEach((v,i)=>a.months[i]+=v||0); a.pa+=r.pa_sum; a.pan+=r.pa_n; a.ps+=r.ps_sum; a.psn+=r.ps_n; a.moh+=r.moh_sum; a.mohn+=r.moh_n;
+    a.sz+=r.sz_sum; a.szn+=r.sz_n; if(r.sz_min!=null) a.szmin=a.szmin==null?+r.sz_min:Math.min(a.szmin,+r.sz_min); if(r.sz_max!=null) a.szmax=a.szmax==null?+r.sz_max:Math.max(a.szmax,+r.sz_max);
+    a.qap+=r.sqa_p; a.qas+=r.sqa_s; a.qsp+=r.sqs_p; a.qss+=r.sqs_s; a.proj.add(r.project); });
+  const P=mPrm, avail=a.ap+a.ad, sold=a.con+(P.res?a.res:0), offered=a.con+a.res+avail;
+  const now=new Date(), mEl=Math.max(.5,(now-new Date(now.getFullYear(),0,1))/864e5/30.44);
+  const vel=P.mv==="30"?a.c30:P.mv==="90"?a.c90/3:a.cy/mEl;
+  return Object.assign(a,{avail,sold,offered,abs:offered?sold/offered*100:null,availPct:offered?avail/offered*100:null,vel,inv:vel>0?avail/vel:(avail?Infinity:0),
+    priceA:a.pan?a.pa/a.pan:null,priceS:a.psn?a.ps/a.psn:null,moh:a.mohn?a.moh/a.mohn:null,size:a.szn?a.sz/a.szn:null,
+    sqmA:a.qas?a.qap/a.qas:null,sqmS:a.qss?a.qsp/a.qss:null,price:a.pan?a.pa/a.pan:a.psn?a.ps/a.psn:null,
+    ok:offered>=P.minU&&offered>0&&sold/offered*100>=P.thr});
+}
+function mRec(x){ if(!x.offered) return null;
+  if(x.ok&&x.inv<3) return ["زِد المعروض","grow","ناجح والمتاح يكفي أقل من 3 أشهر"];
+  if(x.ok) return ["ركّز البيع","good","ناجح وفيه متاح"];
+  if(x.avail&&x.inv>12&&x.offered>=mPrm.minU) return ["راجع السعر/المنتج","bad","سحب ضعيف والمتاح يكفي أكثر من سنة"];
+  return ["متابعة","none",""]; }
+const M_BAND={
+  price:[[0,5e5,"أقل من 500 ألف"],[5e5,75e4,"500–750 ألف"],[75e4,1e6,"750 ألف – 1 م"],[1e6,15e5,"1 – 1.5 م"],[15e5,2e6,"1.5 – 2 م"],[2e6,3e6,"2 – 3 م"],[3e6,Infinity,"أكثر من 3 م"]],
+  size:[[0,100,"أقل من 100 م²"],[100,150,"100–150 م²"],[150,200,"150–200 م²"],[200,250,"200–250 م²"],[250,300,"250–300 م²"],[300,400,"300–400 م²"],[400,Infinity,"أكثر من 400 م²"]],
+  sqm:[[0,3000,"أقل من 3,000 ر/م²"],[3000,4000,"3,000–4,000"],[4000,5000,"4,000–5,000"],[5000,6000,"5,000–6,000"],[6000,8000,"6,000–8,000"],[8000,Infinity,"أكثر من 8,000"]]};
+function mBandIdx(dim,v){ if(v==null) return -1; return M_BAND[dim].findIndex(([lo,hi])=>v>=lo&&v<hi); }
+function mFmtInv(x){ return !x.avail?"نفد":x.inv===Infinity?"بلا حركة":x.inv<1?"أقل من شهر":`${fmt(Math.round(x.inv))} ${Math.round(x.inv)<=10&&Math.round(x.inv)>=3?"أشهر":"شهراً"}`; }
+function mVelLbl(){ return mPrm.mv==="30"?"آخر 30 يوماً":mPrm.mv==="90"?"متوسط آخر 90 يوماً":"متوسط السنة"; }
+function mPct(v){ return v==null?"—":Math.round(v)+"%"; }
+function mSpark(m,col){ const n=new Date().getMonth()+1, v=m.slice(0,n), mx=Math.max(1,...v), w=4, g=1.5, W=n*(w+g);
+  return `<svg class="mSpk" viewBox="0 0 ${W} 18" width="${W*1.6}" height="20" preserveAspectRatio="none">${v.map((x,i)=>`<rect x="${W-(i+1)*(w+g)}" y="${18-Math.max(1,x/mx*17)}" width="${w}" height="${Math.max(1,x/mx*17)}" rx="1" fill="${col||"#009C6D"}" opacity="${i===n-1?1:.55}"/>`).join("")}</svg>`; }
+/* أعمدة شهرية (RTL: يناير يميناً) مع خط مرجعي اختياري (متوسط الفريق) */
+function mMonthBars(vals,o){
+  o=o||{}; const n=o.n||vals.length, W=340, H=o.h||160, pl=6, pr=6, pt=20, pb=22, ref=o.ref||null;
+  const mx=Math.max(1,...vals.slice(0,n).map(v=>+v||0),...(ref||[]).slice(0,n).map(v=>+v||0)), bw=(W-pl-pr)/n, X=i=>W-pr-(i+.5)*bw, Y=v=>pt+(1-(+v||0)/mx)*(H-pt-pb);
+  const best=vals.slice(0,n).reduce((b,v,i)=>(+v||0)>(+vals[b]||0)?i:b,0);
+  let s=`<svg class="mBarsSvg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><line x1="${pl}" x2="${W-pr}" y1="${Y(0)}" y2="${Y(0)}" stroke="#E5E7EB"/>`;
+  for(let i=0;i<n;i++){ const v=+vals[i]||0, x=X(i), y=Y(v), c=i===best&&v?(o.best||"#0B4332"):(o.col||"#009C6D");
+    s+=`<rect x="${x-bw*.32}" y="${y}" width="${bw*.64}" height="${Math.max(0,Y(0)-y)}" rx="3" fill="${c}" opacity="${i===n-1&&o.partial?.55:.9}"/>`;
+    if(v) s+=`<text x="${x}" y="${y-5}" text-anchor="middle" font-size="${n>9?10:11}" font-weight="800" fill="#111827">${fmt(v)}</text>`;
+    s+=`<text x="${x}" y="${H-6}" text-anchor="middle" font-size="10" fill="#6B7280">${M_MON[i]}</text>`; }
+  if(ref){ const pts=[]; for(let i=0;i<n;i++) if(ref[i]!=null) pts.push([X(i),Y(ref[i])]);
+    if(pts.length>1) s+=`<polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="#C97F2E" stroke-width="2" stroke-dasharray="5 4"/>`;
+    pts.forEach(([x,y])=>s+=`<circle cx="${x}" cy="${y}" r="2.6" fill="#C97F2E"/>`); }
+  return s+`</svg>`;
+}
+/* لوحة القرار: نسبة السحب (رأسياً) × المتاح (أفقياً، جذر تربيعي) — حجم الفقاعة = الحركة الشهرية */
+function mScatter(items){
+  const W=340, H=260, pl=34, pr=10, pt=14, pb=30, thr=+mPrm.thr||60;
+  const mx=Math.max(10,...items.map(i=>i.avail)), vmax=Math.max(.1,...items.map(i=>i.vel));
+  const X=v=>pl+Math.sqrt(Math.max(0,v)/mx)*(W-pl-pr), Y=v=>pt+(1-Math.min(100,Math.max(0,v))/100)*(H-pt-pb);
+  let s=`<svg class="mScat" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" direction="ltr" style="direction:ltr">`;
+  s+=`<rect x="${pl}" y="${pt}" width="${W-pl-pr}" height="${Y(thr)-pt}" fill="#E3F6EE" opacity=".6"/>`;
+  [0,25,50,75,100].forEach(v=>{ s+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#EEF0F3"/><text x="${pl-5}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="#9CA3AF">${v}%</text>`; });
+  s+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(thr)}" y2="${Y(thr)}" stroke="#009C6D" stroke-width="1.4" stroke-dasharray="5 4"/>`;
+  [0,mx/16,mx/4,mx].forEach(v=>{ s+=`<text x="${X(v)}" y="${H-12}" text-anchor="middle" font-size="10" fill="#9CA3AF">${fmt(Math.round(v))}</text>`; });
+  s+=`<text x="${W-pr}" y="${H-1}" text-anchor="end" font-size="10" fill="#6B7280">المتاح (وحدات) →</text>`;
+  s+=`<text x="${pl+4}" y="${pt+12}" font-size="10" font-weight="700" fill="#067A55">ناجح · المتاح قليل</text><text x="${W-pr-4}" y="${pt+12}" text-anchor="end" font-size="10" font-weight="700" fill="#067A55">ناجح · فيه متاح</text>`;
+  s+=`<text x="${W-pr-4}" y="${H-pb-6}" text-anchor="end" font-size="10" font-weight="700" fill="#B5361B">متاح كثير · سحب ضعيف</text>`;
+  const lbl=new Set(items.slice().sort((a,b)=>b.offered-a.offered).slice(0,6).map(i=>i.idx));
+  const placed=[];
+  items.slice().sort((a,b)=>b.vel-a.vel).forEach(i=>{ const x=X(i.avail), y=Y(i.abs||0), r=4+10*Math.sqrt(i.vel/vmax), c=i.ok?"#009C6D":(i.abs||0)>=thr?"#C97F2E":"#C2491E";
+    s+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" fill-opacity=".45" stroke="${c}" stroke-width="1.4" data-pg="${i.idx}" style="cursor:pointer"><title>${i.label} · سحب ${mPct(i.abs)} · متاح ${fmt(i.avail)}</title></circle>`;
+    if(lbl.has(i.idx)){ const t=tvShort(i.label,18), w=t.length*5.2, bx=[x-w/2,y-r-13,x+w/2,y-r-2];
+      if(!placed.some(q=>bx[0]<q[2]&&bx[2]>q[0]&&bx[1]<q[3]&&bx[3]>q[1])){ placed.push(bx);
+        s+=`<text x="${x}" y="${y-r-3}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#374151" direction="rtl" pointer-events="none" stroke="#fff" stroke-width="3" paint-order="stroke">${t}</text>`; } } });
+  return s+`</svg>`;
+}
+function mPrmCard(){
+  const P=mPrm, rows=mPS?mPS.rows.filter(mScopeOk):[], cities=[...new Set(rows.map(r=>r.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const sel=(k,opts)=>`<select data-prm="${k}">${opts.map(([v,l])=>`<option value="${v}"${String(P[k])===String(v)?" selected":""}>${l}</option>`).join("")}</select>`;
+  const pill=(k,opts)=>`<div class="mPills sm">${opts.map(([v,l])=>`<button type="button" data-prmset="${k}:${v}" class="${String(P[k])===String(v)?"on":""}">${l}</button>`).join("")}</div>`;
+  const chips=[P.type!=="all"?P.type:"",P.beds!=="all"?(+P.beds>=6?"6 غرف فأكثر":mBedsLbl(+P.beds)):"",P.city!=="all"?P.city:"",P.kind==="nhc"?"NHC":P.kind==="other"?"المطورون":"",
+    P.pmin||P.pmax?`السعر ${P.pmin||0}–${P.pmax||"∞"} ألف`:"",P.smin||P.smax?`المساحة ${P.smin||0}–${P.smax||"∞"} م²`:"",`ناجح ≥ ${P.thr}%`,`مطروح ≥ ${P.minU}`,P.res?"السحب: عقود + حجوزات":"السحب: عقود فقط",mVelLbl()].filter(Boolean);
+  return `<div class="mCard mPrm${mPrmOpen?" open":""}"><button type="button" class="mPrmHd" data-prmtoggle="1"><b>⚙ المعايير</b><span>${mPrmOpen?"إخفاء ▴":"تعديل ▾"}</span></button>
+    <div class="mChips">${chips.map(c=>`<span>${c}</span>`).join("")}</div>
+    ${mPrmOpen?`<div class="mPrmBody">
+      <div class="mPrmG"><label>نوع الوحدة${sel("type",[["all","الكل"],...TV_PRODUCTS.map(t=>[t,t])])}</label><label>الغرف${sel("beds",[["all","الكل"],[1,"1"],[2,"2"],[3,"3"],[4,"4"],[5,"5"],[6,"6+"]])}</label>
+        <label>المدينة${sel("city",[["all","الكل"],...cities.map(c=>[c,c])])}</label><label>المطوّر${sel("kind",[["all","الكل"],["nhc","NHC"],["other","المطورون"]])}</label>
+        <label>السعر من (ألف)<input type="number" inputmode="numeric" data-prm="pmin" value="${P.pmin}" placeholder="0"></label><label>إلى (ألف)<input type="number" inputmode="numeric" data-prm="pmax" value="${P.pmax}" placeholder="∞"></label>
+        <label>المساحة من (م²)<input type="number" inputmode="numeric" data-prm="smin" value="${P.smin}" placeholder="0"></label><label>إلى (م²)<input type="number" inputmode="numeric" data-prm="smax" value="${P.smax}" placeholder="∞"></label>
+        <label>حد النجاح: نسبة السحب ≥ %<input type="number" inputmode="numeric" data-prm="thr" value="${P.thr}" min="1" max="100"></label><label>الحد الأدنى للمطروح (وحدة)<input type="number" inputmode="numeric" data-prm="minU" value="${P.minU}" min="1"></label></div>
+      <div class="mPrmL">السحب يشمل</div>${pill("res",[[true,"العقود + الحجوزات"],[false,"العقود فقط"]])}
+      <div class="mPrmL">الحركة الشهرية</div>${pill("mv",[["30","آخر 30 يوماً"],["90","آخر 90 يوماً"],["y","متوسط السنة"]])}
+      <div class="mPrmL">تعريف المنتج</div>${pill("grp",[["tb","النوع والغرف"],["tbs","+ شريحة المساحة"],["tbp","+ شريحة السعر"]])}
+      <button type="button" class="mMore" data-prmreset="1">إعادة الضبط</button></div>`:""}</div>`;
+}
+function mGroups(rows){
+  const g=mPrm.grp, m=new Map();
+  rows.forEach(r=>{ let k=`${r.type||"—"} · ${mBedsLbl(r.beds)}`, ord=[TV_PRODUCTS.indexOf(r.type),r.beds];
+    if(g==="tbs"){ const b=mBandIdx("size",mUnitSize(r)); k+=` · ${b<0?"مساحة غير مذكورة":M_BAND.size[b][2]}`; ord.push(b); }
+    if(g==="tbp"){ const b=mBandIdx("price",mUnitPrice(r)); k+=` · ${b<0?"سعر غير مذكور":M_BAND.price[b][2]}`; ord.push(b); }
+    const e=m.get(k)||{label:k,rows:[],ord}; e.rows.push(r); m.set(k,e); });
+  return [...m.values()].map(e=>Object.assign(mAgg(e.rows),{label:e.label}));
+}
+function mKpis6(x){
+  return `<div class="mK6"><div><span>المطروح</span><b>${fmt(x.offered)}</b><small>${fmt(x.proj.size)} مشروعاً</small></div>
+    <div><span>المسحوب</span><b>${fmt(x.sold)}</b><small class="${x.abs>=mPrm.thr?"up":"dn"}">نسبة السحب ${mPct(x.abs)}</small></div>
+    <div><span>المتاح</span><b>${fmt(x.avail)}</b><small>${mPct(x.availPct)} من المطروح</small></div>
+    <div><span>الحركة / شهر</span><b>${x.vel>=10?fmt(Math.round(x.vel)):(Math.round(x.vel*10)/10)}</b><small>${mVelLbl()}</small></div>
+    <div><span>يكفي المتاح</span><b>${mFmtInv(x)}</b><small>بنفس الحركة</small></div>
+    <div><span>عقود ${new Date().getFullYear()}</span><b>${fmt(x.cy)}</b><small>حجوزات 30 يوماً ${fmt(x.b30)}</small></div></div>`;
+}
+function mPgRow(x,i){
+  const rc=mRec(x), thr=Math.min(100,+mPrm.thr||60);
+  return `<div class="mPg" data-pg="${i}"><div class="t"><b>${x.label}</b>${mSpark(x.months,x.ok?"#009C6D":"#9CA3AF")}${rc?`<span class="rec ${rc[1]}" title="${rc[2]}">${rc[0]}</span>`:""}</div>
+    <div class="ab"><div class="trk"><i style="width:${Math.min(100,x.abs||0)}%;background:${x.ok?"#009C6D":(x.abs||0)>=thr?"#C97F2E":"#E0442B"}"></i><b style="right:${thr}%"></b></div><span class="pc ${x.ok?"up":""}">${mPct(x.abs)}</span></div>
+    <div class="g"><span>مسحوب <b>${fmt(x.sold)}</b> من ${fmt(x.offered)}</span><span>متاح <b>${fmt(x.avail)}</b> (${mPct(x.availPct)})</span><span>الحركة <b>${x.vel>=10?fmt(Math.round(x.vel)):(Math.round(x.vel*10)/10)}</b>/شهر</span><span>يكفي <b>${mFmtInv(x)}</b></span></div>
+    <div class="s">${x.price?`متوسط ${tvPriceShort(x.price)}`:""}${x.size?` · ${fmt(Math.round(x.size))} م²`:""}${x.sqmA||x.sqmS?` · ${fmt(Math.round(x.sqmA||x.sqmS))} ر/م²`:""} · ${fmt(x.proj.size)} مشروعاً</div></div>`;
+}
+function mPSState(){
+  if(mPS) return "";
+  if(mPSLoading||!mPSErr) return `<div class="mCard"><div class="mEmpty">جارٍ تحميل بيانات المنتجات…</div></div>`;
+  return `<div class="mCard"><div class="mEmpty">تحليل المنتجات غير متاح بعد — شغّل <b>tv_product_analytics.sql</b> على القاعدة ثم ارفع ملف التخصيص.<br><small>${mPSErr}</small></div></div>`;
+}
+function mRenderProducts(ctx){
+  const st=mPSState(); if(st) return st;
+  const rows=mPSRows(); if(!rows.length) return mPrmCard()+`<div class="mCard"><div class="mEmpty">لا وحدات تطابق المعايير${tvRegion?` في ${tvRegionLabel(tvRegion)}`:""}</div></div>`;
+  const all=mAgg(rows), G=mGroups(rows).filter(x=>x.offered>0).sort((a,b)=>(b.ok-a.ok)||((b.abs||0)-(a.abs||0))||b.offered-a.offered);
+  mGroupsCur=G; const shown=G.filter(x=>x.offered>=mPrm.minU), small=G.length-shown.length, okN=shown.filter(x=>x.ok).length;
+  const okAvail=shown.filter(x=>x.ok).reduce((a,x)=>a+x.avail,0);
+  const asOf=mPS.asOf?new Date(mPS.asOf).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"}):"";
+  return mPrmCard()+`<div class="mCard"><div class="mCardHd"><b>الملخص${tvRegion?` — ${tvRegionLabel(tvRegion)}`:""}</b><span>${asOf?`ملف التخصيص ${asOf}`:""}</span></div>${mKpis6(all)}
+      <div class="mNote"><b class="up">${fmt(okN)}</b> منتجاً ناجحاً من ${fmt(shown.length)} · المتاح من الناجح <b>${fmt(okAvail)}</b> وحدة (${mPct(all.avail?okAvail/all.avail*100:null)} من كل المتاح)</div></div>
+    <div class="mCard"><div class="mCardHd"><b>لوحة القرار</b><span>اضغط الفقاعة للتفاصيل</span></div>${mScatter(shown.map(x=>Object.assign(x,{idx:G.indexOf(x)})))}
+      <div class="mNote">رأسياً نسبة السحب، أفقياً المتاح، وحجم الفقاعة الحركة الشهرية. المنطقة الخضراء فوق حد النجاح (${mPrm.thr}%).</div></div>
+    <div class="mCard"><div class="mCardHd"><b>حركة العقود شهرياً ${new Date().getFullYear()}</b><span>للمعايير المختارة</span></div>${mMonthBars(all.months,{n:new Date().getMonth()+1,partial:true})}</div>
+    <div class="mCard"><div class="mCardHd"><b>المنتجات مرتبة بنسبة السحب</b><span>${fmt(shown.length)} منتجاً</span></div><div class="mPgList">${shown.map(x=>mPgRow(x,G.indexOf(x))).join("")||`<div class="mEmpty">لا منتجات بمطروح ≥ ${mPrm.minU}</div>`}</div>
+      ${small?`<div class="mNote">${fmt(small)} منتجاً أُخفي لأن مطروحه أقل من ${mPrm.minU} وحدة (عدّل الحد بالمعايير)</div>`:""}</div>`;
+}
+const M_DIMS=[["price","السعر"],["size","المساحة"],["beds","الغرف"],["sqm","سعر المتر"],["city","المدينة"],["dest","الضاحية"],["type","النوع"]];
+function mRenderDist(ctx){
+  const st=mPSState(); if(st) return st;
+  const rows=mPSRows(), d=mDistDim, m=new Map();
+  rows.forEach(r=>{ let k,ord;
+    if(d==="price"||d==="size"||d==="sqm"){ const v=d==="price"?mUnitPrice(r):d==="size"?mUnitSize(r):mUnitSqm(r), b=mBandIdx(d,v); ord=b<0?99:b; k=b<0?"غير مذكور":M_BAND[d][b][2]; }
+    else if(d==="beds"){ ord=r.beds<0?99:Math.min(r.beds,6); k=r.beds<0?"غير مذكور":r.beds>=6?"6 غرف فأكثر":mBedsLbl(r.beds); }
+    else if(d==="type"){ ord=TV_PRODUCTS.indexOf(r.type); k=r.type||"—"; }
+    else { k=(d==="city"?r.city:r.dest)||"غير مذكور"; ord=0; }
+    const e=m.get(k)||{label:k,ord,rows:[]}; e.rows.push(r); m.set(k,e); });
+  let G=[...m.values()].map(e=>Object.assign(mAgg(e.rows),{label:e.label,ord:e.ord})).filter(x=>x.offered>0);
+  const loc=d==="city"||d==="dest";
+  G=loc?G.filter(x=>x.offered>=mPrm.minU).sort((a,b)=>(b.abs||0)-(a.abs||0)):G.sort((a,b)=>a.ord-b.ord);
+  mGroupsCur=G;
+  const best=G.filter(x=>x.offered>=mPrm.minU).sort((a,b)=>(b.abs||0)-(a.abs||0))[0];
+  const mxAv=Math.max(1,...G.map(x=>x.avail));
+  const lim=loc?40:G.length;
+  return mPrmCard()+`<div class="mSeg mScrollSeg">${M_DIMS.map(([v,l])=>`<button type="button" data-dim="${v}" class="${d===v?"on":""}">${l}</button>`).join("")}</div>
+    <div class="mCard"><div class="mCardHd"><b>نسبة السحب والمتاح حسب ${M_DIMS.find(x=>x[0]===d)[1]}</b><span>${fmt(G.length)} شريحة</span></div>
+      ${best?`<div class="mBest">الأعلى سحباً: <b>${best.label}</b> · ${mPct(best.abs)} · متاح ${fmt(best.avail)}</div>`:""}
+      <div class="mDist"><div class="r h"><span></span><span>نسبة السحب</span><span>المتاح</span><span>حركة/شهر</span></div>
+      ${G.slice(0,lim).map((x,i)=>`<div class="r" data-pg="${i}"><span class="n">${x.label}<small>${fmt(x.offered)} مطروح${x.price?` · ${tvPriceShort(x.price)}`:""}${x.size&&d!=="size"?` · ${fmt(Math.round(x.size))} م²`:""}</small></span>
+        <span class="b"><i style="width:${Math.min(100,x.abs||0)}%;background:${x.ok?"#009C6D":(x.abs||0)>=mPrm.thr?"#C97F2E":"#E0442B"}"></i><em>${mPct(x.abs)}</em></span>
+        <span class="b av"><i style="width:${x.avail/mxAv*100}%"></i><em>${fmt(x.avail)}</em></span><span class="v">${x.vel>=10?fmt(Math.round(x.vel)):(Math.round(x.vel*10)/10)}</span></div>`).join("")||`<div class="mEmpty">لا بيانات بهذه المعايير</div>`}</div>
+      ${loc&&G.length>lim?`<div class="mNote">أعلى ${lim} من ${fmt(G.length)} (بمطروح ≥ ${mPrm.minU})</div>`:""}
+      <div class="mNote">الأخضر ناجح (≥ ${mPrm.thr}% ومطروح ≥ ${mPrm.minU}) · السعر/المساحة من متوسط كل نموذج · اضغط الشريحة للتفاصيل</div></div>`;
+}
+function mModelName(r){ return r.model?`نموذج ${r.model}`:"بدون نموذج"; }
+function mRenderModels(ctx){
+  const st=mPSState(); if(st) return st;
+  const rows=mPSRows();
+  mModelsCur=rows.map(r=>Object.assign(mAgg([r]),{r}));
+  return mPrmCard()+`<div class="mCard"><div class="mSearch${mModelQ?" has":""}"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input type="search" id="mModelQ" value="${mModelQ.replace(/"/g,"&quot;")}" placeholder="ابحث بالمشروع أو النموذج أو الضاحية" autocomplete="off"><button type="button" data-mclear="1">✕</button></div>
+    <div class="mPills sm">${[["abs","نسبة السحب"],["sold","المسحوب"],["vel","الحركة"],["avail","المتاح"],["price","السعر"]].map(([v,l])=>`<button type="button" data-msort="${v}" class="${mModelSort===v?"on":""}">${l}</button>`).join("")}</div>
+    <div id="mModelList"></div></div>`;
+}
+function mRenderModelList(){
+  const el=$("mModelList"); if(!el) return;
+  const q=tvNormName(mModelQ), k=mModelSort;
+  let L=mModelsCur.map((x,i)=>Object.assign(x,{i})).filter(x=>x.offered>=Math.max(1,Math.round(mPrm.minU/2)));
+  const hidden=mModelsCur.length-L.length;
+  if(q) L=L.filter(x=>[x.r.project,x.r.model,x.r.dest,x.r.city,x.r.developer].some(v=>tvNormName(v||"").includes(q)));
+  L.sort((a,b)=>k==="price"?((b.price||0)-(a.price||0)):((b[k]||0)-(a[k]||0))||b.offered-a.offered);
+  el.innerHTML=(L.slice(0,80).map(x=>{ const r=x.r, rc=mRec(x);
+    return `<div class="mMd" data-md="${x.i}"><div class="t"><div><b>${r.project}</b><small>${mModelName(r)} · ${r.type} · ${mBedsLbl(r.beds)}${x.size?` · ${fmt(Math.round(x.size))} م²`:""}${x.price?` · ${tvPriceShort(x.price)}`:""}</small><small class="loc">${[r.dest,r.city].filter(Boolean).join(" · ")}</small></div>
+      <div class="v"><b class="${x.ok?"up":""}">${mPct(x.abs)}</b><small>سحب</small></div></div>
+      <div class="g"><span>مسحوب <b>${fmt(x.sold)}</b>/${fmt(x.offered)}</span><span>متاح <b>${fmt(x.avail)}</b></span><span>${x.vel>=10?fmt(Math.round(x.vel)):(Math.round(x.vel*10)/10)}/شهر</span>${rc?`<span class="rec ${rc[1]}">${rc[0]}</span>`:""}</div></div>`; }).join("")||`<div class="mEmpty">لا نماذج${q?" لهذا البحث":""}</div>`)
+    +(L.length>80?`<div class="mNote">أول 80 من ${fmt(L.length)} — استعمل البحث أو المعايير</div>`:"")+(hidden?`<div class="mNote">${fmt(hidden)} نموذجاً بمطروح أقل من ${Math.max(1,Math.round(mPrm.minU/2))} وحدة لا يظهر</div>`:"");
+}
+/* ---------- ورقة التفاصيل ---------- */
+function mSheetOpen(title,html){ $("mDetailTitle").innerHTML=title; $("mDetailBody").innerHTML=html; $("mDetailSheet").classList.add("on"); $("mDetailBody").scrollTop=0; }
+function mStatusBar(x){
+  const t=x.offered||1, segs=[["عقود",x.con,"#0B4332"],["حجوزات",x.res,"#C97F2E"],["متاح منصة",x.ap,"#009C6D"],["متاح لدى المطور",x.ad,"#7FC9AE"]];
+  return `<div class="mBar">${segs.map(([,v,c])=>`<i style="width:${v/t*100}%;background:${c}"></i>`).join("")}</div><div class="mStLg">${segs.map(([l,v,c])=>`<span style="--c:${c}">${l} <b>${fmt(v)}</b> <small>${Math.round(v/t*100)}%</small></span>`).join("")}</div>`;
+}
+function mCmpRow(lbl,a,b,f,better){ const d=a!=null&&b?Math.round((a/b-1)*100):null, cls=d==null||!better?"flat":(better==="up"?d>=0:d<=0)?"up":"dn";
+  return `<div class="r"><span>${lbl}</span><b>${a!=null?f(a):"—"}</b><span>${b!=null?f(b):"—"}</span><em class="${cls}">${d==null?"—":`${d>0?"▲ +":d<0?"▼ ":""}${d}%`}</em></div>`; }
+function mOpenModel(i){
+  const x=mModelsCur[i]; if(!x) return; const r=x.r;
+  const peersAll=mPS.rows.filter(p=>p.dest&&p.dest===r.dest&&p.type===r.type&&!(p.project===r.project&&p.model===r.model&&p.beds===r.beds));
+  const sameBeds=peersAll.filter(p=>p.beds===r.beds), pb=mAgg(sameBeds), peers=r.beds>=0&&pb.offered>=10?pb:mAgg(peersAll);
+  const peerLbl=peers===pb?`${r.type} ${mBedsLbl(r.beds)}`:r.type;
+  const rankL=[...peersAll.map(p=>mAgg([p])),x].filter(z=>z.offered>=5).sort((a,b)=>(b.abs||0)-(a.abs||0)), rank=rankL.indexOf(x)+1;
+  const sib=mPS.rows.filter(p=>p.project===r.project&&p!==r).map(p=>Object.assign(mAgg([p]),{r:p})).sort((a,b)=>(b.abs||0)-(a.abs||0));
+  const rc=mRec(x), M=v=>tvPriceShort(v), N=v=>fmt(Math.round(v)), P=v=>Math.round(v)+"%", I=v=>v===Infinity?"∞":(Math.round(v*10)/10)+" ش";
+  const sib0=sib.map(s=>{ const k=mModelsCur.findIndex(z=>z.r===s.r); return `<div class="mRow"${k>=0?` data-md="${k}"`:""}><span class="rk"></span><div><div class="nm">${mModelName(s.r)} · ${s.r.type} · ${mBedsLbl(s.r.beds)}</div><div class="dv">${s.size?`${fmt(Math.round(s.size))} م² · `:""}${s.price?tvPriceShort(s.price):""} · متاح ${fmt(s.avail)}</div></div><div class="val"><b>${mPct(s.abs)}</b><small>${fmt(s.sold)}/${fmt(s.offered)}</small></div></div>`; }).join("");
+  mSheetOpen(`${r.project}<small>${mModelName(r)} · ${r.type} · ${mBedsLbl(r.beds)}</small>`,`
+    <div class="mDetTop"><div class="pc ${x.ok?"up":"dn"}">${mPct(x.abs)}<small>نسبة السحب</small></div>${rc?`<span class="rec ${rc[1]}">${rc[0]}</span>`:""}<div class="loc">${[r.dest&&`الضاحية: ${r.dest}`,r.city,tvSecNorm(r.sector),r.kind==="nhc"?"NHC":r.developer].filter(Boolean).join(" · ")}</div></div>
+    <div class="mSecT">المواصفات</div>
+    <div class="mSpecs"><div><span>النوع</span><b>${r.type||"—"}</b></div><div><span>الغرف</span><b>${r.beds>=0?r.beds:"—"}</b></div><div><span>المساحة</span><b>${x.size?N(x.size)+" م²":"—"}</b><small>${x.szmin!=null&&x.szmax!=null&&x.szmin!==x.szmax?`${N(x.szmin)}–${N(x.szmax)}`:""}</small></div>
+      <div><span>سعر المتاح</span><b>${x.priceA?M(x.priceA):"—"}</b><small>${x.moh?`الوزارة ${M(x.moh)}`:""}</small></div><div><span>سعر المباع</span><b>${x.priceS?M(x.priceS):"—"}</b></div><div><span>سعر المتر</span><b>${x.sqmA||x.sqmS?N(x.sqmA||x.sqmS):"—"}</b><small>${x.sqmA&&x.sqmS?`المباع ${N(x.sqmS)}`:""}</small></div></div>
+    <div class="mSecT">الحالة والحركة</div>${mStatusBar(x)}${mKpis6(x)}
+    <div class="mSecT">العقود شهرياً ${new Date().getFullYear()}</div>${mMonthBars(x.months,{n:new Date().getMonth()+1,partial:true,h:140})}
+    <div class="mSecT">مقارنة بالضاحية${r.dest?` — ${r.dest}`:""}</div>
+    ${r.dest&&peers.offered?`<div class="mNote">مقابل ${peerLbl} في نفس الضاحية: ${fmt(peers.n)} نموذجاً في ${fmt(peers.proj.size)} مشروعاً${rank?` · ترتيبه بالسحب <b>${rank}</b> من ${rankL.length}`:""}</div>
+    <div class="mCmp"><div class="r h"><span></span><span>هذا النموذج</span><span>الضاحية</span><span>الفرق</span></div>
+      ${mCmpRow("نسبة السحب",x.abs,peers.abs,P,"up")}${mCmpRow("سعر الوحدة (متاح)",x.priceA,peers.priceA,M)}${mCmpRow("سعر المباع",x.priceS,peers.priceS,M)}
+      ${mCmpRow("سعر المتر",x.sqmA||x.sqmS,peers.sqmA||peers.sqmS,N)}${mCmpRow("المساحة م²",x.size,peers.size,N)}${mCmpRow("أشهر التصريف",x.inv===Infinity?null:x.inv,peers.inv===Infinity?null:peers.inv,I,"down")}
+      ${mCmpRow("المتاح من المطروح",x.availPct,peers.availPct,P,"down")}</div>`:`<div class="mEmpty">لا نماذج مماثلة (${r.type}) في نفس الضاحية للمقارنة</div>`}
+    ${sib.length?`<div class="mSecT">نماذج المشروع الأخرى</div><div class="mList">${sib0}</div>`:""}`);
+}
+function mOpenGroup(i){
+  const x=mGroupsCur[i]; if(!x) return; const rows=x.rows;
+  mModelsCur=mPSRows().map(r=>Object.assign(mAgg([r]),{r}));
+  const byCity=new Map(); rows.forEach(r=>{ const k=r.city||"غير مذكور"; const e=byCity.get(k)||[]; e.push(r); byCity.set(k,e); });
+  const C=[...byCity.entries()].map(([k,l])=>Object.assign(mAgg(l),{label:k})).sort((a,b)=>b.offered-a.offered).slice(0,10);
+  const models=rows.map(r=>Object.assign(mAgg([r]),{r})).filter(z=>z.offered>=Math.max(3,Math.round(mPrm.minU/2)));
+  const top=models.slice().sort((a,b)=>(b.abs||0)-(a.abs||0)).slice(0,8), av=models.filter(z=>z.avail).sort((a,b)=>b.avail-a.avail).slice(0,8);
+  const ml=z=>{ const k=mModelsCur.findIndex(q=>q.r===z.r); return `<div class="mRow"${k>=0?` data-md="${k}"`:""}><span class="rk"></span><div><div class="nm">${z.r.project}</div><div class="dv">${mModelName(z.r)} · ${[z.r.dest,z.r.city].filter(Boolean).join(" · ")}</div></div><div class="val"><b>${mPct(z.abs)}</b><small>متاح ${fmt(z.avail)} · ${mFmtInv(z)}</small></div></div>`; };
+  const rc=mRec(x);
+  mSheetOpen(`${x.label}<small>${tvRegion?tvRegionLabel(tvRegion)+" · ":""}${fmt(x.proj.size)} مشروعاً · ${fmt(x.n)} نموذجاً</small>`,`
+    <div class="mDetTop"><div class="pc ${x.ok?"up":"dn"}">${mPct(x.abs)}<small>نسبة السحب</small></div>${rc?`<span class="rec ${rc[1]}">${rc[0]}</span>`:""}<div class="loc">${x.price?`متوسط ${tvPriceShort(x.price)}`:""}${x.size?` · ${fmt(Math.round(x.size))} م²`:""}${x.sqmA||x.sqmS?` · ${fmt(Math.round(x.sqmA||x.sqmS))} ر/م²`:""}</div></div>
+    ${mStatusBar(x)}${mKpis6(x)}
+    <div class="mSecT">العقود شهرياً ${new Date().getFullYear()}</div>${mMonthBars(x.months,{n:new Date().getMonth()+1,partial:true,h:140})}
+    <div class="mSecT">حسب المدينة</div><div class="mDist">${C.map(c=>`<div class="r"><span class="n">${c.label}<small>${fmt(c.offered)} مطروح</small></span><span class="b"><i style="width:${Math.min(100,c.abs||0)}%;background:${c.ok?"#009C6D":"#C97F2E"}"></i><em>${mPct(c.abs)}</em></span><span class="v">متاح ${fmt(c.avail)}</span></div>`).join("")}</div>
+    <div class="mSecT">أنجح النماذج</div><div class="mList">${top.map(ml).join("")||`<div class="mEmpty">لا نماذج كافية</div>`}</div>
+    <div class="mSecT">أين المتاح منه</div><div class="mList">${av.map(ml).join("")||`<div class="mEmpty">لا متاح</div>`}</div>`);
+}
+async function mOpenEmp(i){
+  const e=mEmpCur[i]; if(!e) return; const y=new Date().getFullYear(), n=new Date().getMonth()+1;
+  mSheetOpen(`${e.n}<small>${e.work||""}</small>`,`<div class="mEmpty">جارٍ تحميل الأداء الشهري…</div>`);
+  let r=null; try{ r=await sbCall("get_tv_employee_months",{p_employee:e.n,p_year:y}); }catch(x){}
+  if($("mDetailTitle").textContent.indexOf(e.n)!==0) return;
+  if(!r||!r.ok){ $("mDetailBody").innerHTML=`<div class="mEmpty">تعذّر تحميل الأداء الشهري — شغّل tv_product_analytics.sql على القاعدة</div>`; return; }
+  const M=r.months||[], vals=Array.from({length:12},(_,k)=>Number((M.find(m=>+m.m===k+1)||{}).cnt||0)), ref=Array.from({length:12},(_,k)=>{ const m=M.find(q=>+q.m===k+1); return m&&m.team_avg!=null?Number(m.team_avg):null; });
+  const act=vals.slice(0,n), best=act.indexOf(Math.max(...act)), months=act.filter(v=>v>0).length, avg=r.total/Math.max(1,n);
+  const first=r.first_date?new Date(r.first_date):null, partial=first&&first.getFullYear()===y&&first.getMonth()>0;
+  $("mDetailBody").innerHTML=`<div class="mK6"><div><span>عقود ${y}</span><b>${fmt(r.total)}</b><small>الترتيب ${fmt(r.rank)} من ${fmt(r.employees)}</small></div>
+      <div><span>أفضل شهر</span><b>${act[best]?MNAMES[String(best+1).padStart(2,"0")]:"—"}</b><small>${act[best]?fmt(act[best])+" عقد":""}</small></div>
+      <div><span>المعدل الشهري</span><b>${avg>=10?fmt(Math.round(avg)):(Math.round(avg*10)/10)}</b><small>باع في ${fmt(months)} من ${n} شهراً</small></div></div>
+    <div class="mSecT">العقود كل شهر <small><span style="color:#009C6D">■</span> الموظف <span style="color:#C97F2E">- -</span> متوسط الفريق</small></div>${mMonthBars(vals,{n,ref,partial:true,h:170})}
+    <div class="mMonT"><div class="r h"><span>الشهر</span><span>عقوده</span><span>متوسط الفريق</span><span>الأعلى</span></div>${M.filter(m=>+m.m<=n).map(m=>`<div class="r"><span>${MNAMES[String(m.m).padStart(2,"0")]}</span><b class="${m.team_avg!=null&&+m.cnt>=+m.team_avg?"up":+m.cnt?"dn":""}">${fmt(+m.cnt)}</b><span>${m.team_avg!=null?m.team_avg:"—"}</span><span>${m.team_max!=null?fmt(+m.team_max):"—"}</span></div>`).join("")}</div>
+    ${(r.work||[]).length>1?`<div class="mNote">مواقع العمل: ${(r.work||[]).map(w=>`${w.work||"—"} ${fmt(w.cnt)}`).join(" · ")}</div>`:""}
+    ${partial?`<div class="mNote">بيانات الموظفين متوفرة من ${first.toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})} (من أعمدة ملف التخصيص)</div>`:""}`;
 }
 function mRenderRegions(){
   const {Rg:R,ctx,progs}=mCtx, live=R.live, hasLive=!!(live&&live.ok&&!live.empty), {lastM,lastMY}=ctx, dim=new Date(lastMY,lastM,0).getDate();
@@ -10993,7 +11379,13 @@ function tvAllocAggregate(rows,appNameOf){
   const fromD=(()=>{ const n=new Date(), a=new Date(n.getFullYear(),0,1), b=new Date(n.getTime()-45*864e5), d=a<b?a:b;
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
   const yearStart=`${new Date().getFullYear()}-01-01`;
-  const agg=new Map(), stat=new Map(), bank=new Map(), val=new Map(), chan=new Map(), emp=new Map(), prc=new Map(), avl=new Map(); let contractsYear=0, noDate=0;
+  const agg=new Map(), stat=new Map(), bank=new Map(), val=new Map(), chan=new Map(), emp=new Map(), prc=new Map(), avl=new Map(), prod=new Map(); let contractsYear=0, noDate=0;
+  /* تحليل المنتجات والنماذج (tv_product_analytics.sql): لكل مشروع × نموذج × نوع × غرف — الحالات والحركة والسعر والمساحة */
+  const modelKey=resolveHeaderKey(rows,["model","النموذج","نموذج","model_name"],null);
+  const bedsKey=resolveHeaderKey(rows,["Number_of_Bedrooms","number of bedrooms","bedrooms","عدد الغرف","عدد غرف النوم","غرف النوم"],[["bedroom","غرف"]]);
+  const sizeKey=resolveHeaderKey(rows,["unit_size","unitsize","unit size","unit area","unitarea","area","sqm","مساحة الوحدة","المساحة","مساحة"],[["size","area","sqm","مساحة"]]);
+  const dToday=new Date(), dIso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const d30=dIso(new Date(dToday.getTime()-30*864e5)), d90=dIso(new Date(dToday.getTime()-90*864e5)), curYr=String(dToday.getFullYear());
   /* أعمدة قنوات البيع والموظفين (الملف الجديد): «القنوات»، «موقع العمل»، «Employee Name» — «-» = غير مذكور */
   const chanKey=resolveHeaderKey(rows,["القنوات","القناة","قناة البيع","قنوات البيع"],[["قناه","قنوات","قناة"]]);
   const workKey=resolveHeaderKey(rows,["موقع العمل","موقع الموظف","work_location","work location"],[["موقع"],["عمل"]]);
@@ -11025,6 +11417,29 @@ function tvAllocAggregate(rows,appNameOf){
       /* المتاح لكل منتج (منصة / لدى المطور) */
       if(st==="متاحة على المنصة"||st==="متاحة لدى المطور"){ const ut0=TV_TYPEAR[S(row.unit_type).toLowerCase()]||S(row.unit_type), ak=[sector,kind,ut0].join("\u0001");
         const a=avl.get(ak)||{p:0,d:0}; if(st==="متاحة على المنصة") a.p++; else a.d++; avl.set(ak,a); }
+      /* المنتج/النموذج */
+      { const ut1=TV_TYPEAR[S(row.unit_type).toLowerCase()]||S(row.unit_type), md=modelKey?clean(row[modelKey]):"";
+        const bn=bedsKey?num(row[bedsKey]):NaN, beds=bn>=0&&bn<20?Math.round(bn):-1;
+        const pk=[pn,code,md,ut1,beds].join("\u0001");
+        let o=prod.get(pk);
+        if(!o){ o={project_name:pn,project_code:code,model:md,unit_type:ut1,beds,developer:dev,kind,sector,city:S(row["المدينة"]),dest,
+          avail_p:0,avail_d:0,reserved:0,contracts:0,other:0,c30:0,c90:0,cy:0,b30:0,months:[0,0,0,0,0,0,0,0,0,0,0,0],
+          pa_sum:0,pa_n:0,ps_sum:0,ps_n:0,moh_sum:0,moh_n:0,sz_sum:0,sz_n:0,sz_min:null,sz_max:null,sqa_p:0,sqa_s:0,sqs_p:0,sqs_s:0}; prod.set(pk,o); }
+        const sz=sizeKey?num(row[sizeKey]):NaN, szOk=sz>=20&&sz<=3000;
+        if(szOk){ o.sz_sum+=sz; o.sz_n++; o.sz_min=o.sz_min==null?sz:Math.min(o.sz_min,sz); o.sz_max=o.sz_max==null?sz:Math.max(o.sz_max,sz); }
+        const bd=tvAllocDate(row["تاريخ الحجز"]); if(bd&&bd>=d30) o.b30++;
+        if(st==="متاحة على المنصة"||st==="متاحة لدى المطور"){ if(st==="متاحة على المنصة") o.avail_p++; else o.avail_d++;
+          const ap=num(row.price), mp=num(row.moh_price);
+          if(ap>=10000){ o.pa_sum+=ap; o.pa_n++; if(szOk){ o.sqa_p+=ap; o.sqa_s+=sz; } }
+          if(mp>=10000){ o.moh_sum+=mp; o.moh_n++; } }
+        else if(st==="حجز") o.reserved++;
+        else if(st==="عقد"){ o.contracts++;
+          const ben=S(row["نوع المستفيدين"]); let sp=num(priceKey?row[priceKey]:NaN);
+          if(!(sp>=10000)) sp=num(ben==="المستفيدين"?row.moh_price:row.price); if(!(sp>=10000)) sp=num(row.price);
+          if(sp>=10000){ o.ps_sum+=sp; o.ps_n++; if(szOk){ o.sqs_p+=sp; o.sqs_s+=sz; } }
+          const cd0=tvAllocDate(row["تاريخ توقيع العقد"]);
+          if(cd0){ if(cd0>=d30) o.c30++; if(cd0>=d90) o.c90++; if(cd0.slice(0,4)===curYr){ o.cy++; o.months[+cd0.slice(5,7)-1]++; } } }
+        else o.other++; }
     }
     if(st==="عقد"){
       /* للإيراد (منهجية جدول الإيرادات): السعر المطبَّق moh_price للمستفيدين و price لغيرهم (وإلا سعر العقد)،
@@ -11071,7 +11486,8 @@ function tvAllocAggregate(rows,appNameOf){
   const channels=chanKey?[...chan.entries()].map(([k,cnt])=>{ const [contract_date,sector,kind,channel]=k.split("\u0001"); return {contract_date,sector,kind,channel,cnt}; }):null;
   const employees=empKey?[...emp.entries()].map(([k,cnt])=>{ const [contract_date,sector,kind,employee,work]=k.split("\u0001"); return {contract_date,sector,kind,employee,work,cnt}; }):null;
   const availTypes=[...avl.entries()].map(([k,a])=>{ const [sector,kind,unit_type]=k.split("\u0001"); return {sector,kind,unit_type,platform:a.p,developer:a.d}; });
-  return {contracts,status,banks:bankKey?banks:null,value:bankKey?value:null,channels,employees,prices,availTypes,chanKey,empKey,priceKey,bankKey,contractsYear,noDate,secFixed,secUnknown,rows:rows.length};
+  const products=[...prod.values()];
+  return {contracts,status,banks:bankKey?banks:null,value:bankKey?value:null,channels,employees,prices,availTypes,products,modelKey,bedsKey,sizeKey,chanKey,empKey,priceKey,bankKey,contractsYear,noDate,secFixed,secUnknown,rows:rows.length};
 }
 /* رفع التجميع: call(fn,body) يضيف بيانات الأدمن (adminCall بالتطبيق، أو sbCall مع بيانات الدخول بالشاشة) */
 async function tvAllocUpload(agg,call,onStatus){
@@ -11114,6 +11530,16 @@ async function tvAllocUpload(agg,call,onStatus){
         if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
       }
     }catch(e){ note+=" · تعذّر تحديث القنوات/الموظفين — شغّل tv_sales_force.sql على القاعدة"; break; }
+  }
+  if(agg.products&&agg.products.length){
+    try{
+      const list=agg.products, CH=2500;
+      for(let i=0;i<list.length;i+=CH){
+        if(onStatus) onStatus(`جارٍ تحديث تحليل المنتجات والنماذج — ${Math.min(list.length,i+CH)} من ${list.length}…`);
+        const r=await call("admin_load_tv_products",{p_rows:list.slice(i,i+CH),p_reset:i===0});
+        if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
+      }
+    }catch(e){ note+=" · تعذّر تحديث تحليل المنتجات — شغّل tv_product_analytics.sql على القاعدة"; }
   }
   if(agg.banks){
     try{
@@ -11334,7 +11760,7 @@ async function tvUpHandleFile(file){
       const agg=tvAllocAggregate(r.rows,null);
       if(!agg.contracts.length&&!agg.status.length) throw new Error("لم أتعرّف على أعمدة ملف التخصيص (project_name، حالة الحجز، تاريخ توقيع العقد…)");
       tvUpAlloc=agg;
-      tvUpMsg(`<b>ملف التخصيص</b> · الورقة «${r.sheet}» · <b>${fmt(r.rows.length)}</b> صف<br>عقود ${new Date().getFullYear()}: <b>${fmt(agg.contractsYear)}</b>${agg.noDate?` · ${fmt(agg.noDate)} بلا تاريخ توقيع`:""}${agg.secFixed?`<br>عقود بقطاع فارغ أو غير معروف بالملف: <b>${fmt(agg.secFixed)}</b> — أُخذ قطاعها من مشروعها/مدينتها`:""}${agg.secUnknown?` · <b style="color:#C2491E">${fmt(agg.secUnknown)}</b> بلا قطاع`:""}<br>القنوات: ${agg.chanKey?`«${agg.chanKey}»`:"غير موجود"} · الموظفون: ${agg.empKey?`«${agg.empKey}» (${fmt(new Set((agg.employees||[]).map(e=>e.employee)).size)} موظفاً)`:"غير موجود"}<br>سعر العقد: ${agg.priceKey?`«${agg.priceKey}»`:"غير موجود — عمود price"} · البنك: ${agg.bankKey?`«${agg.bankKey}»`:"غير موجود — لا يُحسب الإيراد"}${agg.value?(()=>{ const V=agg.value.filter(v=>v.kind==="nhc"), f=V.reduce((x,v)=>x+v.fin_n,0), c=V.reduce((x,v)=>x+v.cash_n,0), sm=V.reduce((x,v)=>x+v.fin_sum+v.cash_sum,0); return `<br>للإيراد — عقود NHC التراكمية: ممول بنكياً <b>${fmt(f)}</b> · نقدي <b>${fmt(c)}</b> · القيمة ${tvMoney(sm)}`; })():""}`);
+      tvUpMsg(`<b>ملف التخصيص</b> · الورقة «${r.sheet}» · <b>${fmt(r.rows.length)}</b> صف<br>عقود ${new Date().getFullYear()}: <b>${fmt(agg.contractsYear)}</b>${agg.noDate?` · ${fmt(agg.noDate)} بلا تاريخ توقيع`:""}${agg.secFixed?`<br>عقود بقطاع فارغ أو غير معروف بالملف: <b>${fmt(agg.secFixed)}</b> — أُخذ قطاعها من مشروعها/مدينتها`:""}${agg.secUnknown?` · <b style="color:#C2491E">${fmt(agg.secUnknown)}</b> بلا قطاع`:""}<br>القنوات: ${agg.chanKey?`«${agg.chanKey}»`:"غير موجود"} · الموظفون: ${agg.empKey?`«${agg.empKey}» (${fmt(new Set((agg.employees||[]).map(e=>e.employee)).size)} موظفاً)`:"غير موجود"}<br>تحليل المنتجات: <b>${fmt((agg.products||[]).length)}</b> منتجاً/نموذجاً · النموذج: ${agg.modelKey?`«${agg.modelKey}»`:"غير موجود"} · الغرف: ${agg.bedsKey?`«${agg.bedsKey}»`:"غير موجود"} · المساحة: ${agg.sizeKey?`«${agg.sizeKey}»`:"غير موجود"}<br>سعر العقد: ${agg.priceKey?`«${agg.priceKey}»`:"غير موجود — عمود price"} · البنك: ${agg.bankKey?`«${agg.bankKey}»`:"غير موجود — لا يُحسب الإيراد"}${agg.value?(()=>{ const V=agg.value.filter(v=>v.kind==="nhc"), f=V.reduce((x,v)=>x+v.fin_n,0), c=V.reduce((x,v)=>x+v.cash_n,0), sm=V.reduce((x,v)=>x+v.fin_sum+v.cash_sum,0); return `<br>للإيراد — عقود NHC التراكمية: ممول بنكياً <b>${fmt(f)}</b> · نقدي <b>${fmt(c)}</b> · القيمة ${tvMoney(sm)}`; })():""}`);
       tvUpUpdateGo(); return;
     }
     const res=await liveReadFile(file);
