@@ -35,6 +35,20 @@ alter table tv_employee_daily enable row level security;
 drop policy if exists tv_employee_daily_read on tv_employee_daily;
 create policy tv_employee_daily_read on tv_employee_daily for select using (true);
 
+-- المتاح للبيع لكل منتج (من ملف التخصيص، لحظة الرفع): على المنصة / لدى المطور — لكل قطاع × NHC/مطور × نوع الوحدة
+create table if not exists tv_avail_type (
+  sector text not null default '',
+  kind text not null default 'other',
+  unit_type text not null default '',
+  platform integer not null default 0,
+  developer integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (sector, kind, unit_type)
+);
+alter table tv_avail_type enable row level security;
+drop policy if exists tv_avail_type_read on tv_avail_type;
+create policy tv_avail_type_read on tv_avail_type for select using (true);
+
 -- رفع على دفعات (الأولى تمسح القديم) — يتطلّب صلاحية أدمن فعلية
 create or replace function admin_load_tv_force(p_admin text, p_pass text, p_table text, p_rows jsonb, p_reset boolean)
 returns jsonb
@@ -71,6 +85,15 @@ begin
     where nullif(r->>'contract_date', '') is not null and nullif(btrim(r->>'employee'), '') is not null
     group by 1, 2, 3, 4, 5
     on conflict (contract_date, sector, kind, employee, work_location) do update set cnt = tv_employee_daily.cnt + excluded.cnt, updated_at = now();
+  elsif p_table = 'avail' then
+    if p_reset then delete from tv_avail_type where true; end if;
+    insert into tv_avail_type (sector, kind, unit_type, platform, developer)
+    select coalesce(btrim(r->>'sector'), ''), coalesce(r->>'kind', 'other'), coalesce(btrim(r->>'unit_type'), ''),
+           sum(coalesce(nullif(r->>'platform', '')::int, 0)), sum(coalesce(nullif(r->>'developer', '')::int, 0))
+    from jsonb_array_elements(p_rows) r
+    group by 1, 2, 3
+    on conflict (sector, kind, unit_type) do update set platform = tv_avail_type.platform + excluded.platform,
+      developer = tv_avail_type.developer + excluded.developer, updated_at = now();
   else
     return jsonb_build_object('ok', false, 'msg', 'جدول غير معروف');
   end if;
@@ -91,6 +114,11 @@ as $$
     'ok', true, 'from', p_from, 'to', p_to,
     'has_channels', exists(select 1 from tv_channel_daily where channel <> ''),
     'has_employees', exists(select 1 from tv_employee_daily),
+    -- المتاح لكل منتج (لا يتبع الفترة — رصيد لحظة آخر رفع لملف التخصيص)
+    'avail', coalesce((
+      select jsonb_agg(jsonb_build_object('sector', tv_region(nullif(sector, ''), null), 'kind', kind, 'type', unit_type,
+        'platform', platform, 'developer', developer)) from tv_avail_type
+    ), '[]'::jsonb),
     'channels', coalesce((
       select jsonb_agg(jsonb_build_object('sector', sec, 'kind', kind, 'channel', channel, 'cnt', c))
       from (select tv_region(nullif(sector, ''), null) as sec, kind, channel, sum(cnt) as c
