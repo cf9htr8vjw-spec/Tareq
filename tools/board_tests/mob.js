@@ -80,18 +80,32 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
   await page.goto(process.env.URL,{waitUntil:'load'});
   await page.waitForTimeout(1800);
   const D=process.env.OUTDIR||'/tmp/pwtest/mob'; require('fs').mkdirSync(D,{recursive:true});
-  console.log('mobile class:',await page.evaluate(()=>document.documentElement.classList.contains('tvMob')));
-  for(const tab of ['today','projects','charts','market','regions']){
-    await page.evaluate(t=>tvSetMobTab(t),tab); await page.waitForTimeout(500);
-    const info=await page.evaluate(()=>{ const W=document.documentElement.clientWidth; const bad=[];
-      document.querySelectorAll('#tvView *').forEach(el=>{ const cs=getComputedStyle(el); if(cs.display==='none'||el.closest('.mHide')||el.closest('.tvUpModal')) return;
+  console.log('mobile class:',await page.evaluate(()=>document.documentElement.classList.contains('tvMob')),'| scope:',await page.textContent('#mScopeName'),'|',await page.textContent('#mScopeSub'));
+  const ov=async()=>page.evaluate(()=>{ const W=document.documentElement.clientWidth; const bad=[];
+      document.querySelectorAll('#mApp *').forEach(el=>{ const cs=getComputedStyle(el); if(cs.display==='none'||el.closest('.mSheet')) return;
         const r=el.getBoundingClientRect(); if(r.width<1) return; if(r.right>W+1||r.left<-1){ let p=el.parentElement,ok=false; while(p){ const o=getComputedStyle(p).overflowX; if(o==='auto'||o==='scroll'||o==='hidden'){ok=true;break;} p=p.parentElement;} if(!ok) bad.push((el.id||el.className||el.tagName)+':'+Math.round(r.left)+'-'+Math.round(r.right)); } });
-      return {docW:document.documentElement.scrollWidth,W,H:document.documentElement.scrollHeight,bad:bad.slice(0,12)}; });
-    console.log(tab,JSON.stringify(info));
+      return {docW:document.documentElement.scrollWidth,W,H:document.documentElement.scrollHeight,bad:bad.slice(0,8)}; });
+  for(const tab of ['today','projects','charts','analysis','regions']){
+    await page.click('#mNav button[data-tab="'+tab+'"]'); await page.waitForTimeout(500);
+    console.log(tab,JSON.stringify(await ov()));
     await page.screenshot({path:D+'/'+tab+'.png',fullPage:true});
   }
-  for(const v of ['prod','emp','dest']){ await page.evaluate(()=>tvSetMobTab('market')); await page.evaluate(v=>tvSetBandView(v),v); await page.waitForTimeout(500); console.log('band',v,await page.evaluate(()=>document.documentElement.scrollWidth)); await page.screenshot({path:D+'/band_'+v+'.png',fullPage:true}); }
-  if(process.env.SWITCH){ await page.click('#tvLayoutBtn'); await page.waitForTimeout(600); console.log('after switch tvMob=',await page.evaluate(()=>document.documentElement.classList.contains('tvMob'))); await page.screenshot({path:D+'/switched.png'}); }
+  await page.click('#mNav button[data-tab="analysis"]');
+  for(const v of ['banks','chan','emp','dest','market']){ await page.click('#mAnSeg button[data-an="'+v+'"]'); await page.waitForTimeout(300); console.log('an',v,JSON.stringify(await ov())); await page.screenshot({path:D+'/an_'+v+'.png',fullPage:true}); }
+  // scope sheet → الأوسط
+  await page.click('#mNav button[data-tab="today"]'); await page.click('#mScopeBtn'); await page.waitForTimeout(300); await page.screenshot({path:D+'/sheet.png'});
+  await page.click('#mScopeList button[data-region="الأوسط"]'); await page.waitForTimeout(600);
+  console.log('region:',await page.textContent('#mScopeName'),JSON.stringify(await ov())); await page.screenshot({path:D+'/region.png',fullPage:true});
+  await page.click('#mScopeBtn'); await page.click('#mScopeList button[data-region="all"]'); await page.waitForTimeout(400);
+  // projects: search + period
+  await page.click('#mNav button[data-tab="projects"]'); await page.fill('#mProjQ','بنان'); await page.waitForTimeout(300);
+  console.log('search rows:',await page.evaluate(()=>document.querySelectorAll('#mProjList .mRow').length),'|',await page.textContent('#mProjTot'));
+  await page.click('#mProjClear'); await page.click('#mProjPeriod button[data-m="month"]'); await page.waitForTimeout(800);
+  console.log('month rows:',await page.evaluate(()=>document.querySelectorAll('#mProjList .mRow').length),'|',await page.textContent('#mProjTot')); await page.screenshot({path:D+'/proj_month.png',fullPage:true});
+  // menu + ticker
+  await page.click('#mMenuBtn'); await page.waitForTimeout(200); await page.screenshot({path:D+'/menu.png'}); await page.click('#mMenuSheet', {position:{x:5,y:5}});
+  console.log('ticker:',(await page.textContent('#mTicker')).trim().slice(0,80));
+  if(process.env.SWITCH){ await page.click('#mTvBtn'); await page.waitForTimeout(600); console.log('after switch tvMob=',await page.evaluate(()=>document.documentElement.classList.contains('tvMob'))); await page.screenshot({path:D+'/switched.png'}); }
   console.log('PAGE ERRORS:',errs.length,errs.join(' | '));
   await browser.close();
 })();
