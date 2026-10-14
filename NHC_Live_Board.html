@@ -1059,6 +1059,7 @@ function tvAsOfDate(R,now){
   return new Date(d.getFullYear(),d.getMonth(),d.getDate());
 }
 async function loadTvDashboard(){
+  if(appStopShown) return;   /* التطبيق موقوف: لا نداءات */
   const now=new Date();
   const curY=now.getFullYear(), curM=now.getMonth()+1;
   let lastM=curM-1, lastMY=curY;
@@ -1089,6 +1090,8 @@ async function loadTvDashboard(){
     today:  sbCall("get_today_activity",{}),
     sync:   sbSelect("sync_status",{select:"last_synced_at",limit:"1"}),
   };
+  /* الرفض يُعالَج لاحقاً عبر allSettled — هذا يمنع اعتباره خطأً غير معالج أثناء انتظار fcP */
+  Object.values(calls).forEach(p=>p&&p.catch&&p.catch(()=>{}));
   /* العقود (العدّادات والمنحنيات) من ملف التخصيص بقطاع الملف ومطوّره هو، بصرف النظر عن تسجيل
      المشروع بالتطبيق (tv_file_counts.sql). قبل تشغيل ذلك الملف: get_sales_report القديمة احتياطاً */
   /* آخر نتيجة ناجحة لكل نداء تبقى معروضة إن فشل النداء مؤقتاً (مهلة/شبكة) — بدل التحوّل لمصدر
@@ -2144,6 +2147,52 @@ function startTvMode(){
     else if(e.key==="r"||e.key==="R") loadTvDashboard();
   });
 }
+/* ---------- إيقاف التطبيق بالكامل (app_control.sql) — للتطبيق وشاشة المبيعات ----------
+   الإيقاف الفعلي على السيرفر (سحب الصلاحيات)؛ هنا فقط شاشة الإيقاف + إعادة التشغيل بحساب أدمن.
+   بيانات الدخول تُستعمل مرة واحدة ولا تُحفظ. */
+let appStopShown=false;
+async function appCheckState(){
+  let s=null; try{ s=await sbCall("get_app_state",{}); }catch(e){ return true; }   /* الملف غير مشغّل أو لا اتصال: لا تغيير */
+  if(s&&s.ok&&s.enabled===false){ appShowStopped(s.message); return false; }
+  if(s&&s.ok&&s.enabled&&appStopShown) location.reload();
+  return true;
+}
+function appShowStopped(msg){
+  ["app","tvView","lock","splash"].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.visibility="hidden"; });
+  document.querySelectorAll(".sheet.open,.tvUpModal.on").forEach(e=>e.classList.remove("open","on"));
+  let o=document.getElementById("appStop");
+  if(!o){
+    const st=document.createElement("style");
+    st.textContent=`#appStop{position:fixed;inset:0;z-index:99999;background:#0B4332;display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit;direction:rtl}
+#appStop .c{background:#fff;border-radius:22px;max-width:420px;width:100%;padding:28px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+#appStop .ic{font-size:44px;line-height:1}#appStop h2{margin:12px 0 6px;color:#0B4332;font-size:22px}
+#appStop p{color:#5e5a4f;font-size:15px;margin:0 0 16px;white-space:pre-line}
+#appStop details{text-align:start;border-top:1px solid #eee;padding-top:12px}#appStop summary{cursor:pointer;color:#767368;font-size:13px}
+#appStop input{display:block;width:100%;box-sizing:border-box;margin-top:8px;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font:inherit;font-size:15px}
+#appStop button{margin-top:10px;width:100%;padding:11px;border:0;border-radius:10px;background:#009C6D;color:#fff;font:inherit;font-weight:800;font-size:15px;cursor:pointer}
+#appStop .e{color:#C2491E;font-size:13px;margin-top:8px;min-height:1em}`;
+    document.head.appendChild(st);
+    o=document.createElement("div"); o.id="appStop";
+    o.innerHTML=`<div class="c"><div class="ic">⏸</div><h2>التطبيق متوقف مؤقتاً</h2><p id="appStopMsg"></p>
+      <details><summary>إعادة التشغيل (للمدير)</summary>
+        <input type="text" id="appStopU" placeholder="اسم المستخدم" autocomplete="username">
+        <input type="password" id="appStopP" placeholder="كلمة المرور" autocomplete="current-password">
+        <button type="button" id="appStopGo">▶ تشغيل التطبيق</button><div class="e" id="appStopErr"></div></details></div>`;
+    document.body.appendChild(o);
+    const go=async()=>{ const u=document.getElementById("appStopU").value.trim(), p=document.getElementById("appStopP").value, er=document.getElementById("appStopErr");
+      if(!u||!p){ er.textContent="أدخل اسم المستخدم وكلمة المرور"; return; }
+      er.textContent="جارٍ التشغيل…";
+      try{ const r=await sbCall("admin_set_app_state",{p_admin:u,p_pass:p,p_enabled:true,p_message:null});
+        document.getElementById("appStopP").value="";
+        if(r&&r.ok){ er.textContent="تم — جارٍ إعادة التحميل…"; setTimeout(()=>location.reload(),600); } else er.textContent=(r&&r.msg)||"تعذّر التشغيل"; }
+      catch(e){ er.textContent="تعذّر الاتصال: "+e.message; } };
+    document.getElementById("appStopGo").onclick=go;
+    document.getElementById("appStopP").addEventListener("keydown",e=>{ if(e.key==="Enter") go(); });
+  }
+  document.getElementById("appStopMsg").textContent=msg||"أوقف المدير التطبيق مؤقتاً. سيعود قريباً.";
+  appStopShown=true;
+}
+appCheckState(); setInterval(appCheckState,60000);
 if(isTvMode()) startTvMode();
 
 /* ---------- سحب العقود الساعي من داشبورد NHC — قراءة ورفع مشتركان (لوحة الإدارة + شاشة التلفزيون) ----------

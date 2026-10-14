@@ -69,6 +69,18 @@
 11. **`tv_revenue.sql`** — المعتمدة لـ: `admin_load_tv_alloc` (contracts/status/value), `get_tv_contracts` (مع fin/cash), `get_tv_period_projects` (مع fin/cash), `get_dashboard_targets` (مع rev_*), `tv_project_value`, `tv_rev_params`, `admin_load_tv_rev`, `tv_rev_key`, `tv_revenue_data` (داخلية), `get_tv_revenue(p_user,p_pass,p_year,p_month)`, `tv_revenue_breakdown(p_sector)` (للتدقيق)، ومستهدفات الدانيات.
 12. **`tv_sales_force.sql`** — `tv_channel_daily`, `tv_employee_daily`, `tv_avail_type`, `admin_load_tv_force` (channels/employees/avail), `get_tv_force`, `tv_price_daily`, `admin_load_tv_prices`, `get_tv_prices`.
 
+13. **`app_control.sql`** — مفتاح إيقاف/تشغيل التطبيق بالكامل (انظر 2.1).
+
+### 2.1 إيقاف / تشغيل التطبيق بالكامل (`app_control.sql`)
+- **الإيقاف على السيرفر:** `admin_set_app_state(p_admin,p_pass,p_enabled,p_message)` (أدمن + `crypt()`) ⇒ `app_control_apply()` يحفظ صلاحيات
+  `PUBLIC/anon/authenticated` على كل جداول ودوال `public` في `app_control_saved` ثم يسحبها (REVOKE). فيتوقف الدخول والتطبيق والشاشة والرفع
+  حتى من نسخة قديمة من الملف. **التشغيل** يعيد الصلاحيات المحفوظة كما كانت بالضبط ويمسحها، ثم `notify pgrst, 'reload schema'`.
+- يبقى متاحاً أثناء الإيقاف فقط: `get_app_state()` و`admin_set_app_state` (القائمة في `app_control_keep`). السجل في `app_control_log`.
+- **الواجهة:** لوحة الإدارة ← تبويب «إيقاف / تشغيل التطبيق» (`loadAppControl`/`setAppControl`). شاشة الإيقاف المشتركة (`appCheckState` كل 60 ث
+  و`appShowStopped`) في منطقة كود الشاشة فتنتقل لـ `NHC_Live_Board.html`؛ فيها إعادة التشغيل بحساب أدمن (لا تُحفظ البيانات). `tryUnlock` يفحص الحالة قبل الدخول.
+- إن شُغّلت ملفات SQL أخرى **أثناء الإيقاف**: الدوال الجديدة تأخذ صلاحيات افتراضية ⇒ `select app_control_apply();` أو أوقف من جديد.
+- اختبار: `stoptest.js` (شاشة الإيقاف + إعادة التشغيل)؛ وعلى Postgres المحلي: إيقاف ثم تشغيل يعيد بصمة الصلاحيات نفسها.
+
 كل الملفات **آمنة لإعادة التشغيل**. عند تعديل دالة موجودة في أكثر من ملف: عدّل التعريف في **الملف الأحدث** (غالباً `tv_revenue.sql` أو `tv_sales_force.sql`) وأرسله.
 
 ---
