@@ -62,6 +62,7 @@ create index if not exists app_session_user on app_session (username);
 -- الدوال وصلاحياتها: user = أي جلسة · fin = جلسة بصلاحية مالية · admin = جلسة أدمن · self = الدالة تتحقق من كلمة المرور بنفسها
 -- (دوال admin_* الحالية). ما ليس هنا: get_* ⇒ user، admin_* ⇒ self، غير ذلك مرفوض.
 create table if not exists api_allow (fn text primary key, role text not null check (role in ('user', 'fin', 'admin', 'self')));
+alter table api_allow enable row level security;   -- تُقرأ داخل البوابة فقط
 insert into api_allow (fn, role) values
   ('get_tv_prices', 'fin'), ('get_tv_revenue', 'fin'), ('get_tv_revenue_v2', 'fin'), ('tv_revenue_breakdown', 'fin'),
   ('get_my_permissions', 'self'), ('mark_onboarded', 'self'), ('mark_onboarded_v2', 'user'),
@@ -71,6 +72,7 @@ on conflict (fn) do update set role = excluded.role;
 
 -- مفاتيح مالية تُحذف من نتائج هذه الدوال لمن لا يملك صلاحية مالية (العدّادات تبقى)
 create table if not exists api_fin_strip (fn text primary key, keys text[] not null);
+alter table api_fin_strip enable row level security;   -- تُقرأ داخل البوابة فقط
 insert into api_fin_strip (fn, keys) values
   ('get_tv_contracts', '{fin,cash}'),
   ('get_tv_period_projects', '{fin,cash}'),
@@ -80,6 +82,7 @@ on conflict (fn) do update set keys = excluded.keys;
 
 -- الجداول المسموح قراءتها عبر api_read
 create table if not exists api_read_allow (tbl text primary key);
+alter table api_read_allow enable row level security;   -- تُقرأ داخل البوابة فقط
 insert into api_read_allow (tbl) values
   ('bank_rates'), ('dev_challenges'), ('dev_eval_criteria'), ('dev_eval_scores'), ('market_price_stats'), ('news_items'),
   ('project_blocked_stats'), ('project_dev_eval'), ('project_istisna_stats'), ('project_model_stats'), ('project_segment_stats'),
