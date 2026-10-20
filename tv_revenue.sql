@@ -98,8 +98,26 @@ alter table tv_rev_params add column if not exists collected numeric;
 alter table tv_rev_params add column if not exists received numeric;
 alter table tv_rev_params add column if not exists remaining numeric;
 alter table tv_rev_params add column if not exists coll_as_of date;
+-- ورقة «مفتاح المشاريع والمصادر» (إن وُجدت بالملف): أكواد المشروع بنظام التخصيص (قد تكون أكثر من كود) وبنظام المالية،
+-- والمدينة، والنطاق (محتسب · مستبعد مباع · الدانيات مالي فقط) — الربط بالكود لا بالاسم
+alter table tv_rev_params add column if not exists alloc_codes text[];
+alter table tv_rev_params add column if not exists fin_code text;          -- null = لا يوجد حساب مالي
+alter table tv_rev_params add column if not exists scope text;
+alter table tv_rev_params add column if not exists city text;
+-- نسبة الدفعة النقدية من ورقة السنة نفسها: المستحق النقدي ÷ (قيمة عقود السنة − المستحق البنكي ÷ 20%)
+alter table tv_rev_params add column if not exists y_cash_pct numeric;
+-- «مستهدف الإيراد التراكمي ≤ السنة» من الورقة المالية (يشمل الدانيات)
+alter table tv_rev_params add column if not exists target_cum_y numeric;
 alter table tv_rev_params enable row level security;
 drop policy if exists tv_rev_params_read on tv_rev_params;
+-- تواريخ المصادر وأعداد المشاريع (ورقة «مفتاح المشاريع والمصادر» A3:B9): تاريخ القطع، لقطة نظام التخصيص، تقرير المالية...
+create table if not exists tv_rev_meta (
+  k text primary key,
+  v text,
+  ord integer not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table tv_rev_meta enable row level security;
 
 -- مفتاح مطابقة أسماء المشاريع بين جدول الإيرادات وملف التخصيص: بلا مسافات وشرطات و«NHC»
 create or replace function tv_rev_key(p text)
@@ -110,7 +128,8 @@ as $$
   select nullif(regexp_replace(lower(coalesce(tv_norm_name(p), '')), '(nhc|[[:space:]\-–—·_.,()]+)', '', 'g'), '')
 $$;
 
-create or replace function admin_load_tv_rev(p_admin text, p_pass text, p_rows jsonb)
+drop function if exists admin_load_tv_rev(text, text, jsonb);
+create or replace function admin_load_tv_rev(p_admin text, p_pass text, p_rows jsonb, p_meta jsonb default null)
 returns jsonb
 language plpgsql
 security definer
@@ -127,8 +146,14 @@ begin
     return jsonb_build_object('ok', false, 'msg', 'غير مصرح — تحقق من بيانات الدخول وصلاحية الإدمن');
   end if;
   delete from tv_rev_params where true;
+  delete from tv_rev_meta where true;
+  insert into tv_rev_meta (k, v, ord)
+  select btrim(m->>'k'), m->>'v', o::int from jsonb_array_elements(coalesce(p_meta, '[]'::jsonb)) with ordinality t(m, o)
+  where nullif(btrim(m->>'k'), '') is not null
+  on conflict (k) do update set v = excluded.v, ord = excluded.ord, updated_at = now();
   insert into tv_rev_params (name, norm, sector, is_region, excluded, cash_pct, cum_value, cash_due, bank_due, target_cum, as_of, target_year, due_year,
-                             y_value, y_bank_due, y_cash_due, year_only, billed, collected, received, remaining, coll_as_of)
+                             y_value, y_bank_due, y_cash_due, year_only, billed, collected, received, remaining, coll_as_of,
+                             alloc_codes, fin_code, scope, city, y_cash_pct, target_cum_y)
   select distinct on (btrim(r->>'name')) btrim(r->>'name'), coalesce(tv_norm_name(r->>'name'), btrim(r->>'name')),
          nullif(btrim(r->>'sector'), ''), coalesce((r->>'is_region')::boolean, false), coalesce((r->>'excluded')::boolean, false),
          nullif(r->>'cash_pct', '')::numeric, nullif(r->>'cum_value', '')::numeric, nullif(r->>'cash_due', '')::numeric,
@@ -137,7 +162,11 @@ begin
          nullif(r->>'y_value', '')::numeric, nullif(r->>'y_bank_due', '')::numeric, nullif(r->>'y_cash_due', '')::numeric,
          coalesce((r->>'year_only')::boolean, false),
          nullif(r->>'billed', '')::numeric, nullif(r->>'collected', '')::numeric, nullif(r->>'received', '')::numeric,
-         nullif(r->>'remaining', '')::numeric, nullif(r->>'coll_as_of', '')::date
+         nullif(r->>'remaining', '')::numeric, nullif(r->>'coll_as_of', '')::date,
+         case when jsonb_typeof(r->'alloc_codes') = 'array' and jsonb_array_length(r->'alloc_codes') > 0
+              then array(select btrim(x) from jsonb_array_elements_text(r->'alloc_codes') x where btrim(x) <> '') end,
+         nullif(btrim(r->>'fin_code'), ''), nullif(btrim(r->>'scope'), ''), nullif(btrim(r->>'city'), ''),
+         nullif(r->>'y_cash_pct', '')::numeric, nullif(r->>'target_cum_y', '')::numeric
   from jsonb_array_elements(p_rows) r
   where nullif(btrim(r->>'name'), '') is not null
   order by btrim(r->>'name');
@@ -362,12 +391,24 @@ stable
 security definer
 set search_path to 'public'
 as $$
-  with params as (select * from tv_rev_params where not is_region),
+  -- مشاريع الورقة المالية (غير صفوف المناطق)؛ in_year = للمشروع أرقام بورقة السنة (الإيراد/المستهدف)
+  with params as (
+    select *, (y_value is not null or target_year is not null or year_only) as in_year
+    from tv_rev_params where not is_region
+  ),
+  has_key as (select exists(select 1 from params where alloc_codes is not null) as k),
   apps as (
     select project_name, max(app_name) as app from (
       select project_name, app_name from tv_project_app
       union all select project_name, app_name from tv_unit_status where app_name is not null
     ) x group by 1
+  ),
+  -- أكواد كل مشروع NHC بملف التخصيص (للربط بالكود — ورقة «مفتاح المشاريع والمصادر»)
+  codes as (
+    select project_name, array_agg(distinct project_code) as codes from (
+      select project_name, project_code from tv_project_value where kind = 'nhc' and project_code <> ''
+      union select project_name, project_code from tv_unit_status where kind = 'nhc' and project_code <> ''
+    ) z group by 1
   ),
   names0 as (
     select v.project_name, min(v.first_date) as first_date, sum(v.fin_sum + v.cash_sum) as value
@@ -375,47 +416,58 @@ as $$
     union all
     select distinct d.project_name, null::date, 0 from tv_contract_daily d
     where d.kind = 'nhc' and d.project_name <> '' and not exists (select 1 from tv_project_value v where v.project_name = d.project_name)
+    union all
+    select distinct u.project_name, null::date, 0 from tv_unit_status u
+    where u.kind = 'nhc' and u.project_name <> '' and not exists (select 1 from tv_project_value v where v.project_name = u.project_name)
+      and not exists (select 1 from tv_contract_daily d where d.kind = 'nhc' and d.project_name = u.project_name)
   ),
   names as (
-    select n.project_name, a.app, n.first_date, n.value, tv_rev_key(n.project_name) as k1, tv_rev_key(a.app) as k2
-    from names0 n left join apps a using (project_name)
+    select n.project_name, a.app, n.first_date, n.value, tv_rev_key(n.project_name) as k1, tv_rev_key(a.app) as k2, c.codes
+    from names0 n left join apps a using (project_name) left join codes c using (project_name)
   ),
   pk as (select p.*, tv_rev_key(p.name) as k from params p),
-  -- لكل مشروع بملف التخصيص: صفّه بجدول الإيرادات — الاسم أو اسم التطبيق: مطابق، ثم بلا مسافات/شرطات/NHC،
-  -- ثم أحدهما يحوي الآخر (الأطول أولاً)
+  -- لكل مشروع بملف التخصيص صفّه بالورقة المالية: بالكود أولاً (إن وُجدت ورقة المفتاح)، وإلا بالاسم أو اسم التطبيق:
+  -- مطابق، ثم بلا مسافات/شرطات/NHC، ثم أحدهما يحوي الآخر (الأطول أولاً). المشروع الذي له أكواد بالمفتاح لا يُطابَق بالاسم
   cand as (
-    select n.project_name, p.name, p.excluded, p.cash_pct,
-           case when p.norm in (tv_norm_name(n.project_name), tv_norm_name(n.app)) then 0
-                when p.k in (n.k1, n.k2) then 1 else 2 end as rk, length(p.k) as kl
-    from names n join pk p on p.k is not null and (
-      p.norm in (tv_norm_name(n.project_name), tv_norm_name(n.app)) or p.k in (n.k1, n.k2)
-      or (length(p.k) >= 4 and ((n.k1 is not null and length(n.k1) >= 4 and (strpos(n.k1, p.k) > 0 or strpos(p.k, n.k1) > 0))
-                             or (n.k2 is not null and length(n.k2) >= 4 and (strpos(n.k2, p.k) > 0 or strpos(p.k, n.k2) > 0)))))
+    select n.project_name, p.name, p.excluded, p.cash_pct, p.y_cash_pct, p.in_year, p.scope,
+           case when p.alloc_codes is not null and n.codes && p.alloc_codes then -1
+                when p.norm in (tv_norm_name(n.project_name), tv_norm_name(n.app)) then 0
+                when p.k in (n.k1, n.k2) then 1 else 2 end as rk, length(coalesce(p.k, '')) as kl
+    from names n join pk p on (p.alloc_codes is not null and n.codes && p.alloc_codes)
+      or (p.alloc_codes is null and p.k is not null and (
+        p.norm in (tv_norm_name(n.project_name), tv_norm_name(n.app)) or p.k in (n.k1, n.k2)
+        or (length(p.k) >= 4 and ((n.k1 is not null and length(n.k1) >= 4 and (strpos(n.k1, p.k) > 0 or strpos(p.k, n.k1) > 0))
+                               or (n.k2 is not null and length(n.k2) >= 4 and (strpos(n.k2, p.k) > 0 or strpos(p.k, n.k2) > 0))))))
   ),
   best as (
-    select distinct on (project_name) project_name, name, excluded, cash_pct from cand
+    select distinct on (project_name) project_name, name, excluded, cash_pct, y_cash_pct, in_year, scope from cand
     order by project_name, rk, kl desc, excluded desc
   ),
   pas as (select max(as_of) as d from tv_rev_params),
-  -- المستبعد: مستبعد بالجدول، أو دانية، أو غير مطابق للجدول وله عقود قبل تاريخه (مشروع قديم اسمه مختلف —
-  -- الجدول يشمل كل المشاريع العاملة حتى تاريخه). غير المطابق الجديد (أول عقد بعد تاريخ الجدول) يُحسب بمتوسط قطاعه
-  -- الدانيات داخل النطاق دائماً (حتى لو «مستبعدة» بجدول الإيرادات)؛ نسبتها النقدية صفر — لا دفعة مقدمة نقدية
-  -- لها بجدول الإيرادات (إيرادها من التمويل البنكي فقط)
   pm0 as (
-    select n.*, b.name as pname, b.excluded as b_excl, b.cash_pct as b_pct,
+    select n.*, b.name as pname, b.excluded as b_excl, b.cash_pct as b_pct, b.y_cash_pct as b_ypct, coalesce(b.in_year, false) as b_in_year,
            (tv_norm_name(n.project_name) like '%دانيه%' or coalesce(tv_norm_name(n.app), '') like '%دانيه%'
-            or coalesce(tv_norm_name(b.name), '') like '%دانيه%') as danyat
+            or coalesce(tv_norm_name(b.name), '') like '%دانيه%' or coalesce(b.scope, '') like '%دانيات%') as danyat
     from names n left join best b using (project_name)
   ),
+  -- المستبعد:
+  --  • تراكمي (excl): مستبعد بالجدول (المباع)، أو غير مطابق وله عقود قبل تاريخ الجدول (مشروع قديم) — الدانيات داخل دائماً.
+  --  • سنة p_year (excl_y): نفسه، لكن المشروع الموجود بورقة السنة المالية يُحتسب ولو كان «مستبعداً» تراكمياً — الورقة
+  --    المالية تجمع مستحقه في إجماليها، فيطابق مجموع الشاشة إجمالي الورقة.
+  --  غير المطابق الجديد (أول عقد بعد تاريخ الجدول) يُحسب بمتوسط قطاعه في الحالتين.
   pm as (
-    select project_name, app, value, pname, danyat,
-           coalesce(b_pct, case when danyat then 0 end) as cash_pct,
+    select project_name, app, value, pname, danyat, first_date,
+           coalesce(b_pct, b_ypct, case when danyat then 0 end) as cash_pct,
+           coalesce(b_ypct, b_pct, case when danyat then 0 end) as cash_pct_y,
+           (pname is null and not danyat and (select d from pas) is not null and first_date is not null and first_date <= (select d from pas)) as old_unmatched,
            ((coalesce(b_excl, false) and not danyat)
             or (pname is null and not danyat and (select d from pas) is not null and first_date is not null and first_date <= (select d from pas))) as excl,
+           ((coalesce(b_excl, false) and not danyat and not b_in_year)
+            or (pname is null and not danyat and (select d from pas) is not null and first_date is not null and first_date <= (select d from pas))) as excl_y,
            (pname is null) as unmatched
     from pm0
   ),
-  -- متوسط نسبة الدفعة النقدية لكل قطاع (بالأوزان) للمشاريع غير الموجودة بالجدول
+  -- متوسط نسبة الدفعة النقدية لكل قطاع (بالأوزان) للمشاريع غير الموجودة بالجدول — تراكمي ولسنة p_year
   secdef as (
     select sector, sum(cash_due) / nullif(sum(cum_value - coalesce(bank_due, 0) / 0.2), 0) as pct
     from params where not excluded and cash_pct is not null group by sector
@@ -423,6 +475,14 @@ as $$
   alldef as (
     select sum(cash_due) / nullif(sum(cum_value - coalesce(bank_due, 0) / 0.2), 0) as pct
     from params where not excluded and cash_pct is not null
+  ),
+  secdef_y as (
+    select sector, sum(y_cash_due) / nullif(sum(y_value - coalesce(y_bank_due, 0) / 0.2), 0) as pct
+    from params where y_cash_pct is not null group by sector
+  ),
+  alldef_y as (
+    select sum(y_cash_due) / nullif(sum(y_value - coalesce(y_bank_due, 0) / 0.2), 0) as pct
+    from params where y_cash_pct is not null
   ),
   v as (
     select tv_region(nullif(v.sector, ''), null) as sec, v.project_name, v.cnt, v.fin_sum, v.cash_sum,
@@ -436,7 +496,12 @@ as $$
            sum(cash_sum * cpct) as cash_due, sum(fin_sum * 0.2) as bank_due
     from v group by 1
   ),
-  -- المستهدف التراكمي: من آخر جدول إيرادات مرفوع (صفوف المناطق) إن وُجد، وإلا من dashboard_targets
+  -- المستهدف التراكمي: «مستهدف الإيراد التراكمي ≤ السنة» بالورقة المالية إن وُجد، وإلا جدول المناطق والمشاريع + الدانيات،
+  -- وإلا dashboard_targets
+  tgt_fin as (
+    select sector as sec, sum(target_cum_y) as target_cum from tv_rev_params
+    where is_region and target_cum_y is not null group by 1
+  ),
   tgt_tbl as (
     select sector as sec, sum(target_cum) as target_cum from tv_rev_params
     where is_region and target_cum is not null group by 1
@@ -446,19 +511,19 @@ as $$
            sum(revenue) filter (where year <= p_year) as target_cum, sum(revenue) filter (where year = p_year) as target_year
     from dashboard_targets where scope = 'nhc' group by 1
   ),
-  -- مستهدف الدانيات (الجدول يستبعدها من مستهدفه) — يُضاف لمستهدف الجدول
   tgt_dan as (
     select coalesce(tv_region(sector, null), 'غير محدد') as sec, sum(revenue) filter (where year <= p_year) as target_cum
     from dashboard_targets where scope = 'nhc' and tv_norm_name(project_name) like '%دانيه%' group by 1
   ),
   tg as (
-    select coalesce(b.sec, t.sec) as sec,
-           case when exists(select 1 from tgt_tbl) then coalesce(t.target_cum, 0) + coalesce(dn.target_cum, 0) else b.target_cum end as target_cum,
+    select coalesce(b.sec, t.sec, f.sec) as sec,
+           case when exists(select 1 from tgt_fin) then f.target_cum
+                when exists(select 1 from tgt_tbl) then coalesce(t.target_cum, 0) + coalesce(dn.target_cum, 0)
+                else b.target_cum end as target_cum,
            b.target_year
-    from tgt_db b full join tgt_tbl t using (sec) left join tgt_dan dn on dn.sec = coalesce(b.sec, t.sec)
+    from tgt_db b full join tgt_tbl t using (sec) full join tgt_fin f on f.sec = coalesce(b.sec, t.sec)
+    left join tgt_dan dn on dn.sec = coalesce(b.sec, t.sec, f.sec)
   ),
-  -- ---- سنة p_year فقط (ما تعرضه الشاشة): المستحق من عقود السنة ÷ مستهدف إيراد السنة ----
-  -- مستهدف السنة: من ورقة «إيراد 2026 والتحصيل» بآخر جدول مرفوع (تشمل الدانيات)، وإلا dashboard_targets
   tgy_tbl as (
     select sector as sec, sum(target_year) as target_year from tv_rev_params
     where is_region and target_year is not null group by 1
@@ -468,56 +533,78 @@ as $$
            case when exists(select 1 from tgy_tbl) then t.target_year else b.target_year end as target_year
     from tgt_db b full join tgy_tbl t using (sec)
   ),
-  achy as (
-    select tv_region(nullif(d.sector, ''), null) as sec, sum(d.cnt) as cnt, sum(d.fin_sum + d.cash_sum) as value,
-           sum(d.fin_sum * 0.2) as bank_due,
-           sum(d.cash_sum * coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10)) as cash_due
+  dy as (
+    select tv_region(nullif(d.sector, ''), null) as sec, d.project_name, d.contract_date, d.cnt, d.fin_sum, d.cash_sum,
+           coalesce(pm.cash_pct_y, sdy.pct, (select pct from alldef_y), (select pct from alldef), 0.10) as cpct
     from tv_contract_daily d join pm using (project_name)
-    left join secdef sd on sd.sector = tv_region(nullif(d.sector, ''), null)
-    where d.kind = 'nhc' and not pm.excl
+    left join secdef_y sdy on sdy.sector = tv_region(nullif(d.sector, ''), null)
+    where d.kind = 'nhc' and not pm.excl_y
       and d.contract_date >= make_date(p_year, 1, 1) and d.contract_date < make_date(p_year + 1, 1, 1)
-    group by 1
+  ),
+  achy as (
+    select sec, sum(cnt) as cnt, sum(fin_sum + cash_sum) as value, sum(fin_sum * 0.2) as bank_due, sum(cash_sum * cpct) as cash_due
+    from dy group by 1
   ),
   secs as (select sec from ach union select sec from tg union select sec from achy union select sec from tgy),
-  -- تفصيل لكل مشروع NHC لسنة p_year (لجدول التفصيل بالشاشة): عقود السنة، المستحق بنكي/نقدي، مستهدف إيراد
-  -- السنة للمشروع ومستحقه بجدول الإيرادات (ورقة السنة) للمقارنة
+  -- ---- جدول التفصيل: كل مشاريع الورقة المالية (نفس نطاق الكروت) + مشاريع التخصيص الجديدة غير الموجودة بها ----
   projy as (
-    select d.project_name, mode() within group (order by tv_region(nullif(d.sector, ''), null)) as sec,
-           sum(d.cnt) as cnt, sum(d.fin_sum) as fin, sum(d.cash_sum) as cash
-    from tv_contract_daily d
-    where d.kind = 'nhc' and d.contract_date >= make_date(p_year, 1, 1) and d.contract_date < make_date(p_year + 1, 1, 1)
-    group by 1
+    select project_name, mode() within group (order by sec) as sec, sum(cnt) as cnt, sum(fin_sum) as fin,
+           sum(cash_sum) as cash, sum(cash_sum * cpct) as cashd
+    from dy group by 1
+  ),
+  pcum as (
+    select v.project_name, sum(v.cnt) as cnt, sum(v.fin_sum) as fin, sum(v.cash_sum) as cash, sum(v.cash_sum * v.cpct) as cashd
+    from v group by 1
   ),
   pvsec as (
     select project_name, mode() within group (order by tv_region(nullif(sector, ''), null)) as sec
     from tv_project_value where kind = 'nhc' group by 1
   ),
-  plist as (
-    select pm.project_name, coalesce(py.sec, pv.sec, sp.sector) as sec, pm.pname, pm.danyat, pm.unmatched,
-           coalesce(py.cnt, 0) as cnt, coalesce(py.fin, 0) as fin, coalesce(py.cash, 0) as cash,
-           coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10) as cpct,
-           sp.y_bank_due, sp.y_cash_due, sp.target_year as p_target, sp.billed, sp.collected
-    from pm left join projy py using (project_name) left join pvsec pv using (project_name)
-    left join tv_rev_params sp on sp.name = pm.pname and not sp.is_region
-    left join secdef sd on sd.sector = coalesce(py.sec, pv.sec, sp.sector)
-    where not pm.excl
+  pa as (
+    select pm.project_name, pm.pname, pm.danyat, pm.excl, pm.excl_y, coalesce(py.sec, pv.sec) as sec,
+           coalesce(py.cnt, 0) as y_cnt, coalesce(py.fin, 0) as y_fin, coalesce(py.cash, 0) as y_cash, coalesce(py.cashd, 0) as y_cashd,
+           coalesce(pc.cnt, 0) as c_cnt, coalesce(pc.fin, 0) as c_fin, coalesce(pc.cash, 0) as c_cash, coalesce(pc.cashd, 0) as c_cashd,
+           coalesce(pm.cash_pct_y, sdy.pct, (select pct from alldef_y), (select pct from alldef), 0.10) as cpy,
+           coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10) as cpc
+    from pm left join projy py using (project_name) left join pcum pc using (project_name) left join pvsec pv using (project_name)
+    left join secdef sd on sd.sector = coalesce(py.sec, pv.sec) left join secdef_y sdy on sdy.sector = coalesce(py.sec, pv.sec)
+    where not (pm.excl and pm.excl_y)
   ),
-  d as (
-    select tv_region(nullif(d.sector, ''), null) as sec, d.contract_date,
-           d.fin_sum * 0.2 + d.cash_sum * coalesce(pm.cash_pct, sd.pct, (select pct from alldef), 0.10) as due
-    from tv_contract_daily d join pm using (project_name)
-    left join secdef sd on sd.sector = tv_region(nullif(d.sector, ''), null)
-    where d.kind = 'nhc' and not pm.excl
-      and d.contract_date >= make_date(p_year, 1, 1) and d.contract_date < make_date(p_year + 1, 1, 1)
+  pg as (
+    select coalesce(pname, project_name) as key, bool_and(pname is null) as alloc_only, bool_or(danyat) as danyat,
+           jsonb_agg(distinct project_name) as alloc, mode() within group (order by sec) as sec,
+           sum(y_cnt) as y_cnt, sum(y_fin + y_cash) as y_value, sum(y_fin * 0.2) as y_bank, sum(y_cashd) as y_cashd,
+           sum(c_cnt) filter (where not excl) as c_cnt, sum(c_fin + c_cash) filter (where not excl) as c_value,
+           sum(c_fin * 0.2) filter (where not excl) as c_bank, sum(c_cashd) filter (where not excl) as c_cashd,
+           max(cpy) as cpy, max(cpc) as cpc
+    from pa group by 1
+  ),
+  sp as (select * from params where in_year or not excluded),
+  plist as (
+    select coalesce(sp.name, g.key) as project, g.alloc, coalesce(nullif(sp.sector, ''), g.sec) as sec,
+           (coalesce(g.danyat, false) or coalesce(sp.scope, '') like '%دانيات%') as danyat,
+           (sp.name is null) as alloc_only, (sp.name is not null and g.key is null) as no_alloc,
+           coalesce(g.y_cnt, 0) as y_cnt, coalesce(g.y_value, 0) as y_value, coalesce(g.y_bank, 0) as y_bank, coalesce(g.y_cashd, 0) as y_cashd,
+           coalesce(g.c_cnt, 0) as c_cnt, coalesce(g.c_value, 0) as c_value, coalesce(g.c_bank, 0) as c_bank, coalesce(g.c_cashd, 0) as c_cashd,
+           g.cpy, g.cpc, sp.target_year, coalesce(sp.target_cum_y, sp.target_cum) as target_cum, sp.billed, sp.collected, sp.received,
+           sp.fin_code, sp.alloc_codes, sp.scope, sp.y_bank_due, sp.y_cash_due, coalesce(sp.excluded, false) as excluded,
+           (select k from has_key) as keyed
+    from pg g full join sp on sp.name = g.key
   )
   select jsonb_build_object(
     'ok', true,
     'has_params', exists(select 1 from params),
     'has_value', exists(select 1 from tv_project_value),
-    'target_src', case when exists(select 1 from tv_rev_params where is_region and target_cum is not null) then 'table' else 'targets' end,
+    'has_key', (select k from has_key),
+    'target_src', case when exists(select 1 from tv_rev_params where is_region and (target_cum_y is not null or target_cum is not null)) then 'table' else 'targets' end,
     'params_as_of', (select max(as_of) from tv_rev_params),
     'coll_as_of', (select max(coll_as_of) from tv_rev_params),
     'value_as_of', (select max(updated_at) from tv_project_value),
+    -- تاريخ آخر عقد بملف التخصيص المرفوع: «الإيراد حتى» — ومقام نسبة الإنجاز يُحسب لنفس التاريخ
+    'rev_as_of', (select max(contract_date) from tv_contract_daily where kind = 'nhc' and contract_date <= current_date),
+    'meta', coalesce((select jsonb_object_agg(k, v) from tv_rev_meta), '{}'::jsonb),
+    'meta_order', coalesce((select jsonb_agg(k order by ord) from tv_rev_meta), '[]'::jsonb),
+    'n_sheet', (select count(*) from sp),
     'sectors', coalesce((
       select jsonb_object_agg(s.sec, jsonb_build_object(
         'cnt', coalesce(a.cnt, 0), 'value', coalesce(a.value, 0), 'cash_due', coalesce(a.cash_due, 0), 'bank_due', coalesce(a.bank_due, 0),
@@ -529,40 +616,45 @@ as $$
       left join (select sector as sec, sum(billed) as billed, sum(collected) as collected, sum(received) as received
                  from tv_rev_params where is_region and billed is not null group by 1) cl using (sec)
     ), '{}'::jsonb),
-    -- لقطة أرقام الجدول المرفوع (صفوف المناطق) للتحقق
     'table', coalesce((select jsonb_agg(jsonb_build_object('name', name, 'sector', sector, 'cum_value', cum_value,
-        'cash_due', cash_due, 'bank_due', bank_due, 'target_cum', target_cum, 'target_year', target_year, 'due_year', due_year))
+        'cash_due', cash_due, 'bank_due', bank_due, 'target_cum', coalesce(target_cum_y, target_cum), 'target_year', target_year, 'due_year', due_year,
+        'y_bank_due', y_bank_due, 'y_cash_due', y_cash_due))
         from tv_rev_params where is_region), '[]'::jsonb),
-    -- نسبة الدفعة النقدية المطبّقة لكل مشروع NHC (لعمود الإيراد بجدول المشاريع) — null = مستبعد
+    -- نسبة الدفعة النقدية لسنة p_year لكل مشروع NHC (لعمود الإيراد بجدول المشاريع) — null = مستبعد
     'pct', coalesce((
-      select jsonb_object_agg(pm.project_name, case when pm.excl then null
-             else coalesce(pm.cash_pct, (select pct from alldef), 0.10) end) from pm
+      select jsonb_object_agg(pm.project_name, case when pm.excl_y then null
+             else coalesce(pm.cash_pct_y, (select pct from alldef_y), (select pct from alldef), 0.10) end) from pm
     ), '{}'::jsonb),
-    'sec_pct', coalesce((select jsonb_object_agg(sector, pct) from secdef where sector is not null), '{}'::jsonb),
+    'sec_pct', coalesce((select jsonb_object_agg(sector, pct) from secdef_y where sector is not null), '{}'::jsonb),
     'months', coalesce((
       select jsonb_agg(jsonb_build_object('m', mo, 'sector', sec, 'due', due))
-      from (select extract(month from contract_date)::int as mo, sec, sum(due) as due from d group by 1, 2) x
+      from (select extract(month from contract_date)::int as mo, sec, sum(fin_sum * 0.2 + cash_sum * cpct) as due from dy group by 1, 2) x
     ), '[]'::jsonb),
     'days', coalesce((
       select jsonb_agg(jsonb_build_object('d', dd, 'sector', sec, 'due', due))
-      from (select extract(day from contract_date)::int as dd, sec, sum(due) as due from d
+      from (select extract(day from contract_date)::int as dd, sec, sum(fin_sum * 0.2 + cash_sum * cpct) as due from dy
             where extract(month from contract_date)::int = p_month group by 1, 2) y
     ), '[]'::jsonb),
+    -- جدول التفصيل: y_* لسنة p_year و c_* تراكمي؛ الحقول القديمة (cnt/value/bank_due/cash_due/due/target) = السنة
     'projects', coalesce((
-      select jsonb_agg(jsonb_build_object('project', project_name, 'table_name', pname, 'sector', sec, 'danyat', danyat, 'new', unmatched,
-        'cnt', cnt, 'value', fin + cash, 'bank_due', fin * 0.2, 'cash_due', cash * cpct, 'due', fin * 0.2 + cash * cpct, 'cash_pct', cpct,
-        'target', p_target, 'billed', billed, 'collected', collected, 'sheet_due', case when y_bank_due is null and y_cash_due is null then null else coalesce(y_bank_due, 0) + coalesce(y_cash_due, 0) end)
-        order by fin * 0.2 + cash * cpct desc)
-      from plist where cnt > 0 or coalesce(p_target, 0) > 0
+      select jsonb_agg(jsonb_build_object('project', project, 'alloc', alloc, 'sector', sec, 'danyat', danyat,
+        'new', alloc_only, 'no_alloc', no_alloc, 'excluded', excluded, 'scope', scope,
+        'codes', to_jsonb(alloc_codes), 'fin_code', fin_code, 'no_fin', keyed and not alloc_only and fin_code is null,
+        'cnt', y_cnt, 'value', y_value, 'bank_due', y_bank, 'cash_due', y_cashd, 'due', y_bank + y_cashd, 'cash_pct', cpy,
+        'c_cnt', c_cnt, 'c_value', c_value, 'c_bank_due', c_bank, 'c_cash_due', c_cashd, 'c_due', c_bank + c_cashd, 'c_cash_pct', cpc,
+        'target', target_year, 'target_cum', target_cum, 'billed', billed, 'collected', collected, 'received', received,
+        'sheet_due', case when y_bank_due is null and y_cash_due is null then null else coalesce(y_bank_due, 0) + coalesce(y_cash_due, 0) end)
+        order by y_bank + y_cashd desc, project)
+      from plist where not alloc_only or y_cnt > 0 or c_cnt > 0
     ), '[]'::jsonb),
+    -- مشاريع الورقة المالية التي لم تُطابَق أي مشروع بملف التخصيص (بالكود أو الاسم) — تُعرض ظاهرة لا تُخفى
     'unmatched', coalesce((
-      select jsonb_agg(p.name order by p.name) from params p
-      where not p.excluded and not exists (select 1 from pm where pm.pname = p.name)
+      select jsonb_agg(jsonb_build_object('name', project, 'codes', to_jsonb(alloc_codes), 'fin_code', fin_code, 'danyat', danyat) order by project)
+      from plist where no_alloc and not excluded
     ), '[]'::jsonb),
-    -- مشاريع NHC بملف التخصيص لم تُطابق الجدول: القديمة خارج الحساب، والجديدة بمتوسط قطاعها
     'dropped', coalesce((select jsonb_agg(jsonb_build_object('project', project_name, 'value', value) order by value desc)
-      from pm where unmatched and excl and value > 0), '[]'::jsonb),
-    'new_projects', coalesce((select jsonb_agg(project_name order by project_name) from pm where unmatched and not excl), '[]'::jsonb)
+      from pm where unmatched and excl and excl_y and value > 0), '[]'::jsonb),
+    'new_projects', coalesce((select jsonb_agg(project_name order by project_name) from pm where unmatched and not excl_y), '[]'::jsonb)
   );
 $$;
 revoke all on function tv_revenue_data(int, int) from public;

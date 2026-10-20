@@ -1839,6 +1839,12 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvRR .p{font-weight:800;border-radius:99px;padding:0 7px;font-size:12.5px;justify-self:center}
 .tvRR .p.good{background:#E1F5EC;color:#007a54}.tvRR .p.bad{background:#FBE5DC;color:#C2491E}.tvRR .p.none{color:#B9B1A0}
 .tvRR .s{color:#767368}
+.tvRevModeSeg{display:none}
+html.tvRev .tvRevModeSeg{display:inline-flex}
+.tvRR .nofin{font-size:11.5px;color:#8b98a9;border:1px dashed #3a4656;border-radius:99px;padding:0 7px}
+.tvRR .n small.bad{background:#3d1a14;color:#ff7a5c}
+.tvRR .n small.new{background:#0f3a26;color:#3fd08a}
+.tvGauge .gRun small,.tvGauge .gColl small{font-size:11px;color:#8a877c;font-weight:600}
 .tvGauge .gColl{font-size:11.5px;color:#5e5a4f;white-space:nowrap;margin-top:1px}
 .tvGauge .gColl b{color:#0B4332}
 /* زر العقود/الإيرادات بالعنوان، وعمود الإيراد بجدول المشاريع */
@@ -3452,6 +3458,7 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
   <div class="tvHead">
     <div class="tvTitle"><b>NHC</b> · شاشة المبيعات <span class="tvLive"><i></i>مباشر</span></div>
     <span class="tvSeg tvMetricSeg" id="tvMetricSeg" title="تقليب العدّادات والمنحنيات بين العقود والإيرادات"><button type="button" data-v="cnt">العقود</button><button type="button" data-v="rev">الإيرادات</button></span>
+    <span class="tvSeg tvRevModeSeg" id="tvRevModeSeg" title="الإيرادات: السنة الحالية أو تراكمي منذ بداية المشاريع — الاختيار يُحفظ كافتراضي بهذا الجهاز"><button type="button" data-rm="year">السنة</button><button type="button" data-rm="cum">تراكمي</button></span>
     <span class="tvRegionChip" id="tvRegionChip" title="العودة للمملكة"></span>
     <div class="tvPageDots" id="tvPageDots"><i class="on"></i><i></i></div>
     <div class="tvClock" id="tvClock"></div>
@@ -9904,6 +9911,22 @@ function tvMoney(n){ n=Number(n)||0; const a=Math.abs(n);
 /* شاشة الإيرادات بتسجيل دخول فقط (أي مستخدم فعّال بالتطبيق)، ولا تُفتح تلقائياً أبداً: الشاشة تبدأ دائماً
    بالعقود، وبيانات الدخول بذاكرة الصفحة فقط — تُنسى عند إعادة التحميل */
 let tvMetric="cnt", tvRevCreds=null;
+/* الإيرادات: السنة الحالية (افتراضي) أو تراكمي منذ بداية المشاريع — يُحفظ بهذا الجهاز كخيار افتراضي، أو بالرابط &rev=cum|year */
+let tvRevMode=(()=>{ const q=tvParam("rev"); if(q==="cum"||q==="year") return q; try{ return localStorage.getItem("tv_rev_mode")==="cum"?"cum":"year"; }catch(e){ return "year"; } })();
+function tvSetRevMode(m){ tvRevMode=m==="cum"?"cum":"year"; try{ localStorage.setItem("tv_rev_mode",tvRevMode); }catch(e){} tvRenderAll(); }
+/* «الإيراد حتى»: تاريخ آخر عقد بملف التخصيص المرفوع — ومقام النسبة (المطلوب حتى) يُحسب لنفس التاريخ، لا لتاريخ اليوم */
+function tvRevAsOf(RV,ctx){ const s=RV&&RV.rev_as_of; if(s){ const [y,m,d]=String(s).slice(0,10).split("-").map(Number); if(y) return new Date(y,m-1,d); } return ctx.asOf; }
+function tvDmy(d){ if(!d) return ""; if(typeof d==="string"){ const p=d.slice(0,10).split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; } return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`; }
+/* الإنجاز التراكمي: المستحق منذ بداية المشاريع ÷ (مستهدف السنوات السابقة + مستهدف السنة × مسار السنة حتى تاريخ الإيراد) */
+function tvCumProg(due,tcum,tyear,ctx){
+  const tgt=Number(tcum)>0?Number(tcum):null, ty=Math.max(0,Number(tyear)||0);
+  if(!tgt) return {ytd:due,tgt:null,tgtToDate:null,pct:null,yearPct:null,pacePct:null,expPct:null,reqDaily:null,runRate:null,deficit:null,status:"none"};
+  const frac=tvExpFrac(ctx.asOf,ctx.curY), toDate=Math.max(1,tgt-Math.min(ty,tgt)+Math.min(ty,tgt)*frac);
+  const pct=Math.round(due/toDate*100), y0=new Date(ctx.curY,0,1), y1=new Date(ctx.curY+1,0,1);
+  const daysLeft=Math.max(1,Math.round((y1-ctx.asOf)/864e5)), daysDone=Math.max(1,Math.round((ctx.asOf-y0)/864e5));
+  return {ytd:due,tgt,tgtToDate:Math.round(toDate),pct,yearPct:Math.round(due/tgt*100),pacePct:pct,expPct:Math.round(toDate/tgt*100),
+    reqDaily:Math.max(0,tgt-due)/daysLeft,runRate:due/daysDone,deficit:Math.round(toDate-due),status:tvPaceStatus(pct)};
+}
 function tvSetMetric(v,init){
   if(v==="rev"&&!tvRevCreds){ tvRevOpen(); return; }
   tvMetric=v==="rev"?"rev":"cnt";
@@ -10180,22 +10203,30 @@ function tvRenderBand(R,ctx){
    المستحق = قيمة العقود الممولة × 20% + النقدية × نسبة جدول دفعات المشروع؛ «بالجدول» = المستحق بجدول الإيرادات
    المرفوع (ورقة السنة) لنفس المشروع، للمقارنة ---------- */
 function tvRenderRevDetail(R,ctx){
-  const RV=R.revenue&&R.revenue.ok?R.revenue:null, region=ctx.region||null, regSfx=region?` · ${tvRegionLabel(region)}`:"";
-  const tbl=RV&&RV.params_as_of?String(RV.params_as_of).split("-").reverse().join("/"):"";
-  $("tvDestTitle").innerHTML=`تفصيل الإيرادات — عقود ${ctx.curY}${regSfx} <small>· المستحق = البنكي × 20% + النقدي × نسبة جدول دفعات المشروع${tbl?` · «بالجدول» = جدول الإيرادات حتى ${tbl}`:""}</small>`;
+  const RV=R.revenue&&R.revenue.ok?R.revenue:null, region=ctx.region||null, regSfx=region?` · ${tvRegionLabel(region)}`:"", cum=tvRevMode==="cum";
+  const revS=tvDmy(tvRevAsOf(RV,ctx)), collS=RV&&RV.coll_as_of?tvDmy(String(RV.coll_as_of)):"";
+  $("tvDestTitle").innerHTML=`<span title="المستحق = البنكي × 20% + النقدي × نسبة جدول دفعات المشروع">تفصيل الإيرادات — ${cum?"تراكمي":`عقود ${ctx.curY}`}${regSfx}</span> <small>· الإيراد حتى ${revS}${collS?` · التحصيل حتى ${collS}`:""}</small>`;
   const tr=$("tvDestTrack"); delete tr.dataset.base;
   const empty=msg=>{ $("tvDestHd").innerHTML=""; $("tvDestTot").textContent=""; tr.innerHTML=`<div class="tvEmpty" style="font-size:16px;padding:8px">${msg}</div>`; };
   if(region==="dev") return empty("الإيراد لمشاريع NHC فقط");
   if(!RV||!Array.isArray(RV.projects)) return empty("شغّل tv_revenue.sql (النسخة الأخيرة) على القاعدة");
-  const list=RV.projects.filter(p=>!region||tvSecNorm(p.sector)===region);
-  if(!list.length) return empty("لا مشاريع — ارفع جدول الإيرادات ثم ملف التخصيص");
-  const sum=list.reduce((a,p)=>a+Number(p.due||0),0), tg=list.reduce((a,p)=>a+Number(p.target||0),0);
-  $("tvDestTot").textContent=`${fmt(list.length)} مشروعاً · المستحق ${tvMoney(sum)}${tg?` من مستهدف ${tvMoney(tg)}`:""}`;
-  $("tvDestHd").innerHTML=`<div class="tvRR h"><span>المشروع</span><span>عقود ${ctx.curY}</span><span>قيمة العقود</span><span>بنكي (20%)</span><span>نقدي (النسبة)</span><span>المستحق</span><span>مستهدف السنة</span><span>من مستهدف السنة</span><span>بالجدول</span><span>التحصيل${RV.coll_as_of?` حتى ${String(RV.coll_as_of).split("-").reverse().slice(0,2).join("/")}`:""}</span></div>`;
+  const all=RV.projects.filter(p=>!region||tvSecNorm(p.sector)===region);
+  if(!all.length) return empty("لا مشاريع — ارفع جدول الإيرادات ثم ملف التخصيص");
+  const due=p=>Number(cum?p.c_due:p.due)||0, tgt=p=>Number(cum?p.target_cum:p.target)||0;
+  const list=[...all].sort((a,b)=>due(b)-due(a)||tgt(b)-tgt(a));
+  const inSheet=list.filter(p=>!p.new), extra=list.length-inSheet.length;
+  const sum=list.reduce((a,p)=>a+due(p),0), tg=list.reduce((a,p)=>a+tgt(p),0);
+  const mCnt=RV.meta?Number(Object.entries(RV.meta).find(([k])=>/عدد المشاريع.*المالية/.test(k))?.[1])||null:null;
+  /* نفس نطاق الكروت: كل مشاريع الورقة المالية (والجديدة بملف التخصيص بمتوسط منطقتها) */
+  $("tvDestTot").textContent=`${fmt(inSheet.length)} مشروعاً بالورقة المالية${!region&&mCnt&&mCnt!==inSheet.length?` (المفتاح ${fmt(mCnt)} ⚠)`:""}${extra?` + ${fmt(extra)} جديد`:""} · المستحق ${tvMoney(sum)}${tg?` من مستهدف ${tvMoney(tg)}`:""}`;
+  $("tvDestHd").innerHTML=`<div class="tvRR h"><span>المشروع</span><span>عقود ${cum?"تراكمي":ctx.curY}</span><span>قيمة العقود</span><span>بنكي (20%)</span><span>نقدي (النسبة)</span><span>المستحق</span><span>${cum?"المستهدف التراكمي":"مستهدف السنة"}</span><span>من المستهدف</span><span>${cum?`مستهدف ${ctx.curY}`:"بالجدول"}</span><span>التحصيل${collS?` حتى ${collS.slice(0,5)}`:""}</span></div>`;
   const M=v=>v?tvMoney(v):"—";
-  tr.innerHTML=list.map(p=>{ const due=Number(p.due||0), t=Number(p.target||0), pc=t?Math.round(due/t*100):null;
-      const tag=p.danyat?`<small>دانية</small>`:p.new?`<small>جديد</small>`:"";
-      return `<div class="tvRR"><span class="n">${p.project}${tag}${!region&&TV_SECTORS.includes(tvSecNorm(p.sector))?`<em>${tvSecNorm(p.sector)}</em>`:""}</span><span>${fmt(p.cnt||0)}</span><span>${M(p.value)}</span><span>${M(p.bank_due)}</span><span>${M(p.cash_due)} <i>${Math.round(Number(p.cash_pct||0)*1000)/10}%</i></span><b>${M(due)}</b><span>${M(t)}</span><span class="p ${pc==null?"none":pc>=TV_GOOD_PCT?"good":"bad"}">${pc!=null?pc+"%":"—"}</span><span class="s">${p.sheet_due!=null?M(p.sheet_due):"—"}</span><span class="s">${p.billed?`${M(p.collected)} / ${M(p.billed)} <i>${Math.round(Number(p.collected||0)/Number(p.billed)*100)}%</i>`:"—"}</span></div>`; }).join("");
+  tr.innerHTML=list.map(p=>{ const d=due(p), t=tgt(p), pc=t?Math.round(d/t*100):null;
+      const cnt=cum?p.c_cnt:p.cnt, val=cum?p.c_value:p.value, bd=cum?p.c_bank_due:p.bank_due, cd=cum?p.c_cash_due:p.cash_due, cp=cum?p.c_cash_pct:p.cash_pct;
+      const tag=p.no_alloc?`<small class="bad" title="لم يُطابَق بملف التخصيص${p.codes?` — كود التخصيص: ${p.codes.join(" + ")}`:""}">غير مطابق</small>`:p.danyat?`<small>دانية</small>`:p.new?`<small class="new">جديد</small>`:"";
+      const coll=p.no_fin?`<span class="nofin">لا يوجد حساب مالي</span>`:p.billed?`${M(p.collected)} / ${M(p.billed)} <i>${Math.round(Number(p.collected||0)/Number(p.billed)*100)}%</i>`:"—";
+      const tip=[p.codes?`التخصيص: ${p.codes.join(" + ")}`:"",p.fin_code?`المالية: ${p.fin_code}`:"",p.alloc&&p.alloc.length&&p.alloc[0]!==p.project?`بملف التخصيص: ${p.alloc.join("، ")}`:"",p.scope||""].filter(Boolean).join(" · ");
+      return `<div class="tvRR"${tip?` title="${tip.replace(/"/g,"&quot;")}"`:""}><span class="n">${p.project}${tag}${!region&&TV_SECTORS.includes(tvSecNorm(p.sector))?`<em>${tvSecNorm(p.sector)}</em>`:""}</span><span>${fmt(cnt||0)}</span><span>${M(val)}</span><span>${M(bd)}</span><span>${M(cd)} <i>${cp!=null?Math.round(Number(cp)*1000)/10+"%":""}</i></span><b>${M(d)}</b><span>${M(t)}</span><span class="p ${pc==null?"none":pc>=TV_GOOD_PCT?"good":"bad"}">${pc!=null?pc+"%":"—"}</span><span class="s">${cum?M(p.target):(p.sheet_due!=null?M(p.sheet_due):"—")}</span><span class="s">${coll}</span></div>`; }).join("");
 }
 /* المتاح من ملف التخصيص: على المنصة ولدى المطور، لكل من NHC والمطورين */
 function tvAvailGrid(R,L){
@@ -10308,30 +10339,40 @@ function tvRenderGauges(R,ctx){
        جدول دفعات المشروع) مقابل مستهدف إيراد السنة بالمذكرات — والنسبة من المطلوب حتى اليوم (نفس مسار العقود:
        43% من السنة بالربع الرابع)، مع المطلوب حتى اليوم ومستهدف السنة ظاهرين */
     const RV=R.revenue&&R.revenue.ok?R.revenue:null, S=(RV&&RV.sectors)||{};
-    const ready=!!(RV&&RV.has_value&&RV.has_params);
+    const ready=!!(RV&&RV.has_value&&RV.has_params), cum=tvRevMode==="cum";
+    const sw=$("tvRevModeSeg"); if(sw) sw.querySelectorAll("button[data-rm]").forEach(b=>{ b.classList.toggle("on",b.dataset.rm===tvRevMode); if(b.dataset.rm==="year") b.textContent=String(ctx.curY); });
+    /* البسط والمقام لنفس التاريخ: الإيراد من ملف التخصيص حتى آخر عقد فيه، والمطلوب حتى نفس ذلك التاريخ */
+    const revD=tvRevAsOf(RV,ctx), ctxR=Object.assign({},ctx,{asOf:revD}), revS=`${revD.getDate()}/${revD.getMonth()+1}`;
     const sumK=(keys,k)=>keys.reduce((a,x)=>a+(Number((S[x]||{})[k])||0),0);
-    const mk=keys=>{ const due=sumK(keys,"y_due"), tg=sumK(keys,"y_target");
-      const prog=tvYearProg(ready?[{period:`${ctx.curY}-01`,cnt:due}]:[],ready&&tg?tg:null,ctx);
+    const mk=keys=>{
+      if(cum){ const due=sumK(keys,"due"), tg=sumK(keys,"target_cum"), ty=sumK(keys,"y_target");
+        return {prog:tvCumProg(ready?due:0,ready&&tg?tg:null,ty,ctxR), cash:sumK(keys,"cash_due"), bank:sumK(keys,"bank_due"), billed:sumK(keys,"billed"), collected:sumK(keys,"collected")}; }
+      const due=sumK(keys,"y_due"), tg=sumK(keys,"y_target");
+      const prog=tvYearProg(ready?[{period:`${ctx.curY}-01`,cnt:due}]:[],ready&&tg?tg:null,ctxR);
       return {prog, cash:sumK(keys,"y_cash_due"), bank:sumK(keys,"y_bank_due"), billed:sumK(keys,"billed"), collected:sumK(keys,"collected")}; };
-    /* التحصيل من آخر تقرير مالي بجدول الإيرادات (تراكمي، عملاء البيع النقدي): المحصّل المطبَّق ÷ المفوتر */
-    const collD=RV&&RV.coll_as_of?String(RV.coll_as_of).split("-").reverse().slice(0,2).join("/"):"";
+    /* التحصيل من تقرير المالية (تراكمي، عملاء البيع النقدي): المحصّل المطبَّق ÷ المفوتر — تاريخه من ورقة «مفتاح المشاريع والمصادر» */
+    const collD=RV&&RV.coll_as_of?(()=>{ const p=String(RV.coll_as_of).slice(0,10).split("-"); return `${+p[2]}/${+p[1]}`; })():"";
     const mS=v=>{ v=Number(v)||0; return v>=1e9?(v/1e9).toFixed(2).replace(/\.?0+$/,"")+" مليار":v>=1e6?(v>=1e8?Math.round(v/1e6):Math.round(v/1e5)/10)+"م":Math.round(v/1e3)+" ألف"; };
-    const collHtml=x=>x.billed?`<div class="gColl" title="المحصّل المطبَّق من المفوتر — عملاء البيع النقدي، تراكمي من تقرير المالية">تحصيل${collD?` ${collD}`:""}: <b>${mS(x.collected)}</b> من ${mS(x.billed)} · <b>${Math.round(x.collected/x.billed*100)}%</b></div>`:"";
-    const opt=(x,o)=>Object.assign({money:true,
+    const collHtml=x=>x.billed?`<div class="gColl" title="المحصّل المطبَّق من المفوتر — عملاء البيع النقدي، تراكمي من تقرير المالية${collD?` حتى ${tvDmy(String(RV.coll_as_of))}`:""}">التحصيل${collD?` <small>${collD}</small>`:""}: <b>${mS(x.collected)}</b>/${mS(x.billed)} · <b>${Math.round(x.collected/x.billed*100)}%</b></div>`:"";
+    const opt=(x,o)=>Object.assign({money:true,when:ready?`${cum?"تراكمي · ":""}من المطلوب حتى ${revS}`:null,
       note:!RV?"شغّل tv_revenue.sql على القاعدة":!RV.has_params?"ارفع جدول الإيرادات":!RV.has_value?"ارفع ملف التخصيص من جديد":null,
-      run:ready?`<div class="gRun">نقدي <b>${tvMoney(x.cash)}</b> · بنكي <b>${tvMoney(x.bank)}</b></div>${collHtml(x)}`:""},o);
+      run:ready?`<div class="gRun" title="الإيراد المستحق حتى ${tvDmy(revD)} من ملف التخصيص">الإيراد <small>${revS}</small>: نقدي <b>${mS(x.cash)}</b> · بنكي <b>${mS(x.bank)}</b></div>${collHtml(x)}`:""},o);
     const all=mk(Object.keys(S));
     g=tvGaugeHtml("NHC — الإجمالي",all.prog,gp(r=>r.kind==="nhc",null),opt(all,{all:true}));
     TV_SECTORS.forEach(sec=>{ const x=mk([sec]); g+=tvGaugeHtml(`NHC ${sec}`,x.prog,gp(r=>r.kind==="nhc"&&tvSecNorm(r.sector)===sec,sec),opt(x,{sec,sel:tvRegion===sec})); });
+    const nSheet=RV&&RV.n_sheet, mCnt=RV&&RV.meta?Number(Object.entries(RV.meta).find(([k])=>/عدد المشاريع.*المالية/.test(k))?.[1])||null:null;
     g+=tvGaugeHtml("المطورون",{ytd:0,tgt:null,pct:null,status:"none"},gp(r=>r.kind!=="nhc",null),
-      {sec:"dev",sel:tvRegion==="dev",when:"",note:"الإيراد لمشاريع NHC فقط",run:"",sub:"—"});
+      {sec:"dev",sel:tvRegion==="dev",when:"",note:"الإيراد لمشاريع NHC فقط",run:nSheet?`<div class="gRun">${cum?"تراكمي":ctx.curY} · <b>${fmt(nSheet)}</b> مشروعاً بالورقة المالية${mCnt&&mCnt!==nSheet?` <small>(المفتاح ${fmt(mCnt)})</small>`:""}</div>`:"",sub:"—"});
   }
   $("tvGauges").innerHTML=g;
   $("tvGauges").classList.toggle("filtered",!!tvRegion);
   /* وضع الإيرادات: مشاريع NHC بملف التخصيص لم تُطابق جدول الإيرادات — القديمة خارج الحساب، والجديدة بمتوسط قطاعها */
   const rn=$("tvRevNote"), RVn=tvMetric==="rev"&&R.revenue&&R.revenue.ok?R.revenue:null;
-  if(rn){ const dr=(RVn&&RVn.dropped)||[], nw=(RVn&&RVn.new_projects)||[];
-    rn.textContent=RVn&&(dr.length||nw.length)?[dr.length?`خارج حساب الإيراد (لم تُطابق جدول الإيرادات): ${dr.slice(0,4).map(d=>d.project).join("، ")}${dr.length>4?` و${dr.length-4} غيرها`:""}`:"",
+  if(rn){ const dr=(RVn&&RVn.dropped)||[], nw=(RVn&&RVn.new_projects)||[], um=(RVn&&RVn.unmatched)||[];
+    const uName=u=>typeof u==="string"?u:`${u.name}${u.codes&&u.codes.length?` (${u.codes.join(" + ")})`:""}`;
+    rn.textContent=RVn?[`الإيراد حتى ${tvDmy(tvRevAsOf(RVn,ctx))} (ملف التخصيص)`,RVn.coll_as_of?`التحصيل حتى ${tvDmy(String(RVn.coll_as_of))} (تقرير المالية)`:"",
+      um.length?`⚠ غير مطابَق بملف التخصيص (${um.length}): ${um.slice(0,4).map(uName).join("، ")}${um.length>4?` و${um.length-4} غيرها`:""}`:"",
+      dr.length?`خارج حساب الإيراد (لم تُطابق جدول الإيرادات): ${dr.slice(0,4).map(d=>d.project).join("، ")}${dr.length>4?` و${dr.length-4} غيرها`:""}`:"",
       nw.length?`مشاريع جديدة بمتوسط منطقتها: ${nw.slice(0,3).join("، ")}${nw.length>3?` و${nw.length-3} غيرها`:""}`:""].filter(Boolean).join(" · "):""; }
   return progs;
 }
@@ -11235,6 +11276,7 @@ function startTvMode(){
   $("tvGauges").addEventListener("click",e=>{ const g=e.target.closest(".tvGauge"); if(!g) return;
     if(g.dataset.sec) tvSetRegion(g.dataset.sec); else if(g.dataset.all) tvSetRegion(null); });
   $("tvRegionChip").onclick=()=>tvSetRegion(null);
+  $("tvRevModeSeg").querySelectorAll("button[data-rm]").forEach(b=>b.onclick=()=>tvSetRevMode(b.dataset.rm));
   $("tvMetricSeg").querySelectorAll("button[data-v]").forEach(b=>b.onclick=()=>tvSetMetric(b.dataset.v));
   $("tvRevGo").onclick=tvRevLogin; $("tvRevClose").onclick=tvRevClose;
   $("tvBandSeg").querySelectorAll("button[data-v]").forEach(b=>b.onclick=()=>tvSetBandView(b.dataset.v));
@@ -11702,6 +11744,7 @@ function tvRevParse(wb){
       const YH=Y[yi].map(c=>String(c||"").replace(/\s+/g," ").trim());
       const cTy=YH.findIndex(h=>/مستهدف الإيراد\s*\d{4}$/.test(h)), cDy=YH.findIndex(h=>/إجمالي الإيراد المستحق/.test(h));
       const cVy=YH.findIndex(h=>/قيمة العقود/.test(h)), cBy=YH.findIndex(h=>/التمويل البنكي/.test(h)), cCy=YH.findIndex(h=>/الدفعة المقدمة/.test(h));
+      const cTcy=YH.findIndex(h=>/مستهدف الإيراد التراكمي/.test(h));
       /* التحصيل (تقرير المالية، تراكمي لعملاء البيع النقدي): المفوتر، المحصّل المطبَّق، النقد الواصل، المتبقي */
       const bare=h=>h.replace(/[\u064B-\u0652]/g,"");
       const cBill=YH.findIndex(h=>/المفوتر/.test(bare(h))), cColl=YH.findIndex(h=>/المحصل المطبق/.test(bare(h))),
@@ -11713,15 +11756,69 @@ function tvRevParse(wb){
       for(const r of Y.slice(yi+1)){ const nm=String((r&&r[0])||"").trim(); if(!nm||/^(إجمالي|الإجمالي|منه)/.test(nm)) continue;
         if(TV_REV_REGION[nm]){ ysec=TV_REV_REGION[nm];
           const reg=out.find(o=>o.is_region&&o.name==="منطقة · "+nm);
-          if(reg){ reg.target_year=cTy>=0?N(r[cTy]):null; reg.due_year=cDy>=0?N(r[cDy]):null; Object.assign(reg,coll(r),{coll_as_of:collAsOf}); } continue; }
+          if(reg){ reg.target_year=cTy>=0?N(r[cTy]):null; reg.due_year=cDy>=0?N(r[cDy]):null; reg.target_cum_y=cTcy>=0?N(r[cTcy]):null;
+            reg.y_value=cVy>=0?N(r[cVy]):null; reg.y_bank_due=cBy>=0?N(r[cBy]):null; reg.y_cash_due=cCy>=0?N(r[cCy]):null; Object.assign(reg,coll(r),{coll_as_of:collAsOf}); } continue; }
         /* أرقام المشروع لسنة الورقة (للتدقيق بدالة tv_revenue_breakdown): قيمة العقود والمستحق البنكي والنقدي */
-        const yv=Object.assign({y_value:cVy>=0?N(r[cVy]):null,y_bank_due:cBy>=0?N(r[cBy]):null,y_cash_due:cCy>=0?N(r[cCy]):null,target_year:cTy>=0?N(r[cTy]):null},coll(r),{coll_as_of:collAsOf});
-        if(yv.y_value==null) continue;
+        const yv=Object.assign({y_value:cVy>=0?N(r[cVy]):null,y_bank_due:cBy>=0?N(r[cBy]):null,y_cash_due:cCy>=0?N(r[cCy]):null,target_year:cTy>=0?N(r[cTy]):null,target_cum_y:cTcy>=0?N(r[cTcy]):null},coll(r),{coll_as_of:collAsOf});
+        /* نسبة الدفعة النقدية من ورقة السنة: المستحق النقدي ÷ قيمة العقود النقدية (القيمة − المستحق البنكي ÷ 20%) */
+        { const cashV=(yv.y_value||0)-(yv.y_bank_due||0)/TV_BANK_DUE_PCT; yv.y_cash_pct=yv.y_cash_due!=null&&cashV>0?Math.max(0,Math.min(1,yv.y_cash_due/cashV)):null; }
+        /* مشروع بمستهدف وبلا عقود بالسنة (مثل دانية بلا مبيعات بعد) يبقى — مستهدفه داخل إجمالي الورقة */
+        if(yv.y_value==null&&yv.target_year==null&&yv.billed==null) continue;
         const pj=out.find(o=>!o.is_region&&o.name===nm);
         if(pj) Object.assign(pj,yv); else out.push(Object.assign({name:nm,sector:ysec,is_region:false,excluded:false,cash_pct:null,cum_value:null,cash_due:null,bank_due:null,target_cum:null,as_of:asOf,year_only:true},yv)); }
     }
   }
-  return out.length?{sheet:name,rows:out,asOf,year,yearSheet:yName||null,collAsOf}:null;
+  if(!out.length) return null;
+  /* ورقة «مفتاح المشاريع والمصادر»: تواريخ المصادر، وأكواد كل مشروع بنظامي التخصيص والمالية، والنطاق */
+  const key=tvRevKeySheet(wb);
+  let keyInfo=null;
+  if(key){
+    const fin=key.dates.finance; if(fin){ collAsOf=fin; out.forEach(o=>{ if(o.billed!=null||o.collected!=null||o.is_region) o.coll_as_of=fin; }); }
+    const byNorm=new Map(); key.projects.forEach(k=>byNorm.set(tvRevNorm(k.name),k));
+    const used=new Set(), noKey=[];
+    out.forEach(o=>{ if(o.is_region) return; const k=byNorm.get(tvRevNorm(o.name));
+      if(!k){ if(!o.excluded||o.target_year!=null||o.y_value!=null) noKey.push(o.name); return; } used.add(k);
+      Object.assign(o,{alloc_codes:k.codes,fin_code:k.fin,scope:k.scope,city:k.city}); if(/مستبعد/.test(k.scope||"")) o.excluded=true; });
+    /* مشروع بالمفتاح ليس بالأوراق: يُضاف بكوده حتى يظهر (لا يختفي صامتاً) */
+    const extra=key.projects.filter(k=>!used.has(k));
+    extra.forEach(k=>out.push({name:k.name,sector:TV_REV_REGION[k.region]||tvSecNorm(k.region)||null,is_region:false,excluded:/مستبعد/.test(k.scope||""),cash_pct:null,
+      cum_value:null,cash_due:null,bank_due:null,target_cum:null,as_of:asOf,year_only:true,alloc_codes:k.codes,fin_code:k.fin,scope:k.scope,city:k.city}));
+    keyInfo={sheet:key.sheet,n:key.projects.length,noFin:key.projects.filter(k=>!k.fin).map(k=>k.name),noKey,extra:extra.map(k=>k.name),dates:key.dates,counts:key.counts};
+  }
+  return {sheet:name,rows:out,asOf,year,yearSheet:yName||null,collAsOf,meta:key?key.meta:null,key:keyInfo};
+}
+/* تطبيع اسم المشروع للمطابقة مع ورقة المفتاح: مسافات، أ/إ/آ→ا، ة→ه، ى→ي، وحذف بادئة «<المدينة>- NHC -» أو «NHC -» */
+function tvRevNorm(s){
+  let t=String(s==null?"":s).replace(/\s+/g," ").trim().replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي");
+  t=t.replace(/^[^\-–—]{1,30}?\s*[-–—]\s*NHC\s*[-–—]\s*/i,"").replace(/^NHC\s*[-–—]\s*/i,"");
+  return t.replace(/\s+/g," ").trim();
+}
+/* ورقة «مفتاح المشاريع والمصادر»: أعلاها أزواج مفتاح/قيمة (تاريخ القطع، لقطة نظام التخصيص، تقرير المالية...)، ثم جدول:
+   المشروع كما بالملف · كود التخصيص (قد يكون «كود + كود») · كود المالية («— لا يوجد —» = بلا حساب مالي) · المدينة · المنطقة · النطاق */
+function tvRevKeySheet(wb){
+  const name=wb.SheetNames.find(n=>/مفتاح\s*المشاريع/.test(n));
+  if(!name) return null;
+  const A=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:null,raw:true});
+  const T=v=>String(v==null?"":v).replace(/\s+/g," ").trim();
+  let hi=A.findIndex(r=>{ const c=(r||[]).map(T); return c.some(x=>/كود/.test(x))&&c.some(x=>/المشروع/.test(x)&&!/كود/.test(x)); });
+  const metaRows=A.slice(0,hi>=0?hi:Math.min(A.length,10));
+  const meta=[], dates={}, counts={};
+  metaRows.forEach(r=>{ const k=T(r&&r[0]), v=r&&r[1]; if(!k||v==null||T(v)==="") return;
+    const d=typeof v==="number"&&v>20000&&v<80000||v instanceof Date||/^\d{1,4}[\/-]\d{1,2}[\/-]\d{1,4}$/.test(T(v))?tvAllocDate(v):null;
+    const val=d||(typeof v==="number"?String(v):T(v)); meta.push({k,v:val});
+    if(d){ if(/القطع/.test(k)) dates.cutoff=d; else if(/التخصيص/.test(k)) dates.alloc=d; else if(/المالية/.test(k)) dates.finance=d; else if(/المرنة|الدفعات/.test(k)) dates.flex=d; else if(/crm/i.test(k)) dates.crm=d; }
+    else if(/عدد المشاريع/.test(k)){ if(/المالية/.test(k)) counts.finance=+val||null; else if(/المحتسبة|أداء البيع/.test(k)) counts.counted=+val||null; } });
+  const H=hi>=0?A[hi].map(T):[];
+  const col=(re,not,def)=>{ const i=H.findIndex(h=>re.every(x=>x.test(h))&&!(not&&not.test(h))); return i>=0?i:def; };
+  const cN=col([/المشروع/],/كود/,0), cA=col([/كود/,/التخصيص/],null,1), cF=col([/كود/,/المالية/],null,2), cC=col([/المدينة/],null,3), cR=col([/المنطقة/],null,4), cS=col([/النطاق/],null,5);
+  const projects=[];
+  for(const r of A.slice(hi>=0?hi+1:10)){
+    const nm=T(r&&r[cN]); if(!nm||/^(إجمالي|الإجمالي)/.test(nm)) continue;
+    const codes=T(r[cA]).split(/\s*\+\s*/).map(x=>x.trim()).filter(x=>x&&!/لا يوجد|^[-–—]+$/.test(x));
+    const f=T(r[cF]), fin=!f||/لا يوجد|^[-–—\s]+$/.test(f)?null:f;
+    projects.push({name:nm,codes:codes.length?codes:null,fin,city:T(r[cC])||null,region:T(r[cR])||null,scope:T(r[cS])||null});
+  }
+  return {sheet:name,meta,dates,counts,projects};
 }
 async function tvUpReadAlloc(file){
   const WANT=["project_name","حالة الحجز","price","unit_type","developer_name","القطاع"];
@@ -11743,7 +11840,9 @@ async function tvUpHandleFile(file){
         tvUpRev=rv; $("tvUpAtRow").style.display="none";
         const reg=rv.rows.filter(r=>r.is_region), pj=rv.rows.filter(r=>!r.is_region), ex=pj.filter(r=>r.excluded);
         const sum=k=>reg.reduce((a,r)=>a+(Number(r[k])||0),0), due=sum("cash_due")+sum("bank_due"), tg=sum("target_cum");
-        tvUpMsg(`<b>جدول الإيرادات</b> · الورقة «${rv.sheet}»${rv.asOf?` · حتى ${rv.asOf.split("-").reverse().join("/")}`:""}<br><b>${fmt(pj.length-ex.length)}</b> مشروعاً (${fmt(ex.length)} مستبعد) · قيمة العقود ${tvMoney(sum("cum_value"))}${rv.year?`<br>${rv.year}: المستحق من عقود السنة <b>${tvMoney(sum("due_year"))}</b> · مستهدف إيراد السنة ${tvMoney(sum("target_year"))}${sum("target_year")?` · <b>${Math.round(sum("due_year")/sum("target_year")*1000)/10}%</b> من مستهدف السنة`:""}`:`<br><span style="color:#C2491E">لم أجد ورقة «إيراد 2026 والتحصيل» — مستهدف السنة من المذكرات</span>`}${sum("billed")?`<br>التحصيل${rv.collAsOf?` حتى ${rv.collAsOf.split("-").reverse().join("/")}`:""}: محصّل ${tvMoney(sum("collected"))} من مفوتر ${tvMoney(sum("billed"))} · <b>${Math.round(sum("collected")/sum("billed")*1000)/10}%</b>`:""}<br>تراكمي: المستحق الآن ${tvMoney(due)} · المستهدف التراكمي ${tvMoney(tg)}`);
+        tvUpMsg(`<b>جدول الإيرادات</b> · الورقة «${rv.sheet}»${rv.asOf?` · حتى ${rv.asOf.split("-").reverse().join("/")}`:""}<br><b>${fmt(pj.length-ex.length)}</b> مشروعاً (${fmt(ex.length)} مستبعد) · قيمة العقود ${tvMoney(sum("cum_value"))}${rv.year?`<br>${rv.year}: المستحق من عقود السنة <b>${tvMoney(sum("due_year"))}</b> · مستهدف إيراد السنة ${tvMoney(sum("target_year"))}${sum("target_year")?` · <b>${Math.round(sum("due_year")/sum("target_year")*1000)/10}%</b> من مستهدف السنة`:""}`:`<br><span style="color:#C2491E">لم أجد ورقة «إيراد 2026 والتحصيل» — مستهدف السنة من المذكرات</span>`}${sum("billed")?`<br>التحصيل${rv.collAsOf?` حتى ${rv.collAsOf.split("-").reverse().join("/")}`:""}: محصّل ${tvMoney(sum("collected"))} من مفوتر ${tvMoney(sum("billed"))} · <b>${Math.round(sum("collected")/sum("billed")*1000)/10}%</b>`:""}<br>تراكمي: المستحق الآن ${tvMoney(due)} · المستهدف التراكمي ${tvMoney(tg)}${(()=>{ const K=rv.key; if(!K) return `<br><span style="color:#C2491E">لا توجد ورقة «مفتاح المشاريع والمصادر» — الربط بالاسم وتاريخ التحصيل من عنوان الورقة</span>`;
+          const D=K.dates, f=d=>d?d.split("-").reverse().join("/"):"—";
+          return `<br><b>ورقة المفتاح</b>: ${fmt(K.n)} مشروعاً بأكوادها${K.counts.finance?` · بالورقة المالية ${fmt(K.counts.finance)}`:""}${K.counts.counted?` · المحتسبة بأداء البيع ${fmt(K.counts.counted)}`:""}<br>تاريخ القطع ${f(D.cutoff)} · لقطة التخصيص ${f(D.alloc)} · تقرير المالية ${f(D.finance)}${K.noFin.length?`<br>بلا حساب مالي (${fmt(K.noFin.length)}): ${K.noFin.join("، ")}`:""}${K.noKey.length?`<br><span style="color:#C2491E">مشاريع بالأوراق ليست بالمفتاح (${fmt(K.noKey.length)}): ${K.noKey.join("، ")}</span>`:""}`; })()}`);
         tvUpUpdateGo(); return;
       }
     }
@@ -11835,10 +11934,14 @@ async function tvUpGoRev(){
     await tvUpEnsureCreds();
     tvUpMsg("جارٍ رفع جدول الإيرادات…");
     let r;
-    try{ r=await sbCall("admin_load_tv_rev",{p_admin:tvUpCreds.u,p_pass:tvUpCreds.p,p_rows:tvUpRev.rows}); }
-    catch(e){ throw new Error("تعذّر الرفع: "+(e.message||e)+" — شغّل tv_revenue.sql على القاعدة"); }
+    let oldFn=false;
+    try{ r=await sbCall("admin_load_tv_rev",{p_admin:tvUpCreds.u,p_pass:tvUpCreds.p,p_rows:tvUpRev.rows,p_meta:tvUpRev.meta||null}); }
+    catch(e){ /* قاعدة لم يُشغَّل عليها tv_revenue.sql الجديد: رفع بلا تواريخ المصادر */
+      try{ const rows=tvUpRev.rows.map(o=>{ const c=Object.assign({},o); ["alloc_codes","fin_code","scope","city","y_cash_pct","target_cum_y"].forEach(k=>delete c[k]); return c; });
+        r=await sbCall("admin_load_tv_rev",{p_admin:tvUpCreds.u,p_pass:tvUpCreds.p,p_rows:rows}); oldFn=true; }
+      catch(e2){ throw new Error("تعذّر الرفع: "+(e.message||e)+" — شغّل tv_revenue.sql على القاعدة"); } }
     if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
-    tvUpMsg(`✓ حُفظ جدول الإيرادات (${fmt(r.count||0)} صفاً) — الشاشة تتحدّث الآن`,"ok");
+    tvUpMsg(`✓ حُفظ جدول الإيرادات (${fmt(r.count||0)} صفاً) — الشاشة تتحدّث الآن${oldFn?`<br><span style="color:#C2491E">شغّل tv_revenue.sql الجديد على القاعدة ثم ارفع الملف مرة أخرى — الربط بالكود وتواريخ المصادر لم تُحفظ</span>`:""}`,"ok");
     tvUpRev=null; $("tvUpFile").value=""; $("tvUpAtRow").style.display=""; $("tvUpDropTxt").textContent="اسحب الملف هنا أو اضغط للاختيار — يُتعرّف على نوعه تلقائياً";
     delete tvGood.revenue;
     await loadTvDashboard();
