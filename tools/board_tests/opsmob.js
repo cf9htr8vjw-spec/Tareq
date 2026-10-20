@@ -113,7 +113,8 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
   await page.click('#mAnBody [data-oc="مركز بيع"]'); await page.waitForTimeout(1200);
   await page.selectOption('#mAnBody select[data-ops="dest"]','خزام'); await page.waitForTimeout(1200);
   console.log('after filters:',JSON.stringify(await ov()),(await page.textContent('#mAnBody .mK6')).replace(/\s+/g,' ').slice(0,160));
-  await page.click('#mAnBody .mRow[data-emp]'); await page.waitForTimeout(700); console.log('emp sheet:',(await page.textContent('#mDetailTitle')).slice(0,60),(await page.textContent('#mDetailBody')).replace(/\s+/g,' ').slice(0,80));
+  if(await page.$('#mAnBody .mRow[data-emp]')){ await page.click('#mAnBody .mRow[data-emp]'); await page.waitForTimeout(700); console.log('emp sheet:',(await page.textContent('#mDetailTitle')).slice(0,60),(await page.textContent('#mDetailBody')).replace(/\s+/g,' ').slice(0,80)); }
+  else console.log('no employees:',(await page.textContent('#mAnBody')).match(/ملف التخصيص بلا عمودي[^—]*/)?.[0]);
   await page.evaluate(()=>document.getElementById('mDetailSheet').classList.remove('on'));
   await page.screenshot({path:D+'/ops_filtered.png',fullPage:true});
   console.log('PAGE ERRORS:',errs.length,errs.join(' | ')); await browser.close(); })();

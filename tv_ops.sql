@@ -31,6 +31,26 @@ create table if not exists tv_ops_daily (
   primary key (contract_date, project_name, dest, sector, kind, channel, employee, work, bank)
 );
 alter table tv_ops_daily enable row level security;
+-- بيانات التمويل (أعمدة REDF بملف التخصيص): مجاميع وعدّادات فقط — لا بيانات شخصية
+alter table tv_ops_daily add column if not exists fa_sum numeric not null default 0;     -- اجمالي مبلغ التمويل
+alter table tv_ops_daily add column if not exists fa_n integer not null default 0;
+alter table tv_ops_daily add column if not exists sal_sum numeric not null default 0;    -- الراتب
+alter table tv_ops_daily add column if not exists sal_n integer not null default 0;
+alter table tv_ops_daily add column if not exists inst_sum numeric not null default 0;   -- القسط الشهري
+alter table tv_ops_daily add column if not exists inst_n integer not null default 0;
+alter table tv_ops_daily add column if not exists fam_sum numeric not null default 0;    -- أفراد الأسرة
+alter table tv_ops_daily add column if not exists fam_n integer not null default 0;
+alter table tv_ops_daily add column if not exists job_mil integer not null default 0;    -- جهة العمل: عسكري / حكومي / خاص / أخرى
+alter table tv_ops_daily add column if not exists job_gov integer not null default 0;
+alter table tv_ops_daily add column if not exists job_pvt integer not null default 0;
+alter table tv_ops_daily add column if not exists job_oth integer not null default 0;
+alter table tv_ops_daily add column if not exists dp_n integer not null default 0;       -- باقة دعم الدفعة المقدمة
+alter table tv_ops_daily add column if not exists dp_sum numeric not null default 0;
+alter table tv_ops_daily add column if not exists ik_n integer not null default 0;       -- الدعم العيني
+alter table tv_ops_daily add column if not exists ik_sum numeric not null default 0;
+alter table tv_ops_daily add column if not exists mil_n integer not null default 0;      -- مستفيد مبادرة العسكريين
+alter table tv_ops_daily add column if not exists mile_n integer not null default 0;     -- الدعم الإضافي للعسكريين (الصندوق)
+alter table tv_ops_daily add column if not exists dh_n integer not null default 0;       -- منتج ذرى بلس
 
 create table if not exists tv_ops_book (
   booking_date date not null,
@@ -84,14 +104,21 @@ begin
   if p_table = 'daily' then
     if p_reset then delete from tv_ops_daily where true; end if;
     insert into tv_ops_daily (contract_date, project_name, dest, sector, kind, channel, employee, work, bank,
-                              cnt, val_sum, val_n, rate_sum, rate_n, term_sum, term_n, ben, days_sum, days_n)
+                              cnt, val_sum, val_n, rate_sum, rate_n, term_sum, term_n, ben, days_sum, days_n,
+                              fa_sum, fa_n, sal_sum, sal_n, inst_sum, inst_n, fam_sum, fam_n, job_mil, job_gov, job_pvt, job_oth,
+                              dp_n, dp_sum, ik_n, ik_sum, mil_n, mile_n, dh_n)
     select (r->>'d')::date, coalesce(btrim(r->>'p'), ''), coalesce(btrim(r->>'dest'), ''), coalesce(btrim(r->>'s'), ''),
            coalesce(r->>'k', 'other'), coalesce(btrim(r->>'ch'), ''), coalesce(btrim(r->>'e'), ''), coalesce(btrim(r->>'w'), ''),
            coalesce(btrim(r->>'b'), ''),
            sum(coalesce((r->>'n')::int, 0)), sum(coalesce((r->>'vs')::numeric, 0)), sum(coalesce((r->>'vn')::int, 0)),
            sum(coalesce((r->>'rs')::numeric, 0)), sum(coalesce((r->>'rn')::int, 0)),
            sum(coalesce((r->>'ts')::numeric, 0)), sum(coalesce((r->>'tn')::int, 0)), sum(coalesce((r->>'ben')::int, 0)),
-           sum(coalesce((r->>'ds')::numeric, 0)), sum(coalesce((r->>'dn')::int, 0))
+           sum(coalesce((r->>'ds')::numeric, 0)), sum(coalesce((r->>'dn')::int, 0)),
+           sum(coalesce((r->>'fa')::numeric, 0)), sum(coalesce((r->>'fan')::int, 0)), sum(coalesce((r->>'sal')::numeric, 0)), sum(coalesce((r->>'saln')::int, 0)),
+           sum(coalesce((r->>'inst')::numeric, 0)), sum(coalesce((r->>'instn')::int, 0)), sum(coalesce((r->>'fam')::numeric, 0)), sum(coalesce((r->>'famn')::int, 0)),
+           sum(coalesce((r->>'jm')::int, 0)), sum(coalesce((r->>'jg')::int, 0)), sum(coalesce((r->>'jp')::int, 0)), sum(coalesce((r->>'jo')::int, 0)),
+           sum(coalesce((r->>'dpn')::int, 0)), sum(coalesce((r->>'dps')::numeric, 0)), sum(coalesce((r->>'ikn')::int, 0)), sum(coalesce((r->>'iks')::numeric, 0)),
+           sum(coalesce((r->>'mil')::int, 0)), sum(coalesce((r->>'mile')::int, 0)), sum(coalesce((r->>'dh')::int, 0))
     from jsonb_array_elements(p_rows) r
     where nullif(r->>'d', '') is not null
     group by 1, 2, 3, 4, 5, 6, 7, 8, 9
@@ -100,7 +127,17 @@ begin
       rate_sum = tv_ops_daily.rate_sum + excluded.rate_sum, rate_n = tv_ops_daily.rate_n + excluded.rate_n,
       term_sum = tv_ops_daily.term_sum + excluded.term_sum, term_n = tv_ops_daily.term_n + excluded.term_n,
       ben = tv_ops_daily.ben + excluded.ben, days_sum = tv_ops_daily.days_sum + excluded.days_sum,
-      days_n = tv_ops_daily.days_n + excluded.days_n, updated_at = now();
+      days_n = tv_ops_daily.days_n + excluded.days_n,
+      fa_sum = tv_ops_daily.fa_sum + excluded.fa_sum, fa_n = tv_ops_daily.fa_n + excluded.fa_n,
+      sal_sum = tv_ops_daily.sal_sum + excluded.sal_sum, sal_n = tv_ops_daily.sal_n + excluded.sal_n,
+      inst_sum = tv_ops_daily.inst_sum + excluded.inst_sum, inst_n = tv_ops_daily.inst_n + excluded.inst_n,
+      fam_sum = tv_ops_daily.fam_sum + excluded.fam_sum, fam_n = tv_ops_daily.fam_n + excluded.fam_n,
+      job_mil = tv_ops_daily.job_mil + excluded.job_mil, job_gov = tv_ops_daily.job_gov + excluded.job_gov,
+      job_pvt = tv_ops_daily.job_pvt + excluded.job_pvt, job_oth = tv_ops_daily.job_oth + excluded.job_oth,
+      dp_n = tv_ops_daily.dp_n + excluded.dp_n, dp_sum = tv_ops_daily.dp_sum + excluded.dp_sum,
+      ik_n = tv_ops_daily.ik_n + excluded.ik_n, ik_sum = tv_ops_daily.ik_sum + excluded.ik_sum,
+      mil_n = tv_ops_daily.mil_n + excluded.mil_n, mile_n = tv_ops_daily.mile_n + excluded.mile_n, dh_n = tv_ops_daily.dh_n + excluded.dh_n,
+      updated_at = now();
   elsif p_table = 'book' then
     if p_reset then delete from tv_ops_book where true; end if;
     insert into tv_ops_book (booking_date, project_name, dest, sector, kind, channel, status, cnt, ist, days_sum, days_n)
@@ -168,6 +205,7 @@ as $$
     'has_channel', exists(select 1 from tv_ops_daily where channel <> ''),
     'has_emp', exists(select 1 from tv_ops_daily where employee <> ''),
     'has_book', exists(select 1 from tv_ops_book),
+    'has_fin', exists(select 1 from tv_ops_daily where fa_n > 0 or sal_n > 0 or job_mil + job_gov + job_pvt > 0),
     'bucket', case when (select m from monthly) then 'month' else 'day' end,
     -- سلسلة كل القنوات (القناة المختارة تُبرز بالشاشة) بنفس تصفية الوجهة/المشروع
     'series', coalesce((
@@ -194,9 +232,11 @@ as $$
       ) z
     ), '[]'::jsonb),
     'banks', coalesce((
-      select jsonb_agg(jsonb_build_object('b', bank, 'n', n, 'rs', rs, 'rn', rn, 'ts', ts, 'tn', tn, 'vs', vs, 'vn', vn, 'prev', pn) order by n desc)
+      select jsonb_agg(jsonb_build_object('b', bank, 'n', n, 'rs', rs, 'rn', rn, 'ts', ts, 'tn', tn, 'vs', vs, 'vn', vn, 'prev', pn,
+               'fa', fa, 'fan', fan, 'sal', sal, 'saln', saln, 'jm', jm, 'jg', jg, 'jp', jp, 'dpn', dpn) order by n desc)
       from (select c.bank, sum(c.cnt) as n, sum(c.rate_sum) as rs, sum(c.rate_n) as rn, sum(c.term_sum) as ts, sum(c.term_n) as tn,
-                   sum(c.val_sum) as vs, sum(c.val_n) as vn,
+                   sum(c.val_sum) as vs, sum(c.val_n) as vn, sum(c.fa_sum) as fa, sum(c.fa_n) as fan, sum(c.sal_sum) as sal, sum(c.sal_n) as saln,
+                   sum(c.job_mil) as jm, sum(c.job_gov) as jg, sum(c.job_pvt) as jp, sum(c.dp_n) as dpn,
                    coalesce((select sum(cnt) from prv p where p.bank = c.bank), 0) as pn
             from cur c group by 1) x
     ), '[]'::jsonb),
@@ -206,6 +246,11 @@ as $$
         'ds', coalesce(sum(days_sum), 0), 'dn', coalesce(sum(days_n), 0),
         'no_emp', coalesce(sum(cnt) filter (where employee = ''), 0), 'no_chan', coalesce(sum(cnt) filter (where channel = ''), 0),
         'projects', count(distinct project_name) filter (where cnt > 0),
+        'fa', coalesce(sum(fa_sum), 0), 'fan', coalesce(sum(fa_n), 0), 'sal', coalesce(sum(sal_sum), 0), 'saln', coalesce(sum(sal_n), 0),
+        'inst', coalesce(sum(inst_sum), 0), 'instn', coalesce(sum(inst_n), 0), 'fam', coalesce(sum(fam_sum), 0), 'famn', coalesce(sum(fam_n), 0),
+        'jm', coalesce(sum(job_mil), 0), 'jg', coalesce(sum(job_gov), 0), 'jp', coalesce(sum(job_pvt), 0), 'jo', coalesce(sum(job_oth), 0),
+        'dpn', coalesce(sum(dp_n), 0), 'dps', coalesce(sum(dp_sum), 0), 'ikn', coalesce(sum(ik_n), 0), 'iks', coalesce(sum(ik_sum), 0),
+        'mil', coalesce(sum(mil_n), 0), 'mile', coalesce(sum(mile_n), 0), 'dh', coalesce(sum(dh_n), 0),
         'prev', (select coalesce(sum(cnt), 0) from prv))
       from cur
     ),

@@ -730,7 +730,7 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
 .tvOpsKpis .agl em{display:inline-block;width:8px;height:8px;border-radius:2px;margin-inline-end:4px}
 .tvOpsKpis .agl b{color:#0B4332}
 .tvOpsBWrap{flex:1;min-height:0;overflow:hidden;margin-top:4px}
-.tvOpsB{display:grid;grid-template-columns:minmax(0,1.3fr) .45fr .75fr .9fr .7fr .65fr .7fr .55fr 1.05fr 1.45fr .85fr 1.75fr;gap:7px;align-items:center;height:30px;border-bottom:1px solid #F0ECE2;font-size:13.5px;white-space:nowrap;text-align:center}
+.tvOpsB{display:grid;grid-template-columns:minmax(0,1.25fr) .42fr .72fr .62fr .62fr .62fr .66fr .5fr .95fr 1fr 1.3fr .75fr 1.55fr;gap:7px;align-items:center;height:30px;border-bottom:1px solid #F0ECE2;font-size:13.5px;white-space:nowrap;text-align:center}
 .tvOpsB.h{height:auto;min-height:22px;font-size:11.5px;color:#767368;font-weight:700;white-space:normal;line-height:1.1;padding-bottom:3px;border-bottom:2px solid #E7E1D3}
 .tvOpsB .n{text-align:start;font-weight:800;color:#0B4332;overflow:hidden;text-overflow:ellipsis}
 .tvOpsB.off{opacity:.5}
@@ -744,6 +744,27 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
 .tvOpsB .ini em{font-style:normal;font-size:10.5px;background:#E1F5EC;color:#007a54;border-radius:99px;padding:0 6px;white-space:nowrap}
 .tvOpsB .ini em.more{background:#F0ECE2;color:#5e5a4f}
 .tvOpsEWrap{flex:1;min-height:0;overflow:hidden;margin-top:4px}
+.tvOpsFinS{font-size:12.5px;color:#5e5a4f;background:#FAF7F1;border-radius:10px;padding:4px 10px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvOpsFinS b{color:#0B4332}
+.tvOpsFin{height:100%;display:flex;flex-direction:column;gap:8px;min-height:0}
+.tvOpsFin .t4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;flex:none}
+.tvOpsFin .t4>div{background:#FAF7F1;border-radius:12px;padding:6px 10px;min-width:0}
+.tvOpsFin .t4 span{display:block;font-size:12.5px;color:#767368;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvOpsFin .t4 b{font-size:22px;color:#0B4332;line-height:1.2}
+.tvOpsFin .t4 small{font-size:11.5px;color:#767368;margin-inline-start:6px;white-space:nowrap}
+.tvOpsFin .jb{flex:none;background:#FAF7F1;border-radius:12px;padding:6px 10px}
+.tvOpsFin .jb .l{font-size:12.5px;color:#767368;font-weight:700}
+.tvOpsFin .ag{display:flex;height:9px;border-radius:99px;overflow:hidden;background:#EEE8DC;margin:4px 0 3px;direction:rtl}
+.tvOpsFin .ag i{display:block;height:100%}
+.tvOpsFin .agl{display:flex;gap:12px;font-size:12px;color:#5e5a4f;flex-wrap:wrap}
+.tvOpsFin .agl em{display:inline-block;width:8px;height:8px;border-radius:2px;margin-inline-end:4px}
+.tvOpsFin .agl b{color:#0B4332}
+.tvOpsFin .pg{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:space-evenly}
+.tvOpsFin .p{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) 54px 92px;gap:8px;align-items:center;font-size:13.5px;min-height:0}
+.tvOpsFin .p .n{font-weight:800;color:#0B4332;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvOpsFin .p .bar{height:8px;background:#F0ECE2;border-radius:99px;overflow:hidden;direction:rtl}.tvOpsFin .p .bar i{display:block;height:100%;background:#C99A2E}
+.tvOpsFin .p b{color:#0B4332;font-size:16px;text-align:center}
+.tvOpsFin .p small{color:#767368;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tvOpsE{display:grid;grid-template-columns:24px minmax(0,1fr) 70px 40px 52px;gap:8px;align-items:center;height:31px;border-bottom:1px solid #F0ECE2;font-size:14px}
 .tvOpsE .rk{color:#B9B1A0;font-weight:800;text-align:center}.tvOpsE.top .rk{color:#C99A2E}
 .tvOpsE .n{font-weight:800;color:#0B4332;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1086,7 +1107,16 @@ function xlsxBestSheet(wb,wantHeaders){
    ملف zip مباشرة، ونفكّ ضغط الورقة قطعةً قطعة (DecompressionStream المدمج بالمتصفح)، ونحلّل الصفوف
    أولاً بأول — الذاكرة بحجم الصفوف فقط. الناتج بنفس شكل sheet_to_json({defval:null}): الصف الأول
    أسماء الأعمدة، الأرقام أرقام (التواريخ أرقام إكسل تسلسلية كما يتوقعها toISODate)، والنص نص. */
-async function xlsxStreamRows(file,wantHeaders,onProgress){
+/* أعمدة ملف التخصيص التي لا يستعملها التطبيق ولا الشاشة — تُسقط أثناء القراءة (الملف ~450 ألف صف × 84 عموداً يستهلك ذاكرة المتصفح)،
+   ومنها «هوية المستفيد» (بيانات شخصية: لا تُقرأ ولا تُرفع إطلاقاً) */
+const ALLOC_DROP_HEADERS=["land_number","floor","apartment_number","Number_of_Bathrooms","construction_status","status","comment",
+  "deed_number","deed_date","booking_status","stage","zone_number","apartment_type","market_building_price","market_land_price","base_land_price","base_building_price",
+  "unit_channel_key","number_of_rooms","master_bedroom_size","living_room_size","kitchen_size","guestroom_size","sales_channels","unit_publish","price_quotation_number",
+  "completion_percentage","completion_percentage_visible","Type","إطلاق المشروع","المسار","نوع المعروض","Publish","bookable","Project Status_Sakani","هوية المستفيد",
+  "تأكيد الحجز","last units Prices","MM-YYYY","MM","YYYY"];
+function allocDropCols(rows){ const D=new Set(ALLOC_DROP_HEADERS.map(normalizeHeaderKey)); const ks=rows.length?Object.keys(rows[0]).filter(k=>D.has(normalizeHeaderKey(k))||/هويه|هوية|national.?id/i.test(k)):[];
+  if(ks.length) for(const r of rows) for(const k of ks) delete r[k]; return rows; }
+async function xlsxStreamRows(file,wantHeaders,onProgress,dropHeaders){
   if(typeof DecompressionStream==="undefined") throw new Error("المتصفح لا يدعم قراءة الملفات الكبيرة — استخدم Chrome أو Edge حديث");
   const buf=new Uint8Array(await file.arrayBuffer()), dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);
   /* فهرس zip المركزي */
@@ -1137,7 +1167,7 @@ async function xlsxStreamRows(file,wantHeaders,onProgress){
   };
   /* يحلّل صفوف ورقة: limit=1 لقراءة صف العناوين فقط (لاختيار الورقة) */
   const parseSheet=async(path,limit)=>{
-    let tail="", header=null; const out=[]; let done=false, bytes=0;
+    let tail="", header=null, dropIdx=[]; const out=[]; let done=false, bytes=0;
     const total=entries[path]?entries[path].csize*8:1;
     const cellRe=/<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g;
     const rowRe=/<(?:\w+:)?row\b[^>]*?(?:\/>|>([\s\S]*?)<\/(?:\w+:)?row>)/g;
@@ -1150,9 +1180,11 @@ async function xlsxStreamRows(file,wantHeaders,onProgress){
       while((m=rowRe.exec(work))){
         const cells=[]; let cm, seq=0; cellRe.lastIndex=0; const inner=m[1]||"";
         while((cm=cellRe.exec(inner))){ const r=(cm[1].match(/\br="([A-Z]+)\d*"/)||[])[1]; const ci=r?colIdx(r):seq; seq=ci+1; cells[ci]=cellVal(cm[1],cm[2]||""); }
-        if(!header){ if(cells.some(v=>v!=null&&v!=="")){ header=cells.map(v=>v==null?"":String(v).trim()); if(limit===1){ done=true; return true; } } continue; }
+        if(!header){ if(cells.some(v=>v!=null&&v!=="")){ header=cells.map(v=>v==null?"":String(v).trim());
+            if(dropHeaders){ const D=new Set(dropHeaders.map(normalizeHeaderKey)); dropIdx=header.map(h=>D.has(normalizeHeaderKey(h))||/هويه|هوية|national.?id/i.test(h)); }
+            if(limit===1){ done=true; return true; } } continue; }
         if(!cells.some(v=>v!=null&&v!=="")) continue;
-        const o={}; header.forEach((h,i)=>{ if(h) o[h]=cells[i]===undefined?null:cells[i]; }); out.push(o);
+        const o={}; header.forEach((h,i)=>{ if(h&&!dropIdx[i]) o[h]=cells[i]===undefined?null:cells[i]; }); out.push(o);
       }
       if(onProgress&&limit!==1) onProgress(Math.min(99,Math.round(bytes/total*100)), out.length);
       return false;
@@ -2955,7 +2987,7 @@ function mRenderDist(ctx){
       ${loc&&G.length>lim?`<div class="mNote">أعلى ${lim} من ${fmt(G.length)} (بمطروح ≥ ${mPrm.minU})</div>`:""}
       <div class="mNote">الأخضر ناجح (≥ ${mPrm.thr}% ومطروح ≥ ${mPrm.minU}) · السعر/المساحة من متوسط كل نموذج · اضغط الشريحة للتفاصيل</div></div>`;
 }
-function mModelName(r){ return r.model?`نموذج ${r.model}`:"بدون نموذج"; }
+function mModelName(r){ return r.model?`نموذج ${String(r.model).replace(/^model[\s_]*/i,"")}`:"بدون نموذج"; }
 function mRenderModels(ctx){
   const st=mPSState(); if(st) return st;
   const rows=mPSRows();
@@ -2995,7 +3027,8 @@ function mOpenModel(i){
   const rc=mRec(x), M=v=>tvPriceShort(v), N=v=>fmt(Math.round(v)), P=v=>Math.round(v)+"%", I=v=>v===Infinity?"∞":(Math.round(v*10)/10)+" ش";
   const sib0=sib.map(s=>{ const k=mModelsCur.findIndex(z=>z.r===s.r); return `<div class="mRow"${k>=0?` data-md="${k}"`:""}><span class="rk"></span><div><div class="nm">${mModelName(s.r)} · ${s.r.type} · ${mBedsLbl(s.r.beds)}</div><div class="dv">${s.size?`${fmt(Math.round(s.size))} م² · `:""}${s.price?tvPriceShort(s.price):""} · متاح ${fmt(s.avail)}</div></div><div class="val"><b>${mPct(s.abs)}</b><small>${fmt(s.sold)}/${fmt(s.offered)}</small></div></div>`; }).join("");
   mSheetOpen(`${r.project}<small>${mModelName(r)} · ${r.type} · ${mBedsLbl(r.beds)}</small>`,`
-    <div class="mDetTop"><div class="pc ${x.ok?"up":"dn"}">${mPct(x.abs)}<small>نسبة السحب</small></div>${rc?`<span class="rec ${rc[1]}">${rc[0]}</span>`:""}<div class="loc">${[r.dest&&`الضاحية: ${r.dest}`,r.city,tvSecNorm(r.sector),r.kind==="nhc"?"NHC":r.developer].filter(Boolean).join(" · ")}</div></div>
+    <div class="mDetTop"><div class="pc ${x.ok?"up":"dn"}">${mPct(x.abs)}<small>نسبة السحب</small></div>${rc?`<span class="rec ${rc[1]}">${rc[0]}</span>`:""}<div class="loc">${[r.dest&&`الضاحية: ${r.dest}`,r.city,tvSecNorm(r.sector),r.kind==="nhc"?"NHC":r.developer].filter(Boolean).join(" · ")}</div>
+      ${r.launch?(()=>{ const L=new Date(String(r.launch).slice(0,10)+"T00:00:00"), mo=Math.max(1,(Date.now()-L)/864e5/30.44); return `<div class="loc">بدء البيع ${tvDmy(String(r.launch))} · منذ ${fmt(Math.round(mo))} شهراً · منذ الإطلاق ${(Math.round(x.sold/mo*10)/10)} وحدة/شهر</div>`; })():""}</div>
     <div class="mSecT">المواصفات</div>
     <div class="mSpecs"><div><span>النوع</span><b>${r.type||"—"}</b></div><div><span>الغرف</span><b>${r.beds>=0?r.beds:"—"}</b></div><div><span>المساحة</span><b>${x.size?N(x.size)+" م²":"—"}</b><small>${x.szmin!=null&&x.szmax!=null&&x.szmin!==x.szmax?`${N(x.szmin)}–${N(x.szmax)}`:""}</small></div>
       <div><span>سعر المتاح</span><b>${x.priceA?M(x.priceA):"—"}</b><small>${x.moh?`الوزارة ${M(x.moh)}`:""}</small></div><div><span>سعر المباع</span><b>${x.priceS?M(x.priceS):"—"}</b></div><div><span>سعر المتر</span><b>${x.sqmA||x.sqmS?N(x.sqmA||x.sqmS):"—"}</b><small>${x.sqmA&&x.sqmS?`المباع ${N(x.sqmS)}`:""}</small></div></div>
@@ -3213,6 +3246,7 @@ function tvOpsDerive(D){
   const banks=(D.banks||[]).filter(b=>b.b).map(b=>{ const k=tvBankKey(b.b); seen.add(k); const P=pol.get(k)||null, r=b.rn?Number(b.rs)/Number(b.rn):null;
     const pub=P&&P.rates?P.rates.sub_t:null;
     return {key:k,name:tvBankName(k,b.b),raw:b.b,n:+b.n,share:pct(+b.n,bTot),d:dlt(+b.n,+b.prev),rate:r,flat:tvFlatRate(r,term),rn:+b.rn||0,
+      fa:b.fan?Number(b.fa)/Number(b.fan):null,sal:b.saln?Number(b.sal)/Number(b.saln):null,mil:(+b.jm||0)+(+b.jg||0)+(+b.jp||0)?(+b.jm||0)/((+b.jm||0)+(+b.jg||0)+(+b.jp||0))*100:null,dpn:+b.dpn||0,
       term:b.tn?Number(b.ts)/Number(b.tn):null,pub,pubFlat:tvFlatRate(pub,term),pubNt:P&&P.rates?P.rates.sub_nt:null,uns:P&&P.rates?P.rates.uns_t:null,
       gap:r!=null&&pub!=null?(r-pub)*100:null,P}; });
   /* جهات معلنة بلا عقود بالفترة — للمقارنة */
@@ -3220,7 +3254,12 @@ function tvOpsDerive(D){
     banks.push({key:p.bank,name:tvBankName(p.bank,P.name),n:0,share:0,d:null,rate:null,flat:null,rn:0,term:null,pub,pubFlat:tvFlatRate(pub,term),pubNt:P.rates?P.rates.sub_nt:null,uns:P.rates?P.rates.uns_t:null,gap:null,P}); });
   const cash=(D.banks||[]).find(b=>!b.b);
   const rated=banks.reduce((a,b)=>a+b.rn,0), rateAvg=rated?banks.reduce((a,b)=>a+(b.rate||0)*b.rn,0)/rated:null;
-  return {term,chans,totN,na:na?+na.n:0,K,B,banks,bTot,cash:cash?+cash.n:0,rated,rateAvg,month:(D.policy&&D.policy[0]&&D.policy[0].month)||""};
+  const jt=(+K.jm||0)+(+K.jg||0)+(+K.jp||0)+(+K.jo||0);
+  const prof={fan:+K.fan||0,fa:K.fan?K.fa/K.fan:null,sal:K.saln?K.sal/K.saln:null,inst:K.instn?K.inst/K.instn:null,fam:K.famn?K.fam/K.famn:null,
+    jm:jt?(+K.jm||0)/jt*100:null,jg:jt?(+K.jg||0)/jt*100:null,jp:jt?(+K.jp||0)/jt*100:null,jt,
+    jo:jt?(+K.jo||0)/jt*100:null,instPct:K.instn&&K.saln&&K.sal?(K.inst/K.instn)/(K.sal/K.saln)*100:null,
+    dpn:+K.dpn||0,dpa:K.dpn?K.dps/K.dpn:null,ikn:+K.ikn||0,ika:K.ikn?K.iks/K.ikn:null,mil:+K.mil||0,mile:+K.mile||0,dh:+K.dh||0};
+  return {term,chans,totN,na:na?+na.n:0,K,B,banks,bTot,cash:cash?+cash.n:0,rated,rateAvg,prof,month:(D.policy&&D.policy[0]&&D.policy[0].month)||""};
 }
 function tvOpsPeriodLbl(){ return (TV_OPS_PERIODS.find(p=>p[0]===tvOps.period)||[0,""])[1]; }
 function tvOpsScopeLbl(){ return [tvRegion?tvRegionLabel(tvRegion):"",tvOps.dest||"",tvOps.proj?tvShort(tvOps.proj,30):"",tvOps.chan||""].filter(Boolean).join(" · "); }
@@ -3239,6 +3278,21 @@ function tvOpsSeries(D,X){
   if(!sel) series.unshift({values:tot,color:"#0B4332",width:3.2,labels:true,valFont:12});
   const labels=days.map(d=>mon?MNAMES[d.slice(5,7)]:String(+d.slice(8,10)));
   return {labels,series,mon};
+}
+/* ملف العملاء والتمويل من أعمدة REDF: كامل (حين لا أعمدة موظفين) أو شريط مختصر فوق قائمة الموظفين */
+function tvOpsFinHtml(X,n,compact){
+  const F=X.prof, r=v=>v==null?"—":Math.round(v)+"%", sp=v=>v?tvPriceShort(v):"—", m=v=>v?fmt(Math.round(v)):"—";
+  if(compact) return `<div class="tvOpsFinS">متوسط التمويل <b>${sp(F.fa)}</b> · الراتب <b>${m(F.sal)}</b> · القسط <b>${m(F.inst)}</b>${F.instPct?` (${r(F.instPct)} من الراتب)`:""} · عسكري <b>${r(F.jm)}</b> · حكومي <b>${r(F.jg)}</b> · خاص <b>${r(F.jp)}</b> · باقة الدفعة <b>${fmt(F.dpn)}</b></div>`;
+  const jobs=[["عسكري",F.jm,"#0B4332"],["حكومي",F.jg,"#009C6D"],["خاص",F.jp,"#2F6FA8"],["أخرى",F.jo,"#B9B1A0"]].filter(j=>j[1]);
+  const prog=[["باقة دعم الدفعة المقدمة",F.dpn,F.dpa],["الدعم العيني",F.ikn,F.ika],["مستفيد مبادرة العسكريين",F.mil,null],["الدعم الإضافي للعسكريين",F.mile,null],["منتج ذرى بلس",F.dh,null]];
+  const pm=Math.max(1,...prog.map(p=>p[1]));
+  return `<div class="tvOpsFin">
+    <div class="t4"><div><span>متوسط التمويل</span><b>${sp(F.fa)}</b></div><div><span>متوسط الراتب</span><b>${m(F.sal)}</b></div>
+      <div><span>متوسط القسط</span><b>${m(F.inst)}</b>${F.instPct?`<small>${r(F.instPct)} من الراتب</small>`:""}</div><div><span>أفراد الأسرة</span><b>${F.fam?Math.round(F.fam*10)/10:"—"}</b></div></div>
+    <div class="jb"><span class="l">جهة العمل</span><div class="ag">${jobs.map(([l,v,c])=>`<i style="width:${v}%;background:${c}"></i>`).join("")}</div>
+      <div class="agl">${jobs.map(([l,v,c])=>`<span><em style="background:${c}"></em>${l} <b>${r(v)}</b></span>`).join("")||"—"}</div></div>
+    <div class="pg">${prog.map(([l,v,a])=>`<div class="p"><span class="n">${l}</span><span class="bar"><i style="width:${v/pm*100}%"></i></span><b>${fmt(v)}</b><small>${n?r(v/n*100):""}${a?` · ${tvPriceShort(a)}`:""}</small></div>`).join("")}</div>
+  </div>`;
 }
 function tvRenderOps(){
   const D=tvOpsData, el=id=>$(id);
@@ -3273,14 +3327,16 @@ function tvRenderOps(){
     <div class="k w"><span>حجوزات قائمة ${fmt(open)} <small>· استصناع موقّع ${fmt(B.open_ist||0)}</small></span>
       <div class="ag">${ag.map(([l,v,c])=>`<i style="width:${open?v/open*100:0}%;background:${c}"></i>`).join("")}</div>
       <div class="agl">${ag.map(([l,v,c])=>`<span><em style="background:${c}"></em>${l} <b>${fmt(v)}</b></span>`).join("")}</div></div>
-    <div class="k w q"><span>جودة البيانات</span><small>عقود بلا موظف <b>${fmt(K.no_emp||0)}</b> · بلا قناة <b>${fmt(K.no_chan||0)}</b> · بنسبة ربح <b>${fmt(X.rated)}</b> من ${fmt(X.bTot)} ممول${!D.has_rate?" — <b style=\"color:#C2491E\">لا عمود نسبة الربح بالملف</b>":""}</small></div>`;
+    <div class="k w q"><span>جودة البيانات</span><small>${D.has_emp?`عقود بلا موظف <b>${fmt(K.no_emp||0)}</b> · `:""}بلا قناة <b>${fmt(K.no_chan||0)}</b> · بنسبة ربح <b>${fmt(X.rated)}</b> من ${fmt(X.bTot)} ممول${!D.has_rate?" — <b style=\"color:#C2491E\">لا عمود نسبة الربح بالملف</b>":""}</small></div>`;
   /* الموظفون */
   const E=D.employees||[], eTot=E.reduce((a,e)=>a+Number(e.n||0),0); tvOpsEmpCur=E;
-  el("tvOpsEmpTitle").innerHTML=`أداء الموظفين — ${per}${sc?` · ${sc}`:""}<span class="tot">${fmt(E.length)} موظفاً · ${fmt(eTot)} عقد</span>`;
-  el("tvOpsEmp").innerHTML=!D.has_emp?`<div class="tvEmpty" style="font-size:15px">أضف عمودي «موقع العمل» و«Employee Name» لملف التخصيص ثم ارفعه</div>`:E.length?E.map((e,i)=>`<div class="tvOpsE${i<3?" top":""}"><span class="rk">${i+1}</span><span class="n">${e.e}<small>${[e.w,e.ch].filter(Boolean).join(" · ")}</small></span><span class="bar"><i style="width:${E[0].n?e.n/E[0].n*100:0}%"></i></span><b>${fmt(e.n)}</b>${tvDl(e.prev?Math.round((e.n-e.prev)/e.prev*100):null)}</div>`).join(""):`<div class="tvEmpty" style="font-size:15px">لا عقود بأسماء موظفين لهذه الفترة</div>`;
+  const finOnly=!D.has_emp&&D.has_fin;
+  el("tvOpsEmpTitle").innerHTML=finOnly?`ملف العملاء والتمويل — ${per}${sc?` · ${sc}`:""} <small>أعمدة REDF بملف التخصيص</small><span class="tot">${fmt(X.prof.fan)} عقد ممول</span>`
+    :`أداء الموظفين — ${per}${sc?` · ${sc}`:""}<span class="tot">${fmt(E.length)} موظفاً · ${fmt(eTot)} عقد</span>`;
+  el("tvOpsEmp").innerHTML=finOnly?tvOpsFinHtml(X,n,false):(D.has_emp&&D.has_fin?tvOpsFinHtml(X,n,true):"")+(!D.has_emp?`<div class="tvEmpty" style="font-size:15px">أضف عمودي «موقع العمل» و«Employee Name» لملف التخصيص ثم ارفعه</div>`:E.length?E.map((e,i)=>`<div class="tvOpsE${i<3?" top":""}"><span class="rk">${i+1}</span><span class="n">${e.e}<small>${[e.w,e.ch].filter(Boolean).join(" · ")}</small></span><span class="bar"><i style="width:${E[0].n?e.n/E[0].n*100:0}%"></i></span><b>${fmt(e.n)}</b>${tvDl(e.prev?Math.round((e.n-e.prev)/e.prev*100):null)}</div>`).join(""):`<div class="tvEmpty" style="font-size:15px">لا عقود بأسماء موظفين لهذه الفترة</div>`);
   /* البنوك */
   el("tvOpsBankTitle").innerHTML=`البنوك — ${per}${sc?` · ${sc}`:""} <small>متوسط نسبة الربح بالعقود والمعلن (مدعوم، محول الراتب)${X.month?` · نسب ${X.month}`:""} · الثابت على ${X.term} سنة</small><span class="tot">${fmt(X.bTot)} عقد ممول · نقدي ${fmt(X.cash)}</span>`;
-  el("tvOpsBanks").innerHTML=`<div class="tvOpsB h"><span>الجهة</span><span>عقود</span><span>الحصة</span><span>بالعقود (فعلي)</span><span>ثابت مكافئ</span><span>المعلن</span><span>ثابت المعلن</span><span>الفرق</span><span>غير محول / غير مدعوم</span><span>المدة · العمر</span><span>أدنى راتب حكومي</span><span>المبادرات</span></div>`
+  el("tvOpsBanks").innerHTML=`<div class="tvOpsB h"><span>الجهة</span><span>عقود</span><span>الحصة</span><span>بالعقود (فعلي)</span><span>ثابت مكافئ</span><span>المعلن</span><span>ثابت المعلن</span><span>الفرق</span><span>غير محول / غير مدعوم</span><span>متوسط التمويل · الراتب (العقود)</span><span>المدة · العمر</span><span>أدنى راتب حكومي</span><span>المبادرات</span></div>`
     +X.banks.map(b=>{ const P=b.P||{}, pol=P.pol||{}, ini=P.init||{};
       const tip=[b.raw&&b.raw!==b.name?`بملف التخصيص: ${b.raw}`:"",b.rn?`${fmt(b.rn)} عقداً بنسبة ربح`:"",b.term?`متوسط مدة التمويل بالعقود ${Math.round(b.term)} سنة`:"",P.note||""].filter(Boolean).join(" · ");
       const inis=TV_INIT.filter(([k])=>ini[k]===true).map(([,l])=>l);
@@ -3289,6 +3345,7 @@ function tvRenderOps(){
         <span class="r">${b.pub!=null?tvPctS(b.pub*100):"—"}</span><span class="f">${b.pubFlat!=null?tvPctS(b.pubFlat*100):"—"}</span>
         <span class="g ${b.gap==null?"":b.gap>0.05?"dn":b.gap<-0.05?"up":"fl"}">${b.gap==null?"—":`${b.gap>0?"+":""}${b.gap.toFixed(2)}`}</span>
         <span class="s">${b.pubNt!=null?tvPctS(b.pubNt*100):"—"} / ${b.uns!=null?tvPctS(b.uns*100):"—"}</span>
+        <span class="s">${b.fa?tvPriceShort(b.fa):"—"} · ${b.sal?fmt(Math.round(b.sal)):"—"}</span>
         <span class="s">${tvShort(pol.term||"—",18)} · ${tvShort(pol.age||"—",12)}</span><span class="s">${tvShort((pol.sal&&pol.sal.gov_t)||"—",14)}</span>
         <span class="ini" title="${inis.join("، ")}">${inis.slice(0,3).map(l=>`<em>${l}</em>`).join("")||"—"}${inis.length>3?`<em class="more">+${inis.length-3}</em>`:""}</span></div>`; }).join("")
     +(!(D.policy||[]).length?`<div class="tvEmpty" style="font-size:14px">ارفع ملف «مميزات وسياسات الجهات التمويلية» من «⬆ رفع ملف» لعرض النسب المعلنة</div>`:"");
@@ -3310,17 +3367,27 @@ function mRenderOps(){
     <div class="mK6"><div><span>عقود ${per}</span><b>${fmt(n)}</b><small>السابقة ${fmt(K.prev||0)}</small></div><div><span>من الحجز للعقد</span><b>${K.dn?Math.round(K.ds/K.dn):"—"}</b><small>يوماً بالمتوسط</small></div>
       <div><span>تحويل الحجوزات</span><b>${conv!=null?conv+"%":"—"}</b><small>حجوزات الفترة</small></div><div><span>ممول بنكياً</span><b>${n?Math.round((n-X.cash)/n*100)+"%":"—"}</b><small>نقدي ${fmt(X.cash)}</small></div>
       <div><span>المستفيدون</span><b>${n?Math.round((+K.ben||0)/n*100)+"%":"—"}</b><small>${fmt(K.ben||0)} عقد</small></div><div><span>حجوزات قائمة</span><b>${fmt(open)}</b><small>أكثر من 90 يوماً ${fmt(B.a91||0)}</small></div></div>
+    ${D.has_fin?(()=>{ const F=X.prof, r=v=>v==null?"—":Math.round(v)+"%";
+      return `<div class="mCard"><div class="mCardHd"><b>التمويل والعملاء</b><span>أعمدة REDF</span></div><div class="mK6">
+        <div><span>متوسط التمويل</span><b>${F.fa?tvPriceShort(F.fa):"—"}</b><small>القسط ${F.inst?fmt(Math.round(F.inst)):"—"}</small></div>
+        <div><span>متوسط الراتب</span><b>${F.sal?fmt(Math.round(F.sal)):"—"}</b><small>الأسرة ${F.fam?Math.round(F.fam*10)/10:"—"}</small></div>
+        <div><span>باقة الدفعة</span><b>${fmt(F.dpn)}</b><small>${F.dpa?`متوسط ${tvPriceShort(F.dpa)}`:"عقد"}</small></div>
+        <div><span>عسكري</span><b>${r(F.jm)}</b><small>مبادرة ${fmt(F.mil)}</small></div><div><span>حكومي</span><b>${r(F.jg)}</b><small>خاص ${r(F.jp)}</small></div>
+        <div><span>دعم عيني · ذرى+</span><b>${fmt(F.ikn)} · ${fmt(F.dh)}</b><small>عقد</small></div></div>
+        <div class="mBars">${[["باقة دعم الدفعة المقدمة",F.dpn],["الدعم العيني",F.ikn],["مبادرة العسكريين",F.mil],["الدعم الإضافي للعسكريين",F.mile],["ذرى بلس",F.dh]].map(([l,v])=>`<div class="r"><span class="n">${l}</span><span class="bar"><i style="width:${n?v/n*100:0}%;background:#C99A2E"></i></span><span class="v"><b>${fmt(v)}</b>${n?` · ${Math.round(v/n*100)}%`:""}</span></div>`).join("")}</div>
+        ${F.instPct?`<div class="mNote">القسط ≈ ${Math.round(F.instPct)}% من الراتب بالمتوسط</div>`:""}</div>`; })():""}
     <div class="mCard"><div class="mCardHd"><b>البنوك — ${per}</b><span>الثابت على ${X.term} سنة</span></div>
       <div class="mPills sm">${[20,25,30].map(v=>`<button type="button" data-ot="${v}" class="${+tvOps.term===v?"on":""}">${v} سنة</button>`).join("")}</div>
       ${X.banks.map(b=>{ const P=b.P||{}, pol=P.pol||{}, ini=P.init||{};
         return `<div class="mBank${b.n?"":" off"}"><div class="t"><b>${b.name}</b><span>${b.n?`${fmt(b.n)} عقد · ${Math.round(b.share)}%`:"بلا عقود بالفترة"}</span></div>
           <div class="g"><div>بالعقود<b>${b.rate!=null?tvPctS(b.rate*100):"—"}</b><small>ثابت ${b.flat!=null?tvPctS(b.flat*100):"—"}</small></div><div>المعلن<b>${b.pub!=null?tvPctS(b.pub*100):"—"}</b><small>ثابت ${b.pubFlat!=null?tvPctS(b.pubFlat*100):"—"}</small></div>
           <div>الفرق<b class="${b.gap==null?"":b.gap>0.05?"dn":b.gap<-0.05?"up":""}">${b.gap==null?"—":`${b.gap>0?"+":""}${b.gap.toFixed(2)}`}</b><small>نقطة مئوية</small></div></div>
+          <div class="s">${[b.fa&&`متوسط التمويل ${tvPriceShort(b.fa)}`,b.sal&&`الراتب ${fmt(Math.round(b.sal))}`,b.mil!=null&&`عسكري ${Math.round(b.mil)}%`].filter(Boolean).join(" · ")}</div>
           <div class="s">${[pol.term&&`المدة ${pol.term}`,pol.age&&`العمر ${pol.age}`,pol.sal&&pol.sal.gov_t&&`أدنى راتب ${pol.sal.gov_t}`].filter(Boolean).join(" · ")}</div>
           ${TV_INIT.some(([k])=>ini[k]===true)?`<div class="ini">${TV_INIT.filter(([k])=>ini[k]===true).map(([,l])=>`<em>${l}</em>`).join("")}</div>`:""}</div>`; }).join("")}
       ${!D.has_rate?`<div class="mNote">لا يوجد عمود «نسبة الربح» بملف التخصيص — المعروض النسب المعلنة فقط</div>`:""}</div>`;
   const E=D.employees||[]; mEmpCur=E.map(e=>({n:e.e,work:e.w,c:e.n}));
-  h+=`<div class="mCard"><div class="mCardHd"><b>أداء الموظفين — ${per}</b><span>${fmt(E.length)} موظفاً</span></div><div class="mList">${E.slice(0,60).map((e,i)=>`<div class="mRow" data-emp="${i}" style="cursor:pointer"><span class="rk${i<3?" m"+(i+1):""}">${i+1}</span><div><div class="nm">${e.e}</div><div class="dv">${[e.w,e.ch].filter(Boolean).join(" · ")}</div></div><div class="val"><b>${fmt(e.n)}</b>${e.prev?`<small class="${e.n>=e.prev?"up":"dn"}">السابقة ${fmt(e.prev)}</small>`:""}</div></div>`).join("")||`<div class="mEmpty">لا عقود بأسماء موظفين لهذه الفترة</div>`}</div></div>`;
+  h+=`<div class="mCard"><div class="mCardHd"><b>أداء الموظفين — ${per}</b><span>${fmt(E.length)} موظفاً</span></div><div class="mList">${!D.has_emp?`<div class="mEmpty">ملف التخصيص بلا عمودي «Employee Name» و«موقع العمل» — أضفهما ثم ارفعه</div>`:E.slice(0,60).map((e,i)=>`<div class="mRow" data-emp="${i}" style="cursor:pointer"><span class="rk${i<3?" m"+(i+1):""}">${i+1}</span><div><div class="nm">${e.e}</div><div class="dv">${[e.w,e.ch].filter(Boolean).join(" · ")}</div></div><div class="val"><b>${fmt(e.n)}</b>${e.prev?`<small class="${e.n>=e.prev?"up":"dn"}">السابقة ${fmt(e.prev)}</small>`:""}</div></div>`).join("")||`<div class="mEmpty">لا عقود بأسماء موظفين لهذه الفترة</div>`}</div></div>`;
   setTimeout(()=>{ const c=$("mOpsChart"); if(c) tvDrawChart(c,S.labels,S.series,{pulseLast:true,xFont:10,padX:16,empty:"لا عقود لهذه الفترة"}); },0);
   return h;
 }
@@ -3460,11 +3527,27 @@ function tvAllocAggregate(rows,appNameOf){
   const dToday=new Date(), dIso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const d30=dIso(new Date(dToday.getTime()-30*864e5)), d90=dIso(new Date(dToday.getTime()-90*864e5)), curYr=String(dToday.getFullYear());
   /* الصفحة التشغيلية (tv_ops.sql): نسبة الربح بالعقد ومدة التمويل (إن وُجد عموداهما)، وكل عقد بقناته وموظفه وبنكه، والحجوزات بتاريخ حجزها */
-  const rateKey=resolveHeaderKey(rows,["نسبة الربح","نسبة الربح السنوية","معدل الربح","هامش الربح","نسبة الفائدة","معدل الفائدة","سعر الفائدة","نسبة الفايدة","نسبة التمويل","معدل النسبة السنوي","APR","interest_rate","interest rate","profit_rate","profit rate","effective_rate","effective rate","rate"],[["ربح","فائدة","فايدة","فائده","interest","profit","apr"]]);
+  const rateKey=resolveHeaderKey(rows,["REDF - نسبة الأرباح","نسبة الأرباح","نسبة الارباح","نسبة الربح","نسبة الربح السنوية","معدل الربح","معدل الأرباح","هامش الربح","نسبة الفائدة","معدل الفائدة","سعر الفائدة","نسبة الفايدة","معدل النسبة السنوي","APR","interest_rate","interest rate","profit_rate","profit rate","effective_rate","effective rate","rate"],[["ربح","رباح","فائدة","فايدة","فائده","interest","profit","apr"]]);
   const termKey=resolveHeaderKey(rows,["مدة التمويل","مده التمويل","مدة القرض","مدة السداد","loan_term","loan term","tenor","financing_term","financing term","term_years"],[["مدة","مده","tenor","term"],["تمويل","قرض","سداد","loan","financ","years"]]);
   const pRate=v=>{ if(v==null||v==="") return NaN; let x=typeof v==="number"?v:Number(String(v).replace(/[%\s]/g,"").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(",","."));
     if(!(x>0)) return NaN; if(x>1) x=x/100; return x>=0.005&&x<=0.25?x:NaN; };
-  const pTerm=v=>{ let x=num(v); if(!(x>0)) return NaN; if(x>60) x=x/12; return x>=1&&x<=40?x:NaN; };
+  /* المدة بالأشهر إن ذكر العنوان ذلك («مدة التمويل بالأشهر- REDF»)، وإلا بالسنوات (أكبر من 60 = أشهر) */
+  const termMonths=!!termKey&&/شهر|month/i.test(termKey);
+  const pTerm=v=>{ let x=num(v); if(!(x>0)) return NaN; if(termMonths||x>60) x=x/12; return x>=1&&x<=40?x:NaN; };
+  /* بيانات التمويل (أعمدة REDF): مبلغ التمويل، الراتب، القسط، جهة العمل، أفراد الأسرة، باقة الدفعة المقدمة، الدعم العيني، مبادرة العسكريين، ذرى بلس */
+  const faKey=resolveHeaderKey(rows,["اجمالي مبلغ التمويل - REDF","إجمالي مبلغ التمويل","اجمالي مبلغ التمويل","مبلغ التمويل","loan_amount","financing_amount"],[["مبلغ"],["تمويل"]]);
+  const salKey=resolveHeaderKey(rows,["الراتب  - REDF","الراتب - REDF","الراتب","salary"],[["راتب","salary"]]);
+  const instKey=resolveHeaderKey(rows,["القسط الشهرى - REDF","القسط الشهري - REDF","القسط الشهري","القسط","installment"],[["قسط","install"]]);
+  const jobKey=resolveHeaderKey(rows,["جهة العمل - REDF","جهة العمل","employer"],[["جهة","جهه"],["عمل"]]);
+  const famKey=resolveHeaderKey(rows,["عدد أفراد الأسرة -REDF","عدد أفراد الأسرة","عدد افراد الاسرة","family_size"],[["افراد","أفراد"]]);
+  const dpKey=resolveHeaderKey(rows,["مبلغ باقة دعم الدفعة المقدمة"],[["باقة","باقه"],["دفعة","دفعه"]]);
+  const ikKey=resolveHeaderKey(rows,["مبلغ الدعم العيني","مبلغ الدعم العينى"],[["مبلغ"],["عيني","عينى"]]);
+  const milKey=resolveHeaderKey(rows,["مستفيد مبادرة العسكريين"],[["مستفيد"],["عسكري"]]);
+  const mileKey=resolveHeaderKey(rows,["مبادرة الدعم الإضافى عسكريين - الصندوق","مبادرة الدعم الإضافي عسكريين"],[["اضاف","إضاف"],["عسكري"]]);
+  const dhKey=resolveHeaderKey(rows,["منتج ذرى بلس","ذرى بلس"],[["ذرى","ذري"]]);
+  const launchKey=resolveHeaderKey(rows,["تاريخ بدء البيع للمشروع","تاريخ بدء البيع"],[["بدء","بداية"],["بيع"]]);
+  const yes1=v=>{ if(v==null||v==="") return false; if(typeof v==="number") return v>0; const t=String(v).trim().toLowerCase(); return t==="1"||t==="yes"||t==="true"||t==="نعم"; };
+  const jobCat=v=>{ const t=String(v==null?"":v); return /عسكر/.test(t)?"mil":/حكوم/.test(t)?"gov":/خاص/.test(t)?"pvt":t.trim()?"oth":""; };
   const ops=new Map(), book=new Map();
   /* أعمدة قنوات البيع والموظفين (الملف الجديد): «القنوات»، «موقع العمل»، «Employee Name» — «-» = غير مذكور */
   const chanKey=resolveHeaderKey(rows,["القنوات","القناة","قناة البيع","قنوات البيع"],[["قناه","قنوات","قناة"]]);
@@ -3502,7 +3585,7 @@ function tvAllocAggregate(rows,appNameOf){
         const bn=bedsKey?num(row[bedsKey]):NaN, beds=bn>=0&&bn<20?Math.round(bn):-1;
         const pk=[pn,code,md,ut1,beds].join("\u0001");
         let o=prod.get(pk);
-        if(!o){ o={project_name:pn,project_code:code,model:md,unit_type:ut1,beds,developer:dev,kind,sector,city:S(row["المدينة"]),dest,
+        if(!o){ o={project_name:pn,project_code:code,model:md,unit_type:ut1,beds,developer:dev,kind,sector,city:S(row["المدينة"]),dest,launch:launchKey?tvAllocDate(row[launchKey]):null,
           avail_p:0,avail_d:0,reserved:0,contracts:0,other:0,c30:0,c90:0,cy:0,b30:0,months:[0,0,0,0,0,0,0,0,0,0,0,0],
           pa_sum:0,pa_n:0,ps_sum:0,ps_n:0,moh_sum:0,moh_n:0,sz_sum:0,sz_n:0,sz_min:null,sz_max:null,sqa_p:0,sqa_s:0,sqs_p:0,sqs_s:0}; prod.set(pk,o); }
         const sz=sizeKey?num(row[sizeKey]):NaN, szOk=sz>=20&&sz<=3000;
@@ -3557,7 +3640,15 @@ function tvAllocAggregate(rows,appNameOf){
         if(empKey){ const en=clean(row[empKey]); if(en){ const ek=[cd,sector,kind,en,workKey?clean(row[workKey]):""].join("\u0001"); emp.set(ek,(emp.get(ek)||0)+1); } }
         /* الصفحة التشغيلية: عقد × مشروع × ضاحية × قناة × موظف × بنك (فارغ = نقدي) */
         { const ch=chanKey?clean(row[chanKey]):"", en=empKey?clean(row[empKey]):"", wk=workKey?clean(row[workKey]):"", bn=bankKey&&!tvIsCashBank(row[bankKey])?S(row[bankKey]):"";
-          const ok=[cd,pn,dest,sector,kind,ch,en,wk,bn].join("\u0001"), o=ops.get(ok)||{n:0,vs:0,vn:0,rs:0,rn:0,ts:0,tn:0,ben:0,ds:0,dn:0}; o.n++;
+          const ok=[cd,pn,dest,sector,kind,ch,en,wk,bn].join("\u0001"), o=ops.get(ok)||{n:0,vs:0,vn:0,rs:0,rn:0,ts:0,tn:0,ben:0,ds:0,dn:0,fa:0,fan:0,sal:0,saln:0,inst:0,instn:0,fam:0,famn:0,jm:0,jg:0,jp:0,jo:0,dpn:0,dps:0,ikn:0,iks:0,mil:0,mile:0,dh:0}; o.n++;
+          { const fa=faKey?num(row[faKey]):NaN; if(fa>=1000){ o.fa+=fa; o.fan++; }
+            const sl=salKey?num(row[salKey]):NaN; if(sl>=500&&sl<1e6){ o.sal+=sl; o.saln++; }
+            const it=instKey?num(row[instKey]):NaN; if(it>=50&&it<1e6){ o.inst+=it; o.instn++; }
+            const fm=famKey?num(row[famKey]):NaN; if(fm>=1&&fm<30){ o.fam+=fm; o.famn++; }
+            const jc=jobKey?jobCat(row[jobKey]):""; if(jc==="mil") o.jm++; else if(jc==="gov") o.jg++; else if(jc==="pvt") o.jp++; else if(jc) o.jo++;
+            const dp=dpKey?num(row[dpKey]):NaN; if(dp>0){ o.dpn++; o.dps+=dp; }
+            const ik=ikKey?num(row[ikKey]):NaN; if(ik>0){ o.ikn++; o.iks+=ik; }
+            if(milKey&&yes1(row[milKey])) o.mil++; if(mileKey&&yes1(row[mileKey])) o.mile++; if(dhKey&&yes1(row[dhKey])) o.dh++; }
           const cv=pr>=10000?pr:(rp>=10000?rp:NaN); if(cv>=10000){ o.vs+=cv; o.vn++; }
           if(rateKey&&bn){ const rr=pRate(row[rateKey]); if(rr===rr){ o.rs+=rr; o.rn++; } }
           if(termKey&&bn){ const tt=pTerm(row[termKey]); if(tt===tt){ o.ts+=tt; o.tn++; } }
@@ -3585,7 +3676,7 @@ function tvAllocAggregate(rows,appNameOf){
   const products=[...prod.values()];
   const opsDaily=[...ops.entries()].map(([k,o])=>{ const [d,p,dst,sc,kd,ch,e,w,b]=k.split("\u0001"); return Object.assign({d,p,dest:dst,s:sc,k:kd,ch,e,w,b},o); });
   const opsBook=[...book.entries()].map(([k,o])=>{ const [d,p,dst,sc,kd,ch,st]=k.split("\u0001"); return Object.assign({d,p,dest:dst,s:sc,k:kd,ch,st},o); });
-  return {opsDaily,opsBook,rateKey,termKey,contracts,status,banks:bankKey?banks:null,value:bankKey?value:null,channels,employees,prices,availTypes,products,modelKey,bedsKey,sizeKey,chanKey,empKey,priceKey,bankKey,contractsYear,noDate,secFixed,secUnknown,rows:rows.length};
+  return {opsDaily,opsBook,rateKey,termKey,finKeys:{faKey,salKey,instKey,jobKey,famKey,dpKey,ikKey,milKey,mileKey,dhKey,launchKey},contracts,status,banks:bankKey?banks:null,value:bankKey?value:null,channels,employees,prices,availTypes,products,modelKey,bedsKey,sizeKey,chanKey,empKey,priceKey,bankKey,contractsYear,noDate,secFixed,secUnknown,rows:rows.length};
 }
 /* رفع التجميع: call(fn,body) يضيف بيانات الأدمن (adminCall بالتطبيق، أو sbCall مع بيانات الدخول بالشاشة) */
 async function tvAllocUpload(agg,call,onStatus){
@@ -3853,8 +3944,8 @@ async function tvUpReadAlloc(file){
   const WANT=["project_name","حالة الحجز","price","unit_type","developer_name","القطاع"];
   let rows=null, sheet="", sheets=1;
   if(file.size<=25*1024*1024){ try{ await loadSheetJS(); const wb=XLSX.read(new Uint8Array(await file.arrayBuffer()),{type:"array"}); const ws=xlsxBestSheet(wb,WANT);
-    if(ws){ rows=XLSX.utils.sheet_to_json(ws,{defval:null}); sheet=ws.__name; sheets=wb.SheetNames.length; } }catch(_){ rows=null; } }
-  if(!rows||!rows.length){ const r=await xlsxStreamRows(file,WANT,(pct,nr)=>tvUpMsg(`جارٍ قراءة ملف التخصيص — ${pct}% · ${fmt(nr)} صف…`)); rows=r.rows; sheet=r.sheetName; sheets=r.sheetCount; }
+    if(ws){ rows=allocDropCols(XLSX.utils.sheet_to_json(ws,{defval:null})); sheet=ws.__name; sheets=wb.SheetNames.length; } }catch(_){ rows=null; } }
+  if(!rows||!rows.length){ const r=await xlsxStreamRows(file,WANT,(pct,nr)=>tvUpMsg(`جارٍ قراءة ملف التخصيص — ${pct}% · ${fmt(nr)} صف…`),ALLOC_DROP_HEADERS); rows=r.rows; sheet=r.sheetName; sheets=r.sheetCount; }
   return {rows,sheet,sheets};
 }
 async function tvUpHandleFile(file){
@@ -3895,7 +3986,7 @@ async function tvUpHandleFile(file){
       const agg=tvAllocAggregate(r.rows,null);
       if(!agg.contracts.length&&!agg.status.length) throw new Error("لم أتعرّف على أعمدة ملف التخصيص (project_name، حالة الحجز، تاريخ توقيع العقد…)");
       tvUpAlloc=agg;
-      tvUpMsg(`<b>ملف التخصيص</b> · الورقة «${r.sheet}» · <b>${fmt(r.rows.length)}</b> صف<br>عقود ${new Date().getFullYear()}: <b>${fmt(agg.contractsYear)}</b>${agg.noDate?` · ${fmt(agg.noDate)} بلا تاريخ توقيع`:""}${agg.secFixed?`<br>عقود بقطاع فارغ أو غير معروف بالملف: <b>${fmt(agg.secFixed)}</b> — أُخذ قطاعها من مشروعها/مدينتها`:""}${agg.secUnknown?` · <b style="color:#C2491E">${fmt(agg.secUnknown)}</b> بلا قطاع`:""}<br>القنوات: ${agg.chanKey?`«${agg.chanKey}»`:"غير موجود"} · الموظفون: ${agg.empKey?`«${agg.empKey}» (${fmt(new Set((agg.employees||[]).map(e=>e.employee)).size)} موظفاً)`:"غير موجود"}<br>الصفحة التشغيلية: نسبة الربح ${agg.rateKey?`«${agg.rateKey}»`:`<span style="color:#C2491E">غير موجود — لا مقارنة لنسب البنوك بالعقود</span>`} · مدة التمويل ${agg.termKey?`«${agg.termKey}»`:"غير موجود (20 سنة للمقارنة)"}<br>تحليل المنتجات: <b>${fmt((agg.products||[]).length)}</b> منتجاً/نموذجاً · النموذج: ${agg.modelKey?`«${agg.modelKey}»`:"غير موجود"} · الغرف: ${agg.bedsKey?`«${agg.bedsKey}»`:"غير موجود"} · المساحة: ${agg.sizeKey?`«${agg.sizeKey}»`:"غير موجود"}<br>سعر العقد: ${agg.priceKey?`«${agg.priceKey}»`:"غير موجود — عمود price"} · البنك: ${agg.bankKey?`«${agg.bankKey}»`:"غير موجود — لا يُحسب الإيراد"}${agg.value?(()=>{ const V=agg.value.filter(v=>v.kind==="nhc"), f=V.reduce((x,v)=>x+v.fin_n,0), c=V.reduce((x,v)=>x+v.cash_n,0), sm=V.reduce((x,v)=>x+v.fin_sum+v.cash_sum,0); return `<br>للإيراد — عقود NHC التراكمية: ممول بنكياً <b>${fmt(f)}</b> · نقدي <b>${fmt(c)}</b> · القيمة ${tvMoney(sm)}`; })():""}`);
+      tvUpMsg(`<b>ملف التخصيص</b> · الورقة «${r.sheet}» · <b>${fmt(r.rows.length)}</b> صف<br>عقود ${new Date().getFullYear()}: <b>${fmt(agg.contractsYear)}</b>${agg.noDate?` · ${fmt(agg.noDate)} بلا تاريخ توقيع`:""}${agg.secFixed?`<br>عقود بقطاع فارغ أو غير معروف بالملف: <b>${fmt(agg.secFixed)}</b> — أُخذ قطاعها من مشروعها/مدينتها`:""}${agg.secUnknown?` · <b style="color:#C2491E">${fmt(agg.secUnknown)}</b> بلا قطاع`:""}<br>القنوات: ${agg.chanKey?`«${agg.chanKey}»`:"غير موجود"} · الموظفون: ${agg.empKey?`«${agg.empKey}» (${fmt(new Set((agg.employees||[]).map(e=>e.employee)).size)} موظفاً)`:"غير موجود"}<br>الصفحة التشغيلية: نسبة الربح ${agg.rateKey?`«${agg.rateKey}»`:`<span style="color:#C2491E">غير موجود — لا مقارنة لنسب البنوك بالعقود</span>`} · مدة التمويل ${agg.termKey?`«${agg.termKey}»`:"غير موجود (20 سنة للمقارنة)"} · بيانات التمويل: ${fmt(Object.values(agg.finKeys||{}).filter(Boolean).length)} من 11 عموداً${agg.empKey?"":` · <span style="color:#C2491E">لا عمود «Employee Name» — أداء الموظفين فارغ</span>`}<br>تحليل المنتجات: <b>${fmt((agg.products||[]).length)}</b> منتجاً/نموذجاً · النموذج: ${agg.modelKey?`«${agg.modelKey}»`:"غير موجود"} · الغرف: ${agg.bedsKey?`«${agg.bedsKey}»`:"غير موجود"} · المساحة: ${agg.sizeKey?`«${agg.sizeKey}»`:"غير موجود"}<br>سعر العقد: ${agg.priceKey?`«${agg.priceKey}»`:"غير موجود — عمود price"} · البنك: ${agg.bankKey?`«${agg.bankKey}»`:"غير موجود — لا يُحسب الإيراد"}${agg.value?(()=>{ const V=agg.value.filter(v=>v.kind==="nhc"), f=V.reduce((x,v)=>x+v.fin_n,0), c=V.reduce((x,v)=>x+v.cash_n,0), sm=V.reduce((x,v)=>x+v.fin_sum+v.cash_sum,0); return `<br>للإيراد — عقود NHC التراكمية: ممول بنكياً <b>${fmt(f)}</b> · نقدي <b>${fmt(c)}</b> · القيمة ${tvMoney(sm)}`; })():""}`);
       tvUpUpdateGo(); return;
     }
     const res=await liveReadFile(file);

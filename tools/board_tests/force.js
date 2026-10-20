@@ -84,8 +84,8 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
   console.log(await page.evaluate(()=>document.getElementById('tvLeadChan').innerText.replace(/\n+/g,' | ')));
   await page.click('#tvBandSeg button[data-v="dest"]'); await page.waitForTimeout(300);
   console.log('band dest:',await page.evaluate(()=>document.getElementById('tvDestTitle').innerText.slice(0,40)+' / '+document.getElementById('tvDestTot').innerText));
-  await page.click('.tvGauge[data-sec="الغربي"]'); await page.click('#tvBandSeg button[data-v="emp"]'); await page.waitForTimeout(300);
-  console.log('west emp:',await page.evaluate(()=>document.getElementById('tvDestTitle').innerText.slice(0,60)+' / '+document.getElementById('tvDestTot').innerText), '| chan:', await page.evaluate(()=>document.getElementById('tvLeadChan').innerText.replace(/\n+/g,' | ').slice(0,120)));
+  await page.click('.tvGauge[data-sec="الغربي"]'); console.log('emp band removed (moved to ops page):',!(await page.$('#tvBandSeg button[data-v="emp"]'))); await page.waitForTimeout(300);
+  console.log('west dest:',await page.evaluate(()=>document.getElementById('tvDestTitle').innerText.slice(0,60)+' / '+document.getElementById('tvDestTot').innerText), '| chan:', await page.evaluate(()=>document.getElementById('tvLeadChan').innerText.replace(/\n+/g,' | ').slice(0,120)));
   await page.click('#tvLeadSeg button[data-m="today"]'); await page.waitForTimeout(500);
   console.log('today:',await page.evaluate(()=>document.getElementById('tvLeadChan').innerText.replace(/\n+/g,' | ').slice(0,140)),'||',await page.evaluate(()=>document.getElementById('tvDestTrack').innerText.slice(0,80)));
   console.log('ERR',errs.length,errs.slice(0,2)); await browser.close(); return;
