@@ -6,7 +6,7 @@ const fs=require('fs');
   const roster=JSON.parse(fs.readFileSync(process.argv[3],'utf8'));
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
   const p=await b.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message)); await p.route('**/rest/v1/**',r=>r.fulfill({status:404,body:'{}'}));
-  await p.goto('file:///home/user/Tareq/NHC_Live_Board.html'); await p.waitForTimeout(400);
+  await p.goto('file:///home/user/Tareq/SalesPlace_01.html?tv=1'); await p.waitForTimeout(400);
   const out=await p.evaluate(roster=>{
     let seed=5; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; }, pick=a=>a[Math.floor(rnd()*a.length)];
     const today=new Date(), iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;

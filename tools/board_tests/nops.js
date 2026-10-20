@@ -1,3 +1,4 @@
+const GW=require('/tmp/pwtest/gw.js');
 const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
 const mk=(c,b,a,s,i,f,ca,nb,sb,p)=>({contracts:c,bookings:b,available:a,supply:s,inventory:i,financed:f,cash:ca,nonbene:nb,selfbuild:sb,projects_with_contracts:p});
 const t=(h,m)=>{const d=new Date();d.setHours(h,m,0,0);return d.toISOString();};
@@ -31,10 +32,10 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
   const browser=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',headless:true,args:['--no-sandbox']});
   const page=await browser.newPage({viewport:{width:+(process.env.VW||1920),height:+(process.env.VH||1080)},isMobile:!!process.env.MOBILE,hasTouch:!!process.env.MOBILE,deviceScaleFactor:process.env.MOBILE?2:1});
   const errs=[]; page.on('pageerror',e=>errs.push(e.message));
-  await page.route('**/rest/v1/**',async route=>{
-    const url=route.request().url(); let body=null;
+  await page.route('**/rest/v1/**',GW(async(route,__url,__post)=>{
+    const url=__url; let body=null;
     const m=url.match(/rpc\/([a-z_]+)/);
-    if(m){ const fn=m[1]; const q=JSON.parse(route.request().postData()||'{}'); const sec=q.p_sector??null;
+    if(m){ const fn=m[1]; const q=JSON.parse(__post||'{}'); const sec=q.p_sector??null;
       if(fn==='get_tv_contracts'){ if(process.env.NOFC) return route.fulfill({status:404,contentType:'application/json',body:'{"message":"no fn"}'});
         const months=[]; const add=(sec,kind,q3,oc)=>{ for(let i=0;i<9;i++) months.push({m:i+1,sector:sec,kind,cnt:i<8?Math.floor(q3/9):q3-Math.floor(q3/9)*8}); months.push({m:10,sector:sec,kind,cnt:oc}); }; const RV=r=>process.env.NOREV?r:Object.assign(r,{fin:r.cnt*800000*0.6,cash:r.cnt*800000*0.4});
         add(process.env.VARIANT?'الوسطى':'الأوسط','nhc',2562,291); add('الغربي','nhc',3073,163); add('الشرقي','nhc',565,53); add('الأوسط','other',12000,1577);
@@ -95,7 +96,8 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
     else if(url.includes('sync_status')) body=[{last_synced_at:t(7,5)}];
     if(body===null) return route.fulfill({status:404,contentType:'application/json',body:'{"message":"mock"}'});
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
-  });
+  }));
+  await GW.init(page);
   await page.goto(process.env.URL,{waitUntil:'load'}); await page.waitForTimeout(1200);
   await page.click('#mNav button[data-tab="analysis"]'); await page.click('#mAnSeg button[data-an="prod"]'); await page.waitForTimeout(800);
   let n=0; page.on('request',r=>{ if(r.url().includes('get_tv_product_stats')) n++; }); await page.waitForTimeout(1500); console.log('calls in 1.5s:',n);

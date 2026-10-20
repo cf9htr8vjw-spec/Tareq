@@ -1,15 +1,17 @@
+const GW=require('/tmp/pwtest/gw.js');
 // رفع جدول الإيرادات من الشاشة: رسالة الملخص (ورقة المفتاح) ووصول p_meta والأكواد للقاعدة، والرجوع للدالة القديمة
 const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
 (async()=>{
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
   const p=await b.newPage({viewport:{width:1920,height:1080}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
   let sent=null, calls=0;
-  await p.route('**/rest/v1/**',async r=>{ const m=r.request().url().match(/rpc\/([a-z_]+)/); const q=JSON.parse(r.request().postData()||'{}');
-    if(m&&m[1]==='login') return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,admin:true,name:'طارق'})});
+  await p.route('**/rest/v1/**',GW(async(r,__url,__post)=>{ const m=__url.match(/rpc\/([a-z_]+)/); const q=JSON.parse(__post||'{}');
+    if(m&&m[1]==='admin_sessions') return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,admin:true,name:'طارق'})});
     if(m&&m[1]==='admin_load_tv_rev'){ calls++; if(process.env.OLDFN&&'p_meta' in q) return r.fulfill({status:404,contentType:'application/json',body:'{"message":"Could not find the function public.admin_load_tv_rev(p_admin, p_meta, p_pass, p_rows)"}'});
       sent=q; return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,count:q.p_rows.length})}); }
-    return r.fulfill({status:404,contentType:'application/json',body:'{}'}); });
-  await p.goto('file:///home/user/Tareq/NHC_Live_Board.html',{waitUntil:'load'}); await p.waitForTimeout(800);
+    return r.fulfill({status:404,contentType:'application/json',body:'{}'}); }));
+  await GW.init(p);
+  await p.goto('file:///home/user/Tareq/SalesPlace_01.html?tv=1',{waitUntil:'load'}); await p.waitForTimeout(800);
   await p.evaluate(()=>tvUpOpen());
   await p.setInputFiles('#tvUpFile',process.argv[2]); await p.waitForTimeout(2500);
   console.log('MSG:',(await p.textContent('#tvUpMsg')).replace(/\s+/g,' ').slice(0,900));

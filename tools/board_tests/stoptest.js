@@ -1,3 +1,4 @@
+const GW=require('/tmp/pwtest/gw.js');
 // شاشة الإيقاف: get_app_state=موقوف ⇒ الشاشة مخفية وتظهر رسالة الإيقاف؛ إعادة التشغيل بحساب أدمن ⇒ إعادة تحميل وعودة العرض
 const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
 (async()=>{
@@ -5,14 +6,15 @@ const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
   const page=await browser.newPage({viewport:{width:390,height:844}});
   const errs=[]; page.on('pageerror',e=>errs.push(e.message));
   let enabled=false, calls=[];
-  await page.route('**/rest/v1/**',async route=>{
-    const url=route.request().url(); const m=url.match(/rpc\/([a-z_]+)/);
+  await page.route('**/rest/v1/**',GW(async(route,__url,__post)=>{
+    const url=__url; const m=url.match(/rpc\/([a-z_]+)/);
     if(m&&m[1]==='get_app_state') return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,enabled,message:'متوقف للصيانة حتى الساعة 5'})});
-    if(m&&m[1]==='admin_set_app_state'){ const q=JSON.parse(route.request().postData()); calls.push(q);
+    if(m&&m[1]==='admin_set_app_state'){ const q=JSON.parse(__post); calls.push(q);
       const ok=q.p_admin==='tareq'&&q.p_pass==='pw'; if(ok) enabled=q.p_enabled; return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(ok?{ok:true,msg:'أُعيد'}:{ok:false,msg:'غير مصرح'})}); }
     if(!enabled) return route.fulfill({status:401,contentType:'application/json',body:'{"message":"permission denied"}'});
     return route.fulfill({status:404,contentType:'application/json',body:'{"message":"mock"}'});
-  });
+  }));
+  await GW.init(page);
   await page.goto(process.env.URL,{waitUntil:'load'}); await page.waitForTimeout(1200);
   const st=()=>page.evaluate(()=>({stop:!!document.getElementById('appStop'),msg:(document.getElementById('appStopMsg')||{}).textContent,
      tv:(document.getElementById('tvView')||{style:{}}).style.visibility, app:(document.getElementById('app')||{style:{}}).style.visibility, lock:(document.getElementById('lock')||{style:{}}).style.visibility}));

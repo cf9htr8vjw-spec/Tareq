@@ -4,7 +4,7 @@ const fs=require('fs');
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',headless:true,args:['--no-sandbox']});
   const p=await b.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
   await p.route('**/rest/v1/**',r=>r.fulfill({status:404,contentType:'application/json',body:'{}'}));
-  await p.goto('file:///home/user/Tareq/NHC_Live_Board.html',{waitUntil:'load'}); await p.waitForTimeout(500);
+  await p.goto('file:///home/user/Tareq/SalesPlace_01.html?tv=1',{waitUntil:'load'}); await p.waitForTimeout(500);
   const b64=fs.readFileSync(process.argv[2]).toString('base64');
   const out=await p.evaluate(async b64=>{ await loadSheetJS(); const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)); return tvRevParse(XLSX.read(bin,{type:'array'})); },b64);
   fs.writeFileSync('/tmp/pwtest/revparams.json',JSON.stringify(out.rows));

@@ -3,7 +3,7 @@ const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
 (async()=>{
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
   const p=await b.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
-  await p.goto('file:///home/user/Tareq/NHC_Live_Board.html',{waitUntil:'load'}); await p.waitForTimeout(600);
+  await p.goto('file:///home/user/Tareq/SalesPlace_01.html?tv=1',{waitUntil:'load'}); await p.waitForTimeout(600);
   console.log(JSON.stringify(await p.evaluate(()=>{
     const today=new Date(), iso=d=>d.toISOString().slice(0,10), ago=n=>iso(new Date(today-n*864e5));
     const base={project_name:"خزام بارك",project_code:"P1",developer_name:"NHC","القطاع":"الأوسط","المدينة":"الرياض","الضاحية":"خزام",unit_type:"apartment",model:"A",Number_of_Bedrooms:3,unit_size:150};

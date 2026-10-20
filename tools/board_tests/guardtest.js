@@ -1,3 +1,4 @@
+const GW=require('/tmp/pwtest/gw.js');
 const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
 (async()=>{
   const browser=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',headless:true,args:['--no-sandbox']});
@@ -6,21 +7,22 @@ const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
   let inserts=[], deletes=[], deleted=false;
   const LIVE={ok:true,empty:false,day:new Date().toISOString().slice(0,10),latest_at:'2026-10-12T08:10:00Z',prev_at:'2026-10-12T07:56:00Z',first_at:'2026-10-12T06:06:00Z',snapshots_today:4,
     latest:{all:{contracts:154965,bookings:5568},nhc:{contracts:28066},dev:{contracts:126899}},prev:{all:{contracts:1}},first:{all:{contracts:1}},timeline:[{at:'2026-10-12T06:06:00Z',contracts:1,nhc:0},{at:'2026-10-12T07:16:00Z',contracts:1,nhc:0},{at:'2026-10-12T07:56:00Z',contracts:1,nhc:0},{at:'2026-10-12T08:10:00Z',contracts:154965,nhc:28066},{at:'2026-10-12T08:27:00Z',contracts:2,nhc:2}],movers:[],feed:[],today_by_sector:{}};
-  await page.route('**/rest/v1/**',async route=>{
-    const url=route.request().url(); const m=url.match(/rpc\/([a-z_]+)/); let body=null;
-    const q=JSON.parse(route.request().postData()||'{}');
+  await page.route('**/rest/v1/**',GW(async(route,__url,__post)=>{
+    const url=__url; const m=url.match(/rpc\/([a-z_]+)/); let body=null;
+    const q=JSON.parse(__post||'{}');
     if(m){ const fn=m[1];
-      if(fn==='login') body= q.p_pass==='good'?{ok:true,admin:true,name:'طارق'}:{ok:false,msg:'بيانات دخول غير صحيحة'};
+      if(fn==='admin_sessions') body= q.p_pass==='good'?{ok:true,admin:true,name:'طارق'}:{ok:false,msg:'بيانات دخول غير صحيحة'};
       else if(fn==='admin_insert_live_snapshot'){ inserts.push(q); body={ok:true,count:q.p_rows.length}; }
       else if(fn==='admin_delete_live_snapshot'){ deletes.push(q); deleted=true; body={ok:true,count:788}; }
       else if(fn==='get_live_board') body= deleted?{ok:true,empty:true}:LIVE;
       else body=fn==='get_dashboard_targets'?{ok:true,scopes:{}}:[];
     } else body=[];
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
-  });
+  }));
   page.on('console',m=>{ if(m.type()==='error') console.log('CONSOLE:',m.text()); });
   page.on('dialog',d=>{ console.log('confirm text:',d.message()); d.accept(); });
-  await page.goto('file:///home/user/Tareq/NHC_Live_Board.html?page=1',{waitUntil:'load'}); await page.waitForTimeout(1200);
+  await GW.init(page);
+  await page.goto('file:///home/user/Tareq/SalesPlace_01.html?tv=1&page=1',{waitUntil:'load'}); await page.waitForTimeout(1200);
   console.log('early errs:',errs.join(' | ')); await page.keyboard.press('u'); await page.waitForTimeout(200);
   console.log('pulls:',await page.evaluate(()=>[...document.querySelectorAll('.tvUpPull')].map(r=>(r.classList.contains('bad')?'[BAD] ':'')+r.innerText.replace(/\n+/g,' ')).join(' || ')));
   await page.setInputFiles('#tvUpFile','/tmp/pwtest/up2/cumulative.xlsx'); await page.waitForTimeout(1500);

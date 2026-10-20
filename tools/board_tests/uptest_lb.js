@@ -1,21 +1,23 @@
+const GW=require('/tmp/pwtest/gw.js');
 const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
 (async()=>{
   const browser=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',headless:true,args:['--no-sandbox']});
   const page=await browser.newPage({viewport:{width:1920,height:1080}});
   const errs=[]; page.on('pageerror',e=>errs.push(e.message));
   let inserts=[], liveCalls=0, logins=[];
-  await page.route('**/rest/v1/**',async route=>{
-    const url=route.request().url(); const m=url.match(/rpc\/([a-z_]+)/); let body=null;
-    const q=JSON.parse(route.request().postData()||'{}');
+  await page.route('**/rest/v1/**',GW(async(route,__url,__post)=>{
+    const url=__url; const m=url.match(/rpc\/([a-z_]+)/); let body=null;
+    const q=JSON.parse(__post||'{}');
     if(m){ const fn=m[1];
-      if(fn==='login'){ logins.push(q.p_user); body = q.p_pass!=='good' ? {ok:false,msg:'بيانات دخول غير صحيحة'} : (q.p_user==='sales4'?{ok:true,admin:false,name:'مندوب'}:{ok:true,admin:true,name:'طارق'}); }
+      if(fn==='admin_sessions'){ logins.push(q.p_admin); body = q.p_pass!=='good' ? {ok:false,msg:'بيانات دخول غير صحيحة'} : (q.p_admin==='sales4'?{ok:false,msg:'هذا الإجراء يتطلب صلاحية مدير'}:{ok:true,sessions:[]})   /* admin_sessions: ok فقط للأدمن */; }
       else if(fn==='admin_insert_live_snapshot'){ inserts.push(q); body={ok:true,count:q.p_rows.length,msg:'ok'}; }
       else if(fn==='get_live_board'){ liveCalls++; body={ok:true,empty:true}; }
       else body=fn==='get_dashboard_targets'?{ok:true,scopes:{}}:[];
     } else body=[];
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
-  });
-  await page.goto('file:///home/user/Tareq/NHC_Live_Board.html?page=1',{waitUntil:'load'});
+  }));
+  await GW.init(page);
+  await page.goto('file:///home/user/Tareq/SalesPlace_01.html?tv=1&page=1',{waitUntil:'load'});
   await page.waitForTimeout(1200);
   const vis=async()=>page.evaluate(()=>getComputedStyle(document.getElementById('tvUpBtn')).opacity);
   console.log('button opacity before mouse:',await vis());
