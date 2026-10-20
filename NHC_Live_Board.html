@@ -3481,7 +3481,7 @@ function tvRevParse(wb){
       cum_value:null,cash_due:null,bank_due:null,target_cum:null,as_of:asOf,year_only:true,alloc_codes:k.codes,fin_code:k.fin,scope:k.scope,city:k.city}));
     keyInfo={sheet:key.sheet,n:key.projects.length,noFin:key.projects.filter(k=>!k.fin).map(k=>k.name),noKey,extra:extra.map(k=>k.name),dates:key.dates,counts:key.counts};
   }
-  return {sheet:name,rows:out,asOf,year,yearSheet:yName||null,collAsOf,meta:key?key.meta:null,key:keyInfo};
+  return {sheet:name,rows:out,asOf,year,yearSheet:yName||null,collAsOf,meta:key?key.meta:null,key:keyInfo,sheets:wb.SheetNames.slice()};
 }
 /* تطبيع اسم المشروع للمطابقة مع ورقة المفتاح: مسافات، أ/إ/آ→ا، ة→ه، ى→ي، وحذف بادئة «<المدينة>- NHC -» أو «NHC -» */
 function tvRevNorm(s){
@@ -3491,27 +3491,36 @@ function tvRevNorm(s){
 }
 /* ورقة «مفتاح المشاريع والمصادر»: أعلاها أزواج مفتاح/قيمة (تاريخ القطع، لقطة نظام التخصيص، تقرير المالية...)، ثم جدول:
    المشروع كما بالملف · كود التخصيص (قد يكون «كود + كود») · كود المالية («— لا يوجد —» = بلا حساب مالي) · المدينة · المنطقة · النطاق */
+/* تطبيع عربي للبحث: بلا تشكيل/تطويل/مسافات/شرطات سفلية، وتوحيد أ/إ/آ→ا، ة→ه، ى/ی→ي، ک→ك */
+function tvArNorm(s){ return String(s==null?"":s).replace(/[\u064B-\u0652\u0640\u200B-\u200F\u202A-\u202E\u00A0]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ة/g,"ه").replace(/[ىی]/g,"ي").replace(/ک/g,"ك").replace(/[\s_\-–—]+/g,""); }
 function tvRevKeySheet(wb){
-  const name=wb.SheetNames.find(n=>/مفتاح\s*المشاريع/.test(n));
+  const T=v=>String(v==null?"":v).replace(/[\u200B-\u200F\u202A-\u202E]/g,"").replace(/\s+/g," ").trim();
+  /* بالاسم (بعد التطبيع: «مفتاح» و«مشاريع/مشروعات» أو «مصادر»)، وإلا بالمحتوى: صف فيه عمودا كود (التخصيص والمالية) */
+  const hdrIdx=A=>A.slice(0,40).findIndex(r=>{ const c=(r||[]).map(x=>tvArNorm(x)); return c.filter(x=>/كود/.test(x)).length>=2||(c.some(x=>/كود/.test(x)&&/تخصيص/.test(x))&&c.some(x=>/كود/.test(x)&&/مالي/.test(x))); });
+  let name=wb.SheetNames.find(n=>{ const k=tvArNorm(n); return /مفتاح/.test(k)&&/(مشاريع|مشروعات|مصادر)/.test(k); })
+    ||wb.SheetNames.find(n=>/مفتاح/.test(tvArNorm(n)));
+  if(!name) name=wb.SheetNames.find(n=>{ const A=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:null,raw:true}); return hdrIdx(A)>=0; });
   if(!name) return null;
   const A=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:null,raw:true});
-  const T=v=>String(v==null?"":v).replace(/\s+/g," ").trim();
-  let hi=A.findIndex(r=>{ const c=(r||[]).map(T); return c.some(x=>/كود/.test(x))&&c.some(x=>/المشروع/.test(x)&&!/كود/.test(x)); });
+  let hi=hdrIdx(A);
   const metaRows=A.slice(0,hi>=0?hi:Math.min(A.length,10));
   const meta=[], dates={}, counts={};
   metaRows.forEach(r=>{ const k=T(r&&r[0]), v=r&&r[1]; if(!k||v==null||T(v)==="") return;
     const d=typeof v==="number"&&v>20000&&v<80000||v instanceof Date||/^\d{1,4}[\/-]\d{1,2}[\/-]\d{1,4}$/.test(T(v))?tvAllocDate(v):null;
     const val=d||(typeof v==="number"?String(v):T(v)); meta.push({k,v:val});
-    if(d){ if(/القطع/.test(k)) dates.cutoff=d; else if(/التخصيص/.test(k)) dates.alloc=d; else if(/المالية/.test(k)) dates.finance=d; else if(/المرنة|الدفعات/.test(k)) dates.flex=d; else if(/crm/i.test(k)) dates.crm=d; }
-    else if(/عدد المشاريع/.test(k)){ if(/المالية/.test(k)) counts.finance=+val||null; else if(/المحتسبة|أداء البيع/.test(k)) counts.counted=+val||null; } });
-  const H=hi>=0?A[hi].map(T):[];
+    const kn=tvArNorm(k);
+    if(d){ if(/قطع/.test(kn)) dates.cutoff=d; else if(/تخصيص/.test(kn)) dates.alloc=d; else if(/مالي/.test(kn)) dates.finance=d; else if(/مرن|دفعات/.test(kn)) dates.flex=d; else if(/crm/i.test(kn)) dates.crm=d; }
+    else if(/عدد/.test(kn)){ if(/مالي/.test(kn)) counts.finance=+val||null; else if(/محتسب|اداءالبيع/.test(kn)) counts.counted=+val||null; } });
+  const H=hi>=0?A[hi].map(x=>tvArNorm(x)):[];
   const col=(re,not,def)=>{ const i=H.findIndex(h=>re.every(x=>x.test(h))&&!(not&&not.test(h))); return i>=0?i:def; };
-  const cN=col([/المشروع/],/كود/,0), cA=col([/كود/,/التخصيص/],null,1), cF=col([/كود/,/المالية/],null,2), cC=col([/المدينة/],null,3), cR=col([/المنطقة/],null,4), cS=col([/النطاق/],null,5);
+  const cA=col([/كود/,/تخصيص/],null,-1), cF=col([/كود/,/مالي/],null,-1);
+  const cA2=cA>=0?cA:H.findIndex(h=>/كود/.test(h)), cF2=cF>=0?cF:H.findIndex((h,i)=>/كود/.test(h)&&i!==cA2);
+  const cN=col([/مشروع|مشاريع|اسم/],/كود/,0), cC=col([/مدينه/],null,3), cR=col([/منطقه/],null,4), cS=col([/نطاق|محتسب/],null,5);
   const projects=[];
   for(const r of A.slice(hi>=0?hi+1:10)){
     const nm=T(r&&r[cN]); if(!nm||/^(إجمالي|الإجمالي)/.test(nm)) continue;
-    const codes=T(r[cA]).split(/\s*\+\s*/).map(x=>x.trim()).filter(x=>x&&!/لا يوجد|^[-–—]+$/.test(x));
-    const f=T(r[cF]), fin=!f||/لا يوجد|^[-–—\s]+$/.test(f)?null:f;
+    const codes=T(r[cA2>=0?cA2:1]).split(/\s*\+\s*/).map(x=>x.trim()).filter(x=>x&&!/لا يوجد|^[-–—]+$/.test(x));
+    const f=T(r[cF2>=0?cF2:2]), fin=!f||/لا يوجد|^[-–—\s]+$/.test(f)?null:f;
     projects.push({name:nm,codes:codes.length?codes:null,fin,city:T(r[cC])||null,region:T(r[cR])||null,scope:T(r[cS])||null});
   }
   return {sheet:name,meta,dates,counts,projects};
@@ -3536,7 +3545,7 @@ async function tvUpHandleFile(file){
         tvUpRev=rv; $("tvUpAtRow").style.display="none";
         const reg=rv.rows.filter(r=>r.is_region), pj=rv.rows.filter(r=>!r.is_region), ex=pj.filter(r=>r.excluded);
         const sum=k=>reg.reduce((a,r)=>a+(Number(r[k])||0),0), due=sum("cash_due")+sum("bank_due"), tg=sum("target_cum");
-        tvUpMsg(`<b>جدول الإيرادات</b> · الورقة «${rv.sheet}»${rv.asOf?` · حتى ${rv.asOf.split("-").reverse().join("/")}`:""}<br><b>${fmt(pj.length-ex.length)}</b> مشروعاً (${fmt(ex.length)} مستبعد) · قيمة العقود ${tvMoney(sum("cum_value"))}${rv.year?`<br>${rv.year}: المستحق من عقود السنة <b>${tvMoney(sum("due_year"))}</b> · مستهدف إيراد السنة ${tvMoney(sum("target_year"))}${sum("target_year")?` · <b>${Math.round(sum("due_year")/sum("target_year")*1000)/10}%</b> من مستهدف السنة`:""}`:`<br><span style="color:#C2491E">لم أجد ورقة «إيراد 2026 والتحصيل» — مستهدف السنة من المذكرات</span>`}${sum("billed")?`<br>التحصيل${rv.collAsOf?` حتى ${rv.collAsOf.split("-").reverse().join("/")}`:""}: محصّل ${tvMoney(sum("collected"))} من مفوتر ${tvMoney(sum("billed"))} · <b>${Math.round(sum("collected")/sum("billed")*1000)/10}%</b>`:""}<br>تراكمي: المستحق الآن ${tvMoney(due)} · المستهدف التراكمي ${tvMoney(tg)}${(()=>{ const K=rv.key; if(!K) return `<br><span style="color:#C2491E">لا توجد ورقة «مفتاح المشاريع والمصادر» — الربط بالاسم وتاريخ التحصيل من عنوان الورقة</span>`;
+        tvUpMsg(`<b>جدول الإيرادات</b> · الورقة «${rv.sheet}»${rv.asOf?` · حتى ${rv.asOf.split("-").reverse().join("/")}`:""}<br><b>${fmt(pj.length-ex.length)}</b> مشروعاً (${fmt(ex.length)} مستبعد) · قيمة العقود ${tvMoney(sum("cum_value"))}${rv.year?`<br>${rv.year}: المستحق من عقود السنة <b>${tvMoney(sum("due_year"))}</b> · مستهدف إيراد السنة ${tvMoney(sum("target_year"))}${sum("target_year")?` · <b>${Math.round(sum("due_year")/sum("target_year")*1000)/10}%</b> من مستهدف السنة`:""}`:`<br><span style="color:#C2491E">لم أجد ورقة «إيراد 2026 والتحصيل» — مستهدف السنة من المذكرات</span>`}${sum("billed")?`<br>التحصيل${rv.collAsOf?` حتى ${rv.collAsOf.split("-").reverse().join("/")}`:""}: محصّل ${tvMoney(sum("collected"))} من مفوتر ${tvMoney(sum("billed"))} · <b>${Math.round(sum("collected")/sum("billed")*1000)/10}%</b>`:""}<br>تراكمي: المستحق الآن ${tvMoney(due)} · المستهدف التراكمي ${tvMoney(tg)}${(()=>{ const K=rv.key; if(!K) return `<br><span style="color:#C2491E">لم أجد ورقة «مفتاح المشاريع والمصادر» — الربط بالاسم وتاريخ التحصيل من عنوان الورقة.<br>أوراق الملف: ${(rv.sheets||[]).map(n=>`«${n}»`).join("، ")}</span>`;
           const D=K.dates, f=d=>d?d.split("-").reverse().join("/"):"—";
           return `<br><b>ورقة المفتاح</b>: ${fmt(K.n)} مشروعاً بأكوادها${K.counts.finance?` · بالورقة المالية ${fmt(K.counts.finance)}`:""}${K.counts.counted?` · المحتسبة بأداء البيع ${fmt(K.counts.counted)}`:""}<br>تاريخ القطع ${f(D.cutoff)} · لقطة التخصيص ${f(D.alloc)} · تقرير المالية ${f(D.finance)}${K.noFin.length?`<br>بلا حساب مالي (${fmt(K.noFin.length)}): ${K.noFin.join("، ")}`:""}${K.noKey.length?`<br><span style="color:#C2491E">مشاريع بالأوراق ليست بالمفتاح (${fmt(K.noKey.length)}): ${K.noKey.join("، ")}</span>`:""}`; })()}`);
         tvUpUpdateGo(); return;
