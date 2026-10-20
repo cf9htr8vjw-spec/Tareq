@@ -113,11 +113,15 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
     console.log('OVERFLOW:',JSON.stringify(await require('/tmp/pwtest/overflow.js')(page),null,0)); await page.screenshot({path:D+'/'+n+'.png'}); };
   await st('month');
   await page.click('#tvOpsPeriod button[data-op="year"]'); await page.waitForTimeout(1200); await st('year');
-  await page.click('#tvOpsChList button[data-oc="مبيعات الرقمية"]'); await page.waitForTimeout(1200); await st('channel');
+  await page.click('#tvOpsChList button[data-oc]:nth-child(2)'); await page.waitForTimeout(1200); await st('channel');
   await page.selectOption('#tvOpsDest','خزام'); await page.waitForTimeout(1200);
   console.log('proj options:',await page.evaluate(()=>[...document.querySelectorAll('#tvOpsProj option')].map(o=>o.value).join('|')));
   await st('dest');
-  await page.click('#tvOpsTerm button[data-ot="30"]'); await page.waitForTimeout(400); console.log('term30 first bank:',await page.evaluate(()=>{ const r=document.querySelector('#tvOpsBanks .tvOpsB:not(.h)'); return r&&r.innerText.replace(/\n+/g,' ¦ '); }));
+  await page.selectOption('#tvOpsDest',''); await page.click('#tvOpsChan button[data-oc=""]'); await page.waitForTimeout(1000);
+  await page.click('#tvOpsEmpTitle button[data-ev="zero"]'); await page.waitForTimeout(500); await st('zero');
+  console.log('zero groups:',await page.evaluate(()=>[...document.querySelectorAll('#tvOpsEmp .tvOpsZ .g>b')].map(x=>x.innerText).join(' | ').slice(0,300)));
+  await page.click('#tvOpsEmpTitle button[data-ev="top"]'); await page.waitForTimeout(400);
+  console.log('initiatives:',await tx('.tvOpsIni'));
   console.log('saved:',await page.evaluate(()=>localStorage.getItem('tv_ops')));
   console.log('PAGE ERRORS:',errs.length,errs.join(' | '));
   await browser.close();

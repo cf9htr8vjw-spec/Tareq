@@ -7,6 +7,9 @@
 --   tv_ops_book  : الوحدات المحجوزة أو المتعاقد عليها بتاريخ حجزها (للتحويل وأعمار الحجوزات القائمة)
 -- من ملف «مميزات وسياسات الجهات التمويلية» (يُرفع من الشاشة):
 --   tv_bank_policy : نسب البنوك المعلنة (مدعوم/غير مدعوم، محول الراتب/غير محول) والسياسات والمبادرات
+-- من ملف «بيانات الموظفين» (يُرفع من الشاشة):
+--   tv_employee_roster : الاسم، المنطقة، موقع العمل، المسمى، النوع، المشرف، المدير، المباشرة/الاستقالة
+--                        (لا رقم هوية ولا بريد ولا جوال ولا أرقام وظيفية — لا تُقرأ من الملف أصلاً)
 --
 -- يتطلّب: tv_file_counts.sql (tv_region). آمن لإعادة التشغيل. القراءة عبر get_tv_ops فقط.
 -- ============================================================
@@ -51,6 +54,24 @@ alter table tv_ops_daily add column if not exists ik_sum numeric not null defaul
 alter table tv_ops_daily add column if not exists mil_n integer not null default 0;      -- مستفيد مبادرة العسكريين
 alter table tv_ops_daily add column if not exists mile_n integer not null default 0;     -- الدعم الإضافي للعسكريين (الصندوق)
 alter table tv_ops_daily add column if not exists dh_n integer not null default 0;       -- منتج ذرى بلس
+-- الثابت المكافئ (Flat) لكل عقد بنسبته ومدته الفعلية من الملف — مجموع وعدد
+alter table tv_ops_daily add column if not exists flat_sum numeric not null default 0;
+alter table tv_ops_daily add column if not exists flat_n integer not null default 0;
+
+create table if not exists tv_employee_roster (
+  name text primary key,
+  district text not null default '',        -- المنطقة (الوسطى/الغربية/الشرقية/SMART) = «موقع العمل» بملف التخصيص
+  site text not null default '',            -- موقع العمل الفعلي (الضاحية/مركز البيع/المبيعات الهاتفية…)
+  job text not null default '',             -- AGENT / SUPERVISOR / MANAGER …
+  type text not null default '',            -- Direct-Sale / Tele-Sale …
+  supervisor text not null default '',
+  manager text not null default '',
+  start_date date,
+  resigned boolean not null default false,
+  resigned_at date,
+  updated_at timestamptz not null default now()
+);
+alter table tv_employee_roster enable row level security;
 
 create table if not exists tv_ops_book (
   booking_date date not null,
@@ -106,7 +127,7 @@ begin
     insert into tv_ops_daily (contract_date, project_name, dest, sector, kind, channel, employee, work, bank,
                               cnt, val_sum, val_n, rate_sum, rate_n, term_sum, term_n, ben, days_sum, days_n,
                               fa_sum, fa_n, sal_sum, sal_n, inst_sum, inst_n, fam_sum, fam_n, job_mil, job_gov, job_pvt, job_oth,
-                              dp_n, dp_sum, ik_n, ik_sum, mil_n, mile_n, dh_n)
+                              dp_n, dp_sum, ik_n, ik_sum, mil_n, mile_n, dh_n, flat_sum, flat_n)
     select (r->>'d')::date, coalesce(btrim(r->>'p'), ''), coalesce(btrim(r->>'dest'), ''), coalesce(btrim(r->>'s'), ''),
            coalesce(r->>'k', 'other'), coalesce(btrim(r->>'ch'), ''), coalesce(btrim(r->>'e'), ''), coalesce(btrim(r->>'w'), ''),
            coalesce(btrim(r->>'b'), ''),
@@ -118,7 +139,8 @@ begin
            sum(coalesce((r->>'inst')::numeric, 0)), sum(coalesce((r->>'instn')::int, 0)), sum(coalesce((r->>'fam')::numeric, 0)), sum(coalesce((r->>'famn')::int, 0)),
            sum(coalesce((r->>'jm')::int, 0)), sum(coalesce((r->>'jg')::int, 0)), sum(coalesce((r->>'jp')::int, 0)), sum(coalesce((r->>'jo')::int, 0)),
            sum(coalesce((r->>'dpn')::int, 0)), sum(coalesce((r->>'dps')::numeric, 0)), sum(coalesce((r->>'ikn')::int, 0)), sum(coalesce((r->>'iks')::numeric, 0)),
-           sum(coalesce((r->>'mil')::int, 0)), sum(coalesce((r->>'mile')::int, 0)), sum(coalesce((r->>'dh')::int, 0))
+           sum(coalesce((r->>'mil')::int, 0)), sum(coalesce((r->>'mile')::int, 0)), sum(coalesce((r->>'dh')::int, 0)),
+           sum(coalesce((r->>'fls')::numeric, 0)), sum(coalesce((r->>'fln')::int, 0))
     from jsonb_array_elements(p_rows) r
     where nullif(r->>'d', '') is not null
     group by 1, 2, 3, 4, 5, 6, 7, 8, 9
@@ -137,6 +159,7 @@ begin
       dp_n = tv_ops_daily.dp_n + excluded.dp_n, dp_sum = tv_ops_daily.dp_sum + excluded.dp_sum,
       ik_n = tv_ops_daily.ik_n + excluded.ik_n, ik_sum = tv_ops_daily.ik_sum + excluded.ik_sum,
       mil_n = tv_ops_daily.mil_n + excluded.mil_n, mile_n = tv_ops_daily.mile_n + excluded.mile_n, dh_n = tv_ops_daily.dh_n + excluded.dh_n,
+      flat_sum = tv_ops_daily.flat_sum + excluded.flat_sum, flat_n = tv_ops_daily.flat_n + excluded.flat_n,
       updated_at = now();
   elsif p_table = 'book' then
     if p_reset then delete from tv_ops_book where true; end if;
@@ -158,6 +181,18 @@ begin
     from jsonb_array_elements(p_rows) r
     where nullif(btrim(r->>'bank'), '') is not null
     on conflict (bank) do update set ord = excluded.ord, month = excluded.month, data = excluded.data, updated_at = now();
+  elsif p_table = 'roster' then
+    if p_reset then delete from tv_employee_roster where true; end if;
+    insert into tv_employee_roster (name, district, site, job, type, supervisor, manager, start_date, resigned, resigned_at)
+    select distinct on (btrim(r->>'name')) btrim(r->>'name'), coalesce(btrim(r->>'district'), ''), coalesce(btrim(r->>'site'), ''),
+           coalesce(btrim(r->>'job'), ''), coalesce(btrim(r->>'type'), ''), coalesce(btrim(r->>'sup'), ''), coalesce(btrim(r->>'mgr'), ''),
+           nullif(r->>'start', '')::date, coalesce((r->>'resigned')::boolean, false), nullif(r->>'resigned_at', '')::date
+    from jsonb_array_elements(p_rows) r
+    where nullif(btrim(r->>'name'), '') is not null
+    order by btrim(r->>'name'), coalesce((r->>'resigned')::boolean, false)
+    on conflict (name) do update set district = excluded.district, site = excluded.site, job = excluded.job, type = excluded.type,
+      supervisor = excluded.supervisor, manager = excluded.manager, start_date = excluded.start_date,
+      resigned = excluded.resigned, resigned_at = excluded.resigned_at, updated_at = now();
   else
     return jsonb_build_object('ok', false, 'msg', 'جدول غير معروف');
   end if;
@@ -233,8 +268,9 @@ as $$
     ), '[]'::jsonb),
     'banks', coalesce((
       select jsonb_agg(jsonb_build_object('b', bank, 'n', n, 'rs', rs, 'rn', rn, 'ts', ts, 'tn', tn, 'vs', vs, 'vn', vn, 'prev', pn,
-               'fa', fa, 'fan', fan, 'sal', sal, 'saln', saln, 'jm', jm, 'jg', jg, 'jp', jp, 'dpn', dpn) order by n desc)
+               'fs', fs, 'fn', fln, 'fa', fa, 'fan', fan, 'sal', sal, 'saln', saln, 'jm', jm, 'jg', jg, 'jp', jp, 'dpn', dpn) order by n desc)
       from (select c.bank, sum(c.cnt) as n, sum(c.rate_sum) as rs, sum(c.rate_n) as rn, sum(c.term_sum) as ts, sum(c.term_n) as tn,
+                   sum(c.flat_sum) as fs, sum(c.flat_n) as fln,
                    sum(c.val_sum) as vs, sum(c.val_n) as vn, sum(c.fa_sum) as fa, sum(c.fa_n) as fan, sum(c.sal_sum) as sal, sum(c.sal_n) as saln,
                    sum(c.job_mil) as jm, sum(c.job_gov) as jg, sum(c.job_pvt) as jp, sum(c.dp_n) as dpn,
                    coalesce((select sum(cnt) from prv p where p.bank = c.bank), 0) as pn
@@ -251,6 +287,7 @@ as $$
         'jm', coalesce(sum(job_mil), 0), 'jg', coalesce(sum(job_gov), 0), 'jp', coalesce(sum(job_pvt), 0), 'jo', coalesce(sum(job_oth), 0),
         'dpn', coalesce(sum(dp_n), 0), 'dps', coalesce(sum(dp_sum), 0), 'ikn', coalesce(sum(ik_n), 0), 'iks', coalesce(sum(ik_sum), 0),
         'mil', coalesce(sum(mil_n), 0), 'mile', coalesce(sum(mile_n), 0), 'dh', coalesce(sum(dh_n), 0),
+        'ts', coalesce(sum(term_sum), 0), 'tn', coalesce(sum(term_n), 0), 'fls', coalesce(sum(flat_sum), 0), 'fln', coalesce(sum(flat_n), 0),
         'prev', (select coalesce(sum(cnt), 0) from prv))
       from cur
     ),
@@ -278,6 +315,13 @@ as $$
                 and (p_dest is null or d.dest = p_dest)
               group by 1) x), '[]'::jsonb),
       'channels', coalesce((select jsonb_agg(channel order by n desc) from (select channel, sum(cnt) n from tv_ops_daily where channel <> '' group by 1) x), '[]'::jsonb)),
+    -- قائمة الموظفين (لإظهار من لم يسجّل عقداً بالفترة): من باشر قبل نهاية الفترة ولم يستقِل قبل بدايتها، بمنطقة الرأس إن اختيرت
+    'has_roster', exists(select 1 from tv_employee_roster),
+    'roster', coalesce((select jsonb_agg(jsonb_build_object('e', name, 'd', district, 's', site, 'j', job, 't', type, 'sup', supervisor) order by name)
+      from tv_employee_roster r
+      where not (r.resigned and (r.resigned_at is null or r.resigned_at < p_from))
+        and (r.start_date is null or r.start_date <= p_to)
+        and (p_sector is null or tv_region(nullif(btrim(r.district), ''), null) = p_sector)), '[]'::jsonb),
     'policy', coalesce((select jsonb_agg(jsonb_build_object('bank', bank, 'month', month, 'data', data) order by ord, bank) from tv_bank_policy), '[]'::jsonb)
   );
 $$;

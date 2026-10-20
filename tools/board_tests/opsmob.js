@@ -117,4 +117,9 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
   else console.log('no employees:',(await page.textContent('#mAnBody')).match(/ملف التخصيص بلا عمودي[^—]*/)?.[0]);
   await page.evaluate(()=>document.getElementById('mDetailSheet').classList.remove('on'));
   await page.screenshot({path:D+'/ops_filtered.png',fullPage:true});
+  await page.selectOption('#mAnBody select[data-ops="dest"]',''); await page.waitForTimeout(900); await page.click('#mAnBody button[data-oc=""]'); await page.waitForTimeout(1200);
+  if(await page.$('#mAnBody button[data-ev="zero"]')){ await page.click('#mAnBody button[data-ev="zero"]'); await page.waitForTimeout(500);
+    console.log('zero view:',JSON.stringify(await ov()),(await page.evaluate(()=>[...document.querySelectorAll('#mAnBody .mZg>b')].map(b=>b.innerText).join(' | '))).slice(0,200));
+    await page.screenshot({path:D+'/ops_zero.png',fullPage:true}); }
+  console.log('initiatives card:',(await page.evaluate(()=>{ const c=[...document.querySelectorAll('#mAnBody .mCard')].find(x=>/المبادرات/.test(x.querySelector('.mCardHd')?.innerText||'')); return c?c.innerText.replace(/\s+/g,' '):'-'; })).slice(0,200));
   console.log('PAGE ERRORS:',errs.length,errs.join(' | ')); await browser.close(); })();

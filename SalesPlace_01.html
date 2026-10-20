@@ -2179,7 +2179,21 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
 .tvOpsKpis .agl em{display:inline-block;width:8px;height:8px;border-radius:2px;margin-inline-end:4px}
 .tvOpsKpis .agl b{color:#0B4332}
 .tvOpsBWrap{flex:1;min-height:0;overflow:hidden;margin-top:4px}
-.tvOpsB{display:grid;grid-template-columns:minmax(0,1.25fr) .42fr .72fr .62fr .62fr .62fr .66fr .5fr .95fr 1fr 1.3fr .75fr 1.55fr;gap:7px;align-items:center;height:30px;border-bottom:1px solid #F0ECE2;font-size:13.5px;white-space:nowrap;text-align:center}
+.tvOpsBWrap{display:flex;flex-direction:column;gap:6px}
+.tvOpsBT{flex:1;min-height:0;overflow:hidden}
+.tvOpsIni{flex:none;display:grid;grid-template-columns:auto repeat(6,minmax(0,1fr));gap:6px;align-items:stretch;border-top:2px solid #E7E1D3;padding-top:6px}
+.tvOpsIni .l{font-size:12.5px;font-weight:800;color:#767368;align-self:center}
+.tvOpsIni .it{background:#F2FAF6;border-radius:10px;padding:4px 8px;min-width:0;display:flex;flex-direction:column}
+.tvOpsIni .it b{font-size:13px;color:#007a54;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvOpsIni .it span{font-size:12px;color:#5e5a4f;white-space:nowrap}.tvOpsIni .it em{font-style:normal;font-weight:800;color:#0B4332}
+.tvOpsIni .it small{font-size:11px;color:#767368;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvOpsEv{margin-inline-start:10px;vertical-align:middle}.tvOpsEv button{font-size:12.5px!important;padding:2px 10px!important}
+.tvOpsZ{height:100%;overflow:hidden;display:flex;flex-direction:column;gap:5px}
+.tvOpsZ .g{display:grid;grid-template-columns:118px minmax(0,1fr);gap:8px;align-items:start;border-bottom:1px solid #F0ECE2;padding-bottom:4px}
+.tvOpsZ .g>b{font-size:13.5px;color:#0B4332;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tvOpsZ .g>b em{font-style:normal;color:#C2491E;margin-inline-start:4px}
+.tvOpsZ .g>span{display:flex;flex-wrap:wrap;gap:3px;max-height:48px;overflow:hidden}
+.tvOpsZ i{font-style:normal;font-size:12px;background:#FBEFEA;color:#8A3A1C;border-radius:99px;padding:1px 8px;white-space:nowrap}
+.tvOpsB{display:grid;grid-template-columns:minmax(0,1.3fr) .5fr .72fr .72fr .72fr .62fr .66fr .66fr .66fr 1fr 1.1fr .75fr;gap:7px;align-items:center;height:30px;border-bottom:1px solid #F0ECE2;font-size:13.5px;white-space:nowrap;text-align:center}
 .tvOpsB.h{height:auto;min-height:22px;font-size:11.5px;color:#767368;font-weight:700;white-space:normal;line-height:1.1;padding-bottom:3px;border-bottom:2px solid #E7E1D3}
 .tvOpsB .n{text-align:start;font-weight:800;color:#0B4332;overflow:hidden;text-overflow:ellipsis}
 .tvOpsB.off{opacity:.5}
@@ -2189,9 +2203,6 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
 .tvOpsB .f{color:#2F6FA8;font-weight:700}
 .tvOpsB .g{font-weight:800}.tvOpsB .g.up{color:#007a54}.tvOpsB .g.dn{color:#C2491E}.tvOpsB .g.fl{color:#767368}
 .tvOpsB .s{color:#5e5a4f;font-size:12px;overflow:hidden;text-overflow:ellipsis}
-.tvOpsB .ini{display:flex;gap:3px;overflow:hidden;justify-content:flex-start}
-.tvOpsB .ini em{font-style:normal;font-size:10.5px;background:#E1F5EC;color:#007a54;border-radius:99px;padding:0 6px;white-space:nowrap}
-.tvOpsB .ini em.more{background:#F0ECE2;color:#5e5a4f}
 .tvOpsEWrap{flex:1;min-height:0;overflow:hidden;margin-top:4px}
 .tvOpsFinS{font-size:12.5px;color:#5e5a4f;background:#FAF7F1;border-radius:10px;padding:4px 10px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tvOpsFinS b{color:#0B4332}
@@ -2232,6 +2243,8 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
 .mBank .s{font-size:11.5px;color:#4B5563;margin-top:5px}
 .mBank .ini{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.mBank .ini em{font-style:normal;font-size:10.5px;background:var(--mgreenSoft);color:#067A55;border-radius:99px;padding:1px 8px;font-weight:700}
 .mBars .v small.up{color:var(--mgreen)}.mBars .v small.dn{color:var(--mred)}
+.mZg{border-bottom:1px solid var(--mline);padding:8px 0}.mZg:last-child{border-bottom:0}.mZg>b{font-size:13.5px}.mZg>b em{font-style:normal;color:var(--mred);margin-inline-start:4px}
+.mZg>div{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.mZg i{font-style:normal;font-size:11.5px;background:#FDF0EC;color:#8A3A1C;border-radius:99px;padding:2px 9px}
 /* print-only report header/footer — invisible on screen */
 #printHead{display:none}
 #printFoot{display:none}
@@ -3622,7 +3635,6 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
       <span class="tvOpsLbl">القناة</span><span class="tvSeg tvOpsChanSeg" id="tvOpsChan"></span>
       <span class="tvOpsLbl">الوجهة</span><select id="tvOpsDest" class="tvOpsSel"></select>
       <span class="tvOpsLbl">المشروع</span><select id="tvOpsProj" class="tvOpsSel"></select>
-      <span class="tvOpsLbl">مقارنة البنوك</span><span class="tvSeg" id="tvOpsTerm"></span>
       <span class="tvOpsNote" id="tvOpsNote"></span>
     </div>
     <div class="tvOpsGrid">
@@ -6592,7 +6604,8 @@ const ALLOC_DROP_HEADERS=["land_number","floor","apartment_number","Number_of_Ba
   "تأكيد الحجز","last units Prices","MM-YYYY","MM","YYYY"];
 function allocDropCols(rows){ const D=new Set(ALLOC_DROP_HEADERS.map(normalizeHeaderKey)); const ks=rows.length?Object.keys(rows[0]).filter(k=>D.has(normalizeHeaderKey(k))||/هويه|هوية|national.?id/i.test(k)):[];
   if(ks.length) for(const r of rows) for(const k of ks) delete r[k]; return rows; }
-async function xlsxStreamRows(file,wantHeaders,onProgress,dropHeaders){
+/* keepHeaders (اختياري): لا يُقرأ إلا هذه الأعمدة — لملفات فيها بيانات شخصية (هوية/بريد/جوال) */
+async function xlsxStreamRows(file,wantHeaders,onProgress,dropHeaders,keepHeaders){
   if(typeof DecompressionStream==="undefined") throw new Error("المتصفح لا يدعم قراءة الملفات الكبيرة — استخدم Chrome أو Edge حديث");
   const buf=new Uint8Array(await file.arrayBuffer()), dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);
   /* فهرس zip المركزي */
@@ -6658,6 +6671,7 @@ async function xlsxStreamRows(file,wantHeaders,onProgress,dropHeaders){
         while((cm=cellRe.exec(inner))){ const r=(cm[1].match(/\br="([A-Z]+)\d*"/)||[])[1]; const ci=r?colIdx(r):seq; seq=ci+1; cells[ci]=cellVal(cm[1],cm[2]||""); }
         if(!header){ if(cells.some(v=>v!=null&&v!=="")){ header=cells.map(v=>v==null?"":String(v).trim());
             if(dropHeaders){ const D=new Set(dropHeaders.map(normalizeHeaderKey)); dropIdx=header.map(h=>D.has(normalizeHeaderKey(h))||/هويه|هوية|national.?id/i.test(h)); }
+            if(keepHeaders){ const K=new Set(keepHeaders.map(normalizeHeaderKey)); dropIdx=header.map(h=>!K.has(normalizeHeaderKey(h))||/هويه|هوية|national.?id|mail|بريد|ايميل|جوال|mobile|phone/i.test(h)); }
             if(limit===1){ done=true; return true; } } continue; }
         if(!cells.some(v=>v!=null&&v!=="")) continue;
         const o={}; header.forEach((h,i)=>{ if(h&&!dropIdx[i]) o[h]=cells[i]===undefined?null:cells[i]; }); out.push(o);
@@ -10880,7 +10894,7 @@ function mInit(){
     const cl=e.target.closest("[data-close]"); if(cl){ $("mDetailSheet").classList.remove("on"); return; }
     const op=e.target.closest("[data-op]"); if(op){ tvOpsSet("period",op.dataset.op); return; }
     const oc=e.target.closest("[data-oc]"); if(oc){ tvOpsSet("chan",oc.dataset.oc&&oc.dataset.oc!==tvOps.chan?oc.dataset.oc:null); return; }
-    const ot=e.target.closest("[data-ot]"); if(ot){ tvOps.term=+ot.dataset.ot; tvOpsSave(); mRenderAnalysis(); return; }
+    const ev=e.target.closest("[data-ev]"); if(ev){ tvOps.ev=ev.dataset.ev; tvOpsSave(); mRenderAnalysis(); return; }
     const md=e.target.closest("[data-md]"); if(md){ mOpenModel(+md.dataset.md); return; }
     const pg=e.target.closest("[data-pg]"); if(pg){ mOpenGroup(+pg.getAttribute("data-pg")); return; }
     const em=e.target.closest("[data-emp]"); if(em){ mOpenEmp(+em.dataset.emp); return; }
@@ -11390,7 +11404,7 @@ function startTvMode(){
   /* الصفحة التشغيلية: المعايير */
   $("tvPage3").addEventListener("click",e=>{ const op=e.target.closest("[data-op]"); if(op){ tvOpsSet("period",op.dataset.op); return; }
     const oc=e.target.closest("[data-oc]"); if(oc){ tvOpsSet("chan",oc.dataset.oc&&oc.dataset.oc!==tvOps.chan?oc.dataset.oc:null); return; }
-    const ot=e.target.closest("[data-ot]"); if(ot){ tvOps.term=+ot.dataset.ot; tvOpsSave(); tvRenderOps(); } });
+    const ev=e.target.closest("[data-ev]"); if(ev){ tvOps.ev=ev.dataset.ev; tvOpsSave(); tvRenderOps(); } });
   $("tvOpsDest").onchange=()=>tvOpsSet("dest",$("tvOpsDest").value||null);
   $("tvOpsProj").onchange=()=>tvOpsSet("proj",$("tvOpsProj").value||null);
   $("tvPageDots").querySelectorAll("i").forEach((el,i)=>el.onclick=()=>{ tvPinnedPage=i+1; tvStartRotation(); });
@@ -11465,7 +11479,7 @@ function tvBankPolicyParse(wb){
    الفعلية إلى ثابتة — حاسبة Effective→Flat). المنطقة المختارة بالرأس تُطبَّق أيضاً. المعايير تُحفظ بهذا الجهاز. */
 const TV_OPS_COLORS=["#009C6D","#2F6FA8","#C97F2E","#7B5BB5","#D9532A","#0B4332","#9A6B12","#5E8C31","#B5361B","#4B5563"];
 const TV_OPS_PERIODS=[["today","اليوم"],["yesterday","أمس"],["week","الأسبوع"],["month","الشهر"],["year","السنة"]];
-let tvOps=(()=>{ const d={period:"month",chan:null,dest:null,proj:null,term:20}; try{ return Object.assign(d,JSON.parse(localStorage.getItem("tv_ops")||"{}")); }catch(e){ return d; } })();
+let tvOps=(()=>{ const d={period:"month",chan:null,dest:null,proj:null,ev:"top"}; try{ return Object.assign(d,JSON.parse(localStorage.getItem("tv_ops")||"{}")); }catch(e){ return d; } })();
 let tvOpsData=null, tvOpsErr="", tvOpsCache={}, tvOpsBusy=false, tvOpsEmpCur=[];
 function tvOpsSave(){ try{ localStorage.setItem("tv_ops",JSON.stringify(tvOps)); }catch(e){} }
 function tvOpsRange(){
@@ -11491,7 +11505,9 @@ function tvOpsSet(k,v){ tvOps[k]=v; if(k==="dest") tvOps.proj=null; tvOpsSave();
 function tvOpsRenderAll(){ if(tvMobile){ if(typeof mRenderAnalysis==="function"&&mInited&&mAnView==="ops") mRenderAnalysis(); } else if(tvPage===3) tvRenderOps(); }
 /* اشتقاق الأرقام للعرض (مشترك بين التلفزيون والجوال) */
 function tvOpsDerive(D){
-  const term=+tvOps.term||20, pct=(a,b)=>b?a/b*100:null, dlt=(n,p)=>p?Math.round((n-p)/p*100):null;
+  const pct=(a,b)=>b?a/b*100:null, dlt=(n,p)=>p?Math.round((n-p)/p*100):null;
+  /* المدة من ملف التخصيص (لا معيار يدوي): الثابت بالعقود = متوسط ثابت كل عقد بمدته؛ ثابت المعلن = بمتوسط مدة عقود الجهة، وإلا متوسط كل العقود، وإلا 20 سنة */
+  const K0=D.kpi||{}, avgTerm=K0.tn?Number(K0.ts)/Number(K0.tn):null, term=avgTerm||20;
   const chans=(D.channels||[]).filter(c=>c.ch).map((c,i)=>Object.assign({},c,{col:TV_OPS_COLORS[i%TV_OPS_COLORS.length]}));
   const totN=(D.channels||[]).reduce((a,c)=>a+Number(c.n||0),0);
   chans.forEach(c=>{ c.share=pct(+c.n,totN); c.d=dlt(+c.n,+c.prev); });
@@ -11501,10 +11517,10 @@ function tvOpsDerive(D){
   const bTot=(D.banks||[]).filter(b=>b.b).reduce((a,b)=>a+Number(b.n||0),0);
   const seen=new Set();
   const banks=(D.banks||[]).filter(b=>b.b).map(b=>{ const k=tvBankKey(b.b); seen.add(k); const P=pol.get(k)||null, r=b.rn?Number(b.rs)/Number(b.rn):null;
-    const pub=P&&P.rates?P.rates.sub_t:null;
-    return {key:k,name:tvBankName(k,b.b),raw:b.b,n:+b.n,share:pct(+b.n,bTot),d:dlt(+b.n,+b.prev),rate:r,flat:tvFlatRate(r,term),rn:+b.rn||0,
+    const pub=P&&P.rates?P.rates.sub_t:null, bt=b.tn?Number(b.ts)/Number(b.tn):null;
+    return {key:k,name:tvBankName(k,b.b),raw:b.b,n:+b.n,share:pct(+b.n,bTot),d:dlt(+b.n,+b.prev),rate:r,flat:b.fn?Number(b.fs)/Number(b.fn):tvFlatRate(r,bt||term),rn:+b.rn||0,
       fa:b.fan?Number(b.fa)/Number(b.fan):null,sal:b.saln?Number(b.sal)/Number(b.saln):null,mil:(+b.jm||0)+(+b.jg||0)+(+b.jp||0)?(+b.jm||0)/((+b.jm||0)+(+b.jg||0)+(+b.jp||0))*100:null,dpn:+b.dpn||0,
-      term:b.tn?Number(b.ts)/Number(b.tn):null,pub,pubFlat:tvFlatRate(pub,term),pubNt:P&&P.rates?P.rates.sub_nt:null,uns:P&&P.rates?P.rates.uns_t:null,
+      term:bt,pub,pubFlat:tvFlatRate(pub,bt||term),pubNt:P&&P.rates?P.rates.sub_nt:null,uns:P&&P.rates?P.rates.uns_t:null,
       gap:r!=null&&pub!=null?(r-pub)*100:null,P}; });
   /* جهات معلنة بلا عقود بالفترة — للمقارنة */
   (D.policy||[]).forEach(p=>{ if(seen.has(p.bank)) return; const P=p.data||{}, pub=P.rates?P.rates.sub_t:null;
@@ -11516,7 +11532,7 @@ function tvOpsDerive(D){
     jm:jt?(+K.jm||0)/jt*100:null,jg:jt?(+K.jg||0)/jt*100:null,jp:jt?(+K.jp||0)/jt*100:null,jt,
     jo:jt?(+K.jo||0)/jt*100:null,instPct:K.instn&&K.saln&&K.sal?(K.inst/K.instn)/(K.sal/K.saln)*100:null,
     dpn:+K.dpn||0,dpa:K.dpn?K.dps/K.dpn:null,ikn:+K.ikn||0,ika:K.ikn?K.iks/K.ikn:null,mil:+K.mil||0,mile:+K.mile||0,dh:+K.dh||0};
-  return {term,chans,totN,na:na?+na.n:0,K,B,banks,bTot,cash:cash?+cash.n:0,rated,rateAvg,prof,month:(D.policy&&D.policy[0]&&D.policy[0].month)||""};
+  return {term,avgTerm,flatAvg:K0.fln?Number(K0.fls)/Number(K0.fln):null,chans,totN,na:na?+na.n:0,K,B,banks,bTot,cash:cash?+cash.n:0,rated,rateAvg,prof,month:(D.policy&&D.policy[0]&&D.policy[0].month)||""};
 }
 function tvOpsPeriodLbl(){ return (TV_OPS_PERIODS.find(p=>p[0]===tvOps.period)||[0,""])[1]; }
 function tvOpsScopeLbl(){ return [tvRegion?tvRegionLabel(tvRegion):"",tvOps.dest||"",tvOps.proj?tvShort(tvOps.proj,30):"",tvOps.chan||""].filter(Boolean).join(" · "); }
@@ -11536,12 +11552,31 @@ function tvOpsSeries(D,X){
   const labels=days.map(d=>mon?MNAMES[d.slice(5,7)]:String(+d.slice(8,10)));
   return {labels,series,mon};
 }
+/* الموظفون + قائمة الموظفين المرفوعة (tv_employee_roster): يُثري كل اسم بموقعه ومسماه، ويُخرج الوكلاء على رأس العمل
+   الذين لم يسجّلوا عقداً بالفترة (مجمّعين بموقع العمل). تصفية القناة أو المشروع لا تنطبق على القائمة → لا تُعرض حينها. */
+function tvOpsEmps(D){
+  const key=v=>tvArNorm(v), R=D.roster||[], rm=new Map(R.map(r=>[key(r.e),r]));
+  const E=(D.employees||[]).map(e=>{ const r=rm.get(key(e.e)); if(r) rm.delete(key(e.e)); return Object.assign({},e,{r}); });
+  const can=!!D.has_roster&&!tvOps.chan&&!tvOps.proj;
+  let zero=can?[...rm.values()].filter(r=>/agent/i.test(r.j||"")):[];
+  if(can&&tvOps.dest){ const dn=key(tvOps.dest); zero=zero.filter(r=>{ const s=key(r.s); return s&&(s===dn||dn.includes(s)||s.includes(dn)); }); }
+  const gm=new Map(); zero.forEach(r=>{ const g=r.s||r.d||"—"; if(!gm.has(g)) gm.set(g,[]); gm.get(g).push(r); });
+  const groups=[...gm].map(([g,l])=>({g,l})).sort((a,b)=>b.l.length-a.l.length);
+  const sold=E.filter(e=>+e.n>0).length;
+  return {E,zero,groups,can,sold,has:!!D.has_roster};
+}
+/* المبادرات كمجاميع: لكل مبادرة الجهات التي تقدّمها وعقود الفترة لديها */
+function tvOpsInits(X){
+  const fin=X.bTot||0;
+  return TV_INIT.map(([k,l])=>{ const bs=X.banks.filter(b=>b.P&&b.P.init&&b.P.init[k]===true); const n=bs.reduce((a,b)=>a+(b.n||0),0);
+    return {k,l,banks:bs.map(b=>b.name),n,share:fin?n/fin*100:null}; }).filter(x=>x.banks.length);
+}
 /* ملف العملاء والتمويل من أعمدة REDF: كامل (حين لا أعمدة موظفين) أو شريط مختصر فوق قائمة الموظفين */
 function tvOpsFinHtml(X,n,compact){
   const F=X.prof, r=v=>v==null?"—":Math.round(v)+"%", sp=v=>v?tvPriceShort(v):"—", m=v=>v?fmt(Math.round(v)):"—";
   if(compact) return `<div class="tvOpsFinS">متوسط التمويل <b>${sp(F.fa)}</b> · الراتب <b>${m(F.sal)}</b> · القسط <b>${m(F.inst)}</b>${F.instPct?` (${r(F.instPct)} من الراتب)`:""} · عسكري <b>${r(F.jm)}</b> · حكومي <b>${r(F.jg)}</b> · خاص <b>${r(F.jp)}</b> · باقة الدفعة <b>${fmt(F.dpn)}</b></div>`;
   const jobs=[["عسكري",F.jm,"#0B4332"],["حكومي",F.jg,"#009C6D"],["خاص",F.jp,"#2F6FA8"],["أخرى",F.jo,"#B9B1A0"]].filter(j=>j[1]);
-  const prog=[["باقة دعم الدفعة المقدمة",F.dpn,F.dpa],["الدعم العيني",F.ikn,F.ika],["مستفيد مبادرة العسكريين",F.mil,null],["الدعم الإضافي للعسكريين",F.mile,null],["منتج ذرى بلس",F.dh,null]];
+  const prog=[["باقة دعم الدفعة المقدمة",F.dpn,F.dpa],["الدعم العيني",F.ikn,F.ika],["مستفيد مبادرة العسكريين",F.mil,null],["الدعم الإضافي للعسكريين",F.mile,null],["منتج ذرى بلس",F.dh,null]].filter((p,i)=>i<2||p[1]>0);   /* المبادرات غير الموجودة بالملف لا تُعرض صفراً */
   const pm=Math.max(1,...prog.map(p=>p[1]));
   return `<div class="tvOpsFin">
     <div class="t4"><div><span>متوسط التمويل</span><b>${sp(F.fa)}</b></div><div><span>متوسط الراتب</span><b>${m(F.sal)}</b></div>
@@ -11555,7 +11590,6 @@ function tvRenderOps(){
   const D=tvOpsData, el=id=>$(id);
   /* المعايير */
   el("tvOpsPeriod").innerHTML=TV_OPS_PERIODS.map(([v,l])=>`<button type="button" data-op="${v}" class="${tvOps.period===v?"on":""}">${l}</button>`).join("");
-  el("tvOpsTerm").innerHTML=[20,25,30].map(v=>`<button type="button" data-ot="${v}" class="${+tvOps.term===v?"on":""}">${v} سنة</button>`).join("");
   const dims=(D&&D.dims)||{}, opt=(list,cur,all)=>`<option value="">${all}</option>`+(list||[]).map(x=>`<option value="${String(x.v).replace(/"/g,"&quot;")}"${x.v===cur?" selected":""}>${x.v}${x.n?` (${fmt(x.n)})`:""}</option>`).join("");
   el("tvOpsDest").innerHTML=opt(dims.dests,tvOps.dest,"كل الوجهات");
   el("tvOpsProj").innerHTML=opt((dims.projects||[]).filter(p=>!tvOps.dest||p.dest===tvOps.dest),tvOps.proj,"كل المشاريع");
@@ -11585,27 +11619,31 @@ function tvRenderOps(){
       <div class="ag">${ag.map(([l,v,c])=>`<i style="width:${open?v/open*100:0}%;background:${c}"></i>`).join("")}</div>
       <div class="agl">${ag.map(([l,v,c])=>`<span><em style="background:${c}"></em>${l} <b>${fmt(v)}</b></span>`).join("")}</div></div>
     <div class="k w q"><span>جودة البيانات</span><small>${D.has_emp?`عقود بلا موظف <b>${fmt(K.no_emp||0)}</b> · `:""}بلا قناة <b>${fmt(K.no_chan||0)}</b> · بنسبة ربح <b>${fmt(X.rated)}</b> من ${fmt(X.bTot)} ممول${!D.has_rate?" — <b style=\"color:#C2491E\">لا عمود نسبة الربح بالملف</b>":""}</small></div>`;
-  /* الموظفون */
-  const E=D.employees||[], eTot=E.reduce((a,e)=>a+Number(e.n||0),0); tvOpsEmpCur=E;
-  const finOnly=!D.has_emp&&D.has_fin;
+  /* الموظفون (مع قائمة الموظفين: من لم يسجّل عقداً بالفترة) */
+  const M=tvOpsEmps(D), E=M.E, eTot=E.reduce((a,e)=>a+Number(e.n||0),0); tvOpsEmpCur=E;
+  const finOnly=!D.has_emp&&D.has_fin, ev=M.can&&tvOps.ev==="zero"?"zero":"top";
   el("tvOpsEmpTitle").innerHTML=finOnly?`ملف العملاء والتمويل — ${per}${sc?` · ${sc}`:""} <small>أعمدة REDF بملف التخصيص</small><span class="tot">${fmt(X.prof.fan)} عقد ممول</span>`
-    :`أداء الموظفين — ${per}${sc?` · ${sc}`:""}<span class="tot">${fmt(E.length)} موظفاً · ${fmt(eTot)} عقد</span>`;
-  el("tvOpsEmp").innerHTML=finOnly?tvOpsFinHtml(X,n,false):(D.has_emp&&D.has_fin?tvOpsFinHtml(X,n,true):"")+(!D.has_emp?`<div class="tvEmpty" style="font-size:15px">أضف عمودي «موقع العمل» و«Employee Name» لملف التخصيص ثم ارفعه</div>`:E.length?E.map((e,i)=>`<div class="tvOpsE${i<3?" top":""}"><span class="rk">${i+1}</span><span class="n">${e.e}<small>${[e.w,e.ch].filter(Boolean).join(" · ")}</small></span><span class="bar"><i style="width:${E[0].n?e.n/E[0].n*100:0}%"></i></span><b>${fmt(e.n)}</b>${tvDl(e.prev?Math.round((e.n-e.prev)/e.prev*100):null)}</div>`).join(""):`<div class="tvEmpty" style="font-size:15px">لا عقود بأسماء موظفين لهذه الفترة</div>`);
-  /* البنوك */
-  el("tvOpsBankTitle").innerHTML=`البنوك — ${per}${sc?` · ${sc}`:""} <small>متوسط نسبة الربح بالعقود والمعلن (مدعوم، محول الراتب)${X.month?` · نسب ${X.month}`:""} · الثابت على ${X.term} سنة</small><span class="tot">${fmt(X.bTot)} عقد ممول · نقدي ${fmt(X.cash)}</span>`;
-  el("tvOpsBanks").innerHTML=`<div class="tvOpsB h"><span>الجهة</span><span>عقود</span><span>الحصة</span><span>بالعقود (فعلي)</span><span>ثابت مكافئ</span><span>المعلن</span><span>ثابت المعلن</span><span>الفرق</span><span>غير محول / غير مدعوم</span><span>متوسط التمويل · الراتب (العقود)</span><span>المدة · العمر</span><span>أدنى راتب حكومي</span><span>المبادرات</span></div>`
-    +X.banks.map(b=>{ const P=b.P||{}, pol=P.pol||{}, ini=P.init||{};
-      const tip=[b.raw&&b.raw!==b.name?`بملف التخصيص: ${b.raw}`:"",b.rn?`${fmt(b.rn)} عقداً بنسبة ربح`:"",b.term?`متوسط مدة التمويل بالعقود ${Math.round(b.term)} سنة`:"",P.note||""].filter(Boolean).join(" · ");
-      const inis=TV_INIT.filter(([k])=>ini[k]===true).map(([,l])=>l);
+    :`أداء الموظفين — ${per}${sc?` · ${sc}`:""}${M.has?`<span class="tvSeg tvOpsEv"><button type="button" data-ev="top" class="${ev==="top"?"on":""}">باعوا ${fmt(M.sold)}</button>${M.can?`<button type="button" data-ev="zero" class="${ev==="zero"?"on":""}">بلا عقود ${fmt(M.zero.length)}</button>`:""}</span>`:""}<span class="tot">${fmt(E.length)} موظفاً · ${fmt(eTot)} عقد</span>`;
+  const empRow=(e,i)=>`<div class="tvOpsE${i<3?" top":""}"><span class="rk">${i+1}</span><span class="n">${e.e}<small>${[e.r&&e.r.s||e.w,e.ch].filter(Boolean).join(" · ")}</small></span><span class="bar"><i style="width:${E[0].n?e.n/E[0].n*100:0}%"></i></span><b>${fmt(e.n)}</b>${tvDl(e.prev?Math.round((e.n-e.prev)/e.prev*100):null)}</div>`;
+  el("tvOpsEmp").innerHTML=finOnly?tvOpsFinHtml(X,n,false)
+    :ev==="zero"?`<div class="tvOpsZ">${M.groups.map(g=>`<div class="g"><b>${g.g} <em>${fmt(g.l.length)}</em></b><span>${g.l.map(r=>`<i title="${[r.j,r.t,r.sup&&"المشرف: "+r.sup].filter(Boolean).join(" · ")}">${r.e}</i>`).join("")}</span></div>`).join("")||`<div class="tvEmpty" style="font-size:15px">كل الوكلاء على رأس العمل سجّلوا عقوداً بهذه الفترة</div>`}</div>`
+    :(D.has_emp&&D.has_fin?tvOpsFinHtml(X,n,true):"")+(M.has&&!M.can?`<div class="tvOpsFinS">من لم يسجّل عقداً يظهر عند «كل القنوات» و«كل المشاريع»</div>`:"")
+      +(!D.has_emp?`<div class="tvEmpty" style="font-size:15px">أضف عمودي «موقع العمل» و«Employee Name» لملف التخصيص ثم ارفعه</div>`:E.length?E.map(empRow).join(""):`<div class="tvEmpty" style="font-size:15px">لا عقود بأسماء موظفين لهذه الفترة</div>`)
+      +(D.has_emp&&!M.has?`<div class="tvOpsFinS">ارفع ملف «بيانات الموظفين» من «⬆ رفع ملف» لإظهار من لم يسجّل عقداً</div>`:"");
+  /* البنوك: الفعلية بالعقود، والثابت المكافئ بمدة كل عقد من الملف، مقابل المعلن؛ والمبادرات كمجاميع أسفل الجدول */
+  el("tvOpsBankTitle").innerHTML=`البنوك — ${per}${sc?` · ${sc}`:""} <small>الثابت (Flat) بمدة كل عقد من الملف${X.avgTerm?` · متوسط ${Math.round(X.avgTerm*10)/10} سنة`:""} · المعلنة${X.month?` ${X.month}`:""} للمدعوم محوّل الراتب</small><span class="tot">${fmt(X.bTot)} عقد ممول · نقدي ${fmt(X.cash)}</span>`;
+  const inits=tvOpsInits(X);
+  el("tvOpsBanks").innerHTML=`<div class="tvOpsBT"><div class="tvOpsB h"><span>الجهة</span><span>العقود</span><span>الحصة</span><span>النسبة الفعلية بالعقود</span><span>الثابت المكافئ بالعقود</span><span>متوسط مدة العقود</span><span>النسبة المعلنة</span><span>ثابت المعلنة</span><span>الفرق: فعلي − معلن</span><span>معلنة: غير محوّل / غير مدعوم</span><span>متوسط التمويل · الراتب</span><span>أدنى راتب حكومي</span></div>`
+    +X.banks.map(b=>{ const P=b.P||{}, pol=P.pol||{};
+      const tip=[b.raw&&b.raw!==b.name?`بملف التخصيص: ${b.raw}`:"",b.rn?`${fmt(b.rn)} عقداً بنسبة ربح`:"",P.note||""].filter(Boolean).join(" · ");
       return `<div class="tvOpsB${b.n?"":" off"}" title="${tip.replace(/"/g,"&quot;")}"><span class="n">${b.name}</span><b>${b.n?fmt(b.n):"—"}</b><span>${b.n?`${Math.round(b.share)}% ${tvDl(b.d)}`:""}</span>
-        <span class="r">${b.rate!=null?tvPctS(b.rate*100):"—"}</span><span class="f">${b.flat!=null?tvPctS(b.flat*100):"—"}</span>
+        <span class="r">${b.rate!=null?tvPctS(b.rate*100):"—"}</span><span class="f">${b.flat!=null?tvPctS(b.flat*100):"—"}</span><span class="s">${b.term?`${Math.round(b.term*10)/10} سنة`:"—"}</span>
         <span class="r">${b.pub!=null?tvPctS(b.pub*100):"—"}</span><span class="f">${b.pubFlat!=null?tvPctS(b.pubFlat*100):"—"}</span>
         <span class="g ${b.gap==null?"":b.gap>0.05?"dn":b.gap<-0.05?"up":"fl"}">${b.gap==null?"—":`${b.gap>0?"+":""}${b.gap.toFixed(2)}`}</span>
         <span class="s">${b.pubNt!=null?tvPctS(b.pubNt*100):"—"} / ${b.uns!=null?tvPctS(b.uns*100):"—"}</span>
-        <span class="s">${b.fa?tvPriceShort(b.fa):"—"} · ${b.sal?fmt(Math.round(b.sal)):"—"}</span>
-        <span class="s">${tvShort(pol.term||"—",18)} · ${tvShort(pol.age||"—",12)}</span><span class="s">${tvShort((pol.sal&&pol.sal.gov_t)||"—",14)}</span>
-        <span class="ini" title="${inis.join("، ")}">${inis.slice(0,3).map(l=>`<em>${l}</em>`).join("")||"—"}${inis.length>3?`<em class="more">+${inis.length-3}</em>`:""}</span></div>`; }).join("")
-    +(!(D.policy||[]).length?`<div class="tvEmpty" style="font-size:14px">ارفع ملف «مميزات وسياسات الجهات التمويلية» من «⬆ رفع ملف» لعرض النسب المعلنة</div>`:"");
+        <span class="s">${b.fa?tvPriceShort(b.fa):"—"} · ${b.sal?fmt(Math.round(b.sal)):"—"}</span><span class="s">${tvShort((pol.sal&&pol.sal.gov_t)||"—",14)}</span></div>`; }).join("")
+    +(!(D.policy||[]).length?`<div class="tvEmpty" style="font-size:14px">ارفع ملف «مميزات وسياسات الجهات التمويلية» من «⬆ رفع ملف» لعرض النسب المعلنة</div>`:"")+`</div>`
+    +(inits.length?`<div class="tvOpsIni"><span class="l">المبادرات</span>${inits.map(x=>`<div class="it" title="${x.banks.join("، ")}"><b>${x.l}</b><span>${fmt(x.banks.length)} جهات · <em>${fmt(x.n)}</em> عقد${x.share!=null?` (${Math.round(x.share)}%)`:""}</span><small>${x.banks.join("، ")}</small></div>`).join("")}</div>`:"");
   requestAnimationFrame(()=>tvRedrawCharts(el("tvPage3")));
 }
 /* الجوال: نفس البيانات بتصميم عمودي (يُستدعى من mRenderAnalysis لقسم «التشغيل») */
@@ -11631,20 +11669,26 @@ function mRenderOps(){
         <div><span>باقة الدفعة</span><b>${fmt(F.dpn)}</b><small>${F.dpa?`متوسط ${tvPriceShort(F.dpa)}`:"عقد"}</small></div>
         <div><span>عسكري</span><b>${r(F.jm)}</b><small>مبادرة ${fmt(F.mil)}</small></div><div><span>حكومي</span><b>${r(F.jg)}</b><small>خاص ${r(F.jp)}</small></div>
         <div><span>دعم عيني · ذرى+</span><b>${fmt(F.ikn)} · ${fmt(F.dh)}</b><small>عقد</small></div></div>
-        <div class="mBars">${[["باقة دعم الدفعة المقدمة",F.dpn],["الدعم العيني",F.ikn],["مبادرة العسكريين",F.mil],["الدعم الإضافي للعسكريين",F.mile],["ذرى بلس",F.dh]].map(([l,v])=>`<div class="r"><span class="n">${l}</span><span class="bar"><i style="width:${n?v/n*100:0}%;background:#C99A2E"></i></span><span class="v"><b>${fmt(v)}</b>${n?` · ${Math.round(v/n*100)}%`:""}</span></div>`).join("")}</div>
+        <div class="mBars">${[["باقة دعم الدفعة المقدمة",F.dpn],["الدعم العيني",F.ikn],["مبادرة العسكريين",F.mil],["الدعم الإضافي للعسكريين",F.mile],["ذرى بلس",F.dh]].filter((p,i)=>i<2||p[1]>0).map(([l,v])=>`<div class="r"><span class="n">${l}</span><span class="bar"><i style="width:${n?v/n*100:0}%;background:#C99A2E"></i></span><span class="v"><b>${fmt(v)}</b>${n?` · ${Math.round(v/n*100)}%`:""}</span></div>`).join("")}</div>
         ${F.instPct?`<div class="mNote">القسط ≈ ${Math.round(F.instPct)}% من الراتب بالمتوسط</div>`:""}</div>`; })():""}
-    <div class="mCard"><div class="mCardHd"><b>البنوك — ${per}</b><span>الثابت على ${X.term} سنة</span></div>
-      <div class="mPills sm">${[20,25,30].map(v=>`<button type="button" data-ot="${v}" class="${+tvOps.term===v?"on":""}">${v} سنة</button>`).join("")}</div>
-      ${X.banks.map(b=>{ const P=b.P||{}, pol=P.pol||{}, ini=P.init||{};
+    <div class="mCard"><div class="mCardHd"><b>البنوك — ${per}</b><span>${X.avgTerm?`متوسط المدة ${Math.round(X.avgTerm*10)/10} سنة`:""}</span></div>
+      <div class="mNote">الفعلية = متوسط «نسبة الأرباح» بالعقود · الثابت = Effective→Flat بمدة كل عقد من ملف التخصيص · المعلنة = مدعوم لمحوّل الراتب</div>
+      ${X.banks.map(b=>{ const P=b.P||{}, pol=P.pol||{};
         return `<div class="mBank${b.n?"":" off"}"><div class="t"><b>${b.name}</b><span>${b.n?`${fmt(b.n)} عقد · ${Math.round(b.share)}%`:"بلا عقود بالفترة"}</span></div>
-          <div class="g"><div>بالعقود<b>${b.rate!=null?tvPctS(b.rate*100):"—"}</b><small>ثابت ${b.flat!=null?tvPctS(b.flat*100):"—"}</small></div><div>المعلن<b>${b.pub!=null?tvPctS(b.pub*100):"—"}</b><small>ثابت ${b.pubFlat!=null?tvPctS(b.pubFlat*100):"—"}</small></div>
+          <div class="g"><div>الفعلية بالعقود<b>${b.rate!=null?tvPctS(b.rate*100):"—"}</b><small>ثابت ${b.flat!=null?tvPctS(b.flat*100):"—"}</small></div><div>المعلنة<b>${b.pub!=null?tvPctS(b.pub*100):"—"}</b><small>ثابت ${b.pubFlat!=null?tvPctS(b.pubFlat*100):"—"}</small></div>
           <div>الفرق<b class="${b.gap==null?"":b.gap>0.05?"dn":b.gap<-0.05?"up":""}">${b.gap==null?"—":`${b.gap>0?"+":""}${b.gap.toFixed(2)}`}</b><small>نقطة مئوية</small></div></div>
-          <div class="s">${[b.fa&&`متوسط التمويل ${tvPriceShort(b.fa)}`,b.sal&&`الراتب ${fmt(Math.round(b.sal))}`,b.mil!=null&&`عسكري ${Math.round(b.mil)}%`].filter(Boolean).join(" · ")}</div>
-          <div class="s">${[pol.term&&`المدة ${pol.term}`,pol.age&&`العمر ${pol.age}`,pol.sal&&pol.sal.gov_t&&`أدنى راتب ${pol.sal.gov_t}`].filter(Boolean).join(" · ")}</div>
-          ${TV_INIT.some(([k])=>ini[k]===true)?`<div class="ini">${TV_INIT.filter(([k])=>ini[k]===true).map(([,l])=>`<em>${l}</em>`).join("")}</div>`:""}</div>`; }).join("")}
+          <div class="s">${[b.term&&`متوسط مدة العقود ${Math.round(b.term*10)/10} سنة`,b.fa&&`التمويل ${tvPriceShort(b.fa)}`,b.sal&&`الراتب ${fmt(Math.round(b.sal))}`].filter(Boolean).join(" · ")}</div>
+          <div class="s">${[(b.pubNt!=null||b.uns!=null)&&`غير محوّل ${b.pubNt!=null?tvPctS(b.pubNt*100):"—"} · غير مدعوم ${b.uns!=null?tvPctS(b.uns*100):"—"}`,pol.sal&&pol.sal.gov_t&&`أدنى راتب ${pol.sal.gov_t}`].filter(Boolean).join(" · ")}</div></div>`; }).join("")}
       ${!D.has_rate?`<div class="mNote">لا يوجد عمود «نسبة الربح» بملف التخصيص — المعروض النسب المعلنة فقط</div>`:""}</div>`;
-  const E=D.employees||[]; mEmpCur=E.map(e=>({n:e.e,work:e.w,c:e.n}));
-  h+=`<div class="mCard"><div class="mCardHd"><b>أداء الموظفين — ${per}</b><span>${fmt(E.length)} موظفاً</span></div><div class="mList">${!D.has_emp?`<div class="mEmpty">ملف التخصيص بلا عمودي «Employee Name» و«موقع العمل» — أضفهما ثم ارفعه</div>`:E.slice(0,60).map((e,i)=>`<div class="mRow" data-emp="${i}" style="cursor:pointer"><span class="rk${i<3?" m"+(i+1):""}">${i+1}</span><div><div class="nm">${e.e}</div><div class="dv">${[e.w,e.ch].filter(Boolean).join(" · ")}</div></div><div class="val"><b>${fmt(e.n)}</b>${e.prev?`<small class="${e.n>=e.prev?"up":"dn"}">السابقة ${fmt(e.prev)}</small>`:""}</div></div>`).join("")||`<div class="mEmpty">لا عقود بأسماء موظفين لهذه الفترة</div>`}</div></div>`;
+  const inits=tvOpsInits(X);
+  if(inits.length) h+=`<div class="mCard"><div class="mCardHd"><b>المبادرات</b><span>الجهات المقدِّمة وعقود الفترة لديها</span></div>
+    <div class="mBars">${inits.map(x=>`<div class="r"><span class="n">${x.l}</span><span class="bar"><i style="width:${x.share||0}%;background:#009C6D"></i></span><span class="v"><b>${fmt(x.n)}</b>${x.share!=null?` · ${Math.round(x.share)}%`:""}</span></div><div class="mNote" style="margin:-2px 0 6px">${x.banks.join("، ")}</div>`).join("")}</div></div>`;
+  const M=tvOpsEmps(D), E=M.E, ev=M.can&&tvOps.ev==="zero"?"zero":"top"; mEmpCur=E.map(e=>({n:e.e,work:e.r&&e.r.s||e.w,c:e.n}));
+  h+=`<div class="mCard"><div class="mCardHd"><b>أداء الموظفين — ${per}</b><span>${fmt(M.sold)} باعوا${M.can?` · ${fmt(M.zero.length)} بلا عقود`:""}</span></div>
+    ${M.can?`<div class="mPills sm"><button type="button" data-ev="top" class="${ev==="top"?"on":""}">باعوا</button><button type="button" data-ev="zero" class="${ev==="zero"?"on":""}">بلا عقود بالفترة (${fmt(M.zero.length)})</button></div>`:""}
+    <div class="mList">${ev==="zero"?(M.groups.map(g=>`<div class="mZg"><b>${g.g} <em>${fmt(g.l.length)}</em></b><div>${g.l.map(r=>`<i>${r.e}</i>`).join("")}</div></div>`).join("")||`<div class="mEmpty">كل الوكلاء سجّلوا عقوداً بهذه الفترة</div>`)
+      :!D.has_emp?`<div class="mEmpty">ملف التخصيص بلا عمودي «Employee Name» و«موقع العمل» — أضفهما ثم ارفعه</div>`:E.slice(0,80).map((e,i)=>`<div class="mRow" data-emp="${i}" style="cursor:pointer"><span class="rk${i<3?" m"+(i+1):""}">${i+1}</span><div><div class="nm">${e.e}</div><div class="dv">${[e.r&&e.r.s||e.w,e.ch].filter(Boolean).join(" · ")}</div></div><div class="val"><b>${fmt(e.n)}</b>${e.prev?`<small class="${e.n>=e.prev?"up":"dn"}">السابقة ${fmt(e.prev)}</small>`:""}</div></div>`).join("")||`<div class="mEmpty">لا عقود بأسماء موظفين لهذه الفترة</div>`}</div>
+    ${M.has&&!M.can?`<div class="mNote">من لم يسجّل عقداً يظهر عند «كل القنوات» و«كل المشاريع»</div>`:""}${D.has_emp&&!M.has?`<div class="mNote">ارفع ملف «بيانات الموظفين» من شاشة التلفزيون لإظهار من لم يسجّل عقداً</div>`:""}</div>`;
   setTimeout(()=>{ const c=$("mOpsChart"); if(c) tvDrawChart(c,S.labels,S.series,{pulseLast:true,xFont:10,padX:16,empty:"لا عقود لهذه الفترة"}); },0);
   return h;
 }
@@ -11797,8 +11841,8 @@ function tvAllocAggregate(rows,appNameOf){
   const instKey=resolveHeaderKey(rows,["القسط الشهرى - REDF","القسط الشهري - REDF","القسط الشهري","القسط","installment"],[["قسط","install"]]);
   const jobKey=resolveHeaderKey(rows,["جهة العمل - REDF","جهة العمل","employer"],[["جهة","جهه"],["عمل"]]);
   const famKey=resolveHeaderKey(rows,["عدد أفراد الأسرة -REDF","عدد أفراد الأسرة","عدد افراد الاسرة","family_size"],[["افراد","أفراد"]]);
-  const dpKey=resolveHeaderKey(rows,["مبلغ باقة دعم الدفعة المقدمة"],[["باقة","باقه"],["دفعة","دفعه"]]);
-  const ikKey=resolveHeaderKey(rows,["مبلغ الدعم العيني","مبلغ الدعم العينى"],[["مبلغ"],["عيني","عينى"]]);
+  const dpKey=resolveHeaderKey(rows,["مبلغ دعم الدفعة المقدمة - REDF","مبلغ باقة دعم الدفعة المقدمة","مبلغ دعم الدفعة المقدمة"],[["مبلغ"],["دفعة","دفعه"]]);
+  const ikKey=resolveHeaderKey(rows,["مبلغ الدعم العيني - REDF","مبلغ الدعم العينى - REDF","مبلغ الدعم العيني","مبلغ الدعم العينى"],[["مبلغ"],["عيني","عينى"]]);
   const milKey=resolveHeaderKey(rows,["مستفيد مبادرة العسكريين"],[["مستفيد"],["عسكري"]]);
   const mileKey=resolveHeaderKey(rows,["مبادرة الدعم الإضافى عسكريين - الصندوق","مبادرة الدعم الإضافي عسكريين"],[["اضاف","إضاف"],["عسكري"]]);
   const dhKey=resolveHeaderKey(rows,["منتج ذرى بلس","ذرى بلس"],[["ذرى","ذري"]]);
@@ -11897,7 +11941,7 @@ function tvAllocAggregate(rows,appNameOf){
         if(empKey){ const en=clean(row[empKey]); if(en){ const ek=[cd,sector,kind,en,workKey?clean(row[workKey]):""].join("\u0001"); emp.set(ek,(emp.get(ek)||0)+1); } }
         /* الصفحة التشغيلية: عقد × مشروع × ضاحية × قناة × موظف × بنك (فارغ = نقدي) */
         { const ch=chanKey?clean(row[chanKey]):"", en=empKey?clean(row[empKey]):"", wk=workKey?clean(row[workKey]):"", bn=bankKey&&!tvIsCashBank(row[bankKey])?S(row[bankKey]):"";
-          const ok=[cd,pn,dest,sector,kind,ch,en,wk,bn].join("\u0001"), o=ops.get(ok)||{n:0,vs:0,vn:0,rs:0,rn:0,ts:0,tn:0,ben:0,ds:0,dn:0,fa:0,fan:0,sal:0,saln:0,inst:0,instn:0,fam:0,famn:0,jm:0,jg:0,jp:0,jo:0,dpn:0,dps:0,ikn:0,iks:0,mil:0,mile:0,dh:0}; o.n++;
+          const ok=[cd,pn,dest,sector,kind,ch,en,wk,bn].join("\u0001"), o=ops.get(ok)||{n:0,vs:0,vn:0,rs:0,rn:0,ts:0,tn:0,fls:0,fln:0,ben:0,ds:0,dn:0,fa:0,fan:0,sal:0,saln:0,inst:0,instn:0,fam:0,famn:0,jm:0,jg:0,jp:0,jo:0,dpn:0,dps:0,ikn:0,iks:0,mil:0,mile:0,dh:0}; o.n++;
           { const fa=faKey?num(row[faKey]):NaN; if(fa>=1000){ o.fa+=fa; o.fan++; }
             const sl=salKey?num(row[salKey]):NaN; if(sl>=500&&sl<1e6){ o.sal+=sl; o.saln++; }
             const it=instKey?num(row[instKey]):NaN; if(it>=50&&it<1e6){ o.inst+=it; o.instn++; }
@@ -11907,8 +11951,10 @@ function tvAllocAggregate(rows,appNameOf){
             const ik=ikKey?num(row[ikKey]):NaN; if(ik>0){ o.ikn++; o.iks+=ik; }
             if(milKey&&yes1(row[milKey])) o.mil++; if(mileKey&&yes1(row[mileKey])) o.mile++; if(dhKey&&yes1(row[dhKey])) o.dh++; }
           const cv=pr>=10000?pr:(rp>=10000?rp:NaN); if(cv>=10000){ o.vs+=cv; o.vn++; }
-          if(rateKey&&bn){ const rr=pRate(row[rateKey]); if(rr===rr){ o.rs+=rr; o.rn++; } }
-          if(termKey&&bn){ const tt=pTerm(row[termKey]); if(tt===tt){ o.ts+=tt; o.tn++; } }
+          { const rr=rateKey&&bn?pRate(row[rateKey]):NaN, tt=termKey&&bn?pTerm(row[termKey]):NaN;
+            if(rr===rr){ o.rs+=rr; o.rn++; } if(tt===tt){ o.ts+=tt; o.tn++; }
+            /* الثابت المكافئ لكل عقد بمدته الفعلية من الملف (لا مدة افتراضية) */
+            const fl=rr===rr&&tt===tt?tvFlatRate(rr,tt):null; if(fl!=null&&isFinite(fl)){ o.fls+=fl; o.fln++; } }
           if(S(row["نوع المستفيدين"])==="المستفيدين") o.ben++;
           const bd=tvAllocDate(row["تاريخ الحجز"]); if(bd&&cd>=bd){ const dd=(new Date(cd)-new Date(bd))/864e5; if(dd<=2000){ o.ds+=dd; o.dn++; } }
           ops.set(ok,o); }
@@ -12086,8 +12132,8 @@ function tvUpMsg(t,cls){ const m=$("tvUpMsg"); m.className="tvUpMsg"+(cls?" "+cl
 function tvUpHasAuth(){ return !!(tvUpCreds||($("tvUpUser").value.trim()&&$("tvUpPass").value)); }
 function tvUpUpdateGo(){
   $("tvUpConfirmRow").classList.toggle("on",tvUpSus);
-  $("tvUpGo").textContent=tvUpPol?"رفع نسب وسياسات البنوك":tvUpRev?"رفع جدول الإيرادات وتحديث الشاشة":tvUpAlloc?"رفع ملف التخصيص وتحديث الشاشة":"رفع اللقطة وتحديث الشاشة";
-  $("tvUpGo").disabled=!(((tvUpList&&tvUpList.length)||tvUpAlloc||tvUpRev||tvUpPol)&&tvUpHasAuth()&&(!tvUpSus||$("tvUpConfirm").checked));
+  $("tvUpGo").textContent=tvUpRos?"رفع بيانات الموظفين":tvUpPol?"رفع نسب وسياسات البنوك":tvUpRev?"رفع جدول الإيرادات وتحديث الشاشة":tvUpAlloc?"رفع ملف التخصيص وتحديث الشاشة":"رفع اللقطة وتحديث الشاشة";
+  $("tvUpGo").disabled=!(((tvUpList&&tvUpList.length)||tvUpAlloc||tvUpRev||tvUpPol||tvUpRos)&&tvUpHasAuth()&&(!tvUpSus||$("tvUpConfirm").checked));
   tvUpRefreshUndo();
 }
 /* سحوبات اليوم مع حذف أي منها (مثلاً ملف رُفع بفلتر تاريخ خاطئ) — نفس صلاحية الأدمن، بتأكيد صريح.
@@ -12118,7 +12164,7 @@ function tvUpOpen(file){
 }
 function tvUpClose(){ $("tvUpModal").classList.remove("on"); $("tvUpDrop").classList.remove("over"); }
 /* نوع الملف: ملف التخصيص (كبير، أعمدة project_name وحالة الحجز) أو Export داشبورد NHC (اسم المشروع/عدد العقود) */
-let tvUpAlloc=null, tvUpRev=null, tvUpPol=null;
+let tvUpAlloc=null, tvUpRev=null, tvUpPol=null, tvUpRos=null;
 /* ---------- جدول الإيرادات («المستهدف والمحقق حسب مذكرات الاستثمار — الإيرادات والتحصيل») ----------
    ورقة «المناطق والمشاريع»: لكل مشروع قيمة العقود التراكمية والمستحق الآن نقدي/بنكي ومستهدف المذكرة.
    منه نسبة جدول الدفعات النقدية لكل مشروع = المستحق النقدي ÷ (قيمة العقود − المستحق البنكي ÷ 20%) —
@@ -12245,6 +12291,30 @@ function tvRevKeySheet(wb){
   }
   return {sheet:name,meta,dates,counts,projects};
 }
+/* ملف «بيانات الموظفين»: الورقة الرئيسية (Employee Name، District، Job Title، موقع العمل، TYPE، المشرف، المدير، تاريخ المباشرة أو «استقالة»)
+   وورقة «منتقلين - مستقيلين» (الاسم، تاريخ الاستقالة). لا تُقرأ الهوية ولا البريد ولا الجوال ولا الأرقام الوظيفية. */
+const TV_ROSTER_MAIN=["Employee Name","District","Job Title","موقع العمل","TYPE","SUPERVIORName","SUPERVISOR Name","MANAGER Name","تاريخ المباشرة"];
+const TV_ROSTER_RES=["الاسم","تاريخ الاستقالة","مواقع العمل","تاريخ المباشرة","job"];
+function tvRosterHeaders(hdr){ const H=new Set(hdr.map(normalizeHeaderKey)), has=k=>H.has(normalizeHeaderKey(k));
+  return has("Employee Name")&&(has("Job Title")||has("District"))&&!has("project_name"); }
+async function tvRosterRead(file){
+  const nm=v=>String(v==null?"":v).replace(/[\u00a0\s]+/g," ").trim(), sv=v=>{ const t=nm(v); return /^[-–—.]*$/.test(t)?"":t; };
+  const dt=v=>v==null||v===""?null:tvAllocDate(v), isRes=v=>/استقال/.test(nm(v));
+  const A=await xlsxStreamRows(file,TV_ROSTER_MAIN,null,null,TV_ROSTER_MAIN);
+  const g=(r,...ks)=>{ for(const k of ks){ const kk=Object.keys(r).find(x=>normalizeHeaderKey(x)===normalizeHeaderKey(k)); if(kk&&r[kk]!=null&&r[kk]!=="") return r[kk]; } return null; };
+  const by=new Map();
+  A.rows.forEach(r=>{ const n=nm(g(r,"Employee Name")); if(!n) return; const st=g(r,"تاريخ المباشرة");
+    by.set(n,{name:n,district:sv(g(r,"District")),site:sv(g(r,"موقع العمل")),job:sv(g(r,"Job Title")),type:sv(g(r,"TYPE")),
+      sup:sv(g(r,"SUPERVIORName","SUPERVISOR Name")),mgr:sv(g(r,"MANAGER Name")),start:isRes(st)?null:dt(st),resigned:isRes(st),resigned_at:null}); });
+  let nRes=0;
+  try{ const B=await xlsxStreamRows(file,TV_ROSTER_RES,null,null,TV_ROSTER_RES);
+    if(B.sheetName!==A.sheetName) B.rows.forEach(r=>{ const n=nm(g(r,"الاسم")); if(!n) return; const at=dt(g(r,"تاريخ الاستقالة")), st=g(r,"تاريخ المباشرة");
+      if(!at&&!isRes(st)) return; nRes++;
+      const o=by.get(n)||{name:n,district:"",site:sv(g(r,"مواقع العمل")),job:sv(g(r,"job")),type:"",sup:"",mgr:"",start:null};
+      o.resigned=true; o.resigned_at=at||o.resigned_at||null; by.set(n,o); }); }catch(_){}
+  const rows=[...by.values()];
+  return {rows,sheet:A.sheetName,nRes,active:rows.filter(r=>!r.resigned).length,agents:rows.filter(r=>!r.resigned&&/agent/i.test(r.job)).length};
+}
 async function tvUpReadAlloc(file){
   const WANT=["project_name","حالة الحجز","price","unit_type","developer_name","القطاع"];
   let rows=null, sheet="", sheets=1;
@@ -12254,10 +12324,20 @@ async function tvUpReadAlloc(file){
   return {rows,sheet,sheets};
 }
 async function tvUpHandleFile(file){
-  tvUpList=null; tvUpAlloc=null; tvUpRev=null; tvUpPol=null; tvUpSus=false; tvUpUpdateGo();
+  tvUpList=null; tvUpAlloc=null; tvUpRev=null; tvUpPol=null; tvUpRos=null; tvUpSus=false; tvUpUpdateGo();
   $("tvUpDropTxt").textContent="📄 "+file.name;
   tvUpMsg("جارٍ قراءة الملف…");
   try{
+    /* ملف «بيانات الموظفين» (Employee Name + Job Title/District، بلا project_name) — صفّا العناوين فقط للتعرّف */
+    if(file.size<=20*1024*1024){ let isRos=false;
+      try{ await loadSheetJS(); const wb=XLSX.read(new Uint8Array(await file.arrayBuffer()),{type:"array",sheetRows:2});
+        isRos=wb.SheetNames.some(n=>{ const ws=wb.Sheets[n]; const h=ws?(XLSX.utils.sheet_to_json(ws,{header:1,defval:null,range:0})[0]||[]):[]; return tvRosterHeaders(h.map(x=>x==null?"":String(x))); }); }catch(_){ isRos=false; }
+      if(isRos){ const R=await tvRosterRead(file);
+        if(!R.rows.length) throw new Error("لم أجد أسماء موظفين بالملف");
+        tvUpRos=R; $("tvUpAtRow").style.display="none";
+        const by=k=>{ const m=new Map(); R.rows.filter(r=>!r.resigned).forEach(r=>m.set(r[k]||"—",(m.get(r[k]||"—")||0)+1)); return [...m].sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${fmt(v)}`).join(" · "); };
+        tvUpMsg(`<b>بيانات الموظفين</b> · الورقة «${R.sheet}» · <b>${fmt(R.rows.length)}</b> اسماً<br>على رأس العمل <b>${fmt(R.active)}</b> (وكلاء AGENT ${fmt(R.agents)}) · مستقيل/منتقل ${fmt(R.rows.length-R.active)}${R.nRes?` (منها ${fmt(R.nRes)} من ورقة المستقيلين)`:""}<br>المنطقة: ${by("district")}<br><small>يُقرأ: الاسم، المنطقة، موقع العمل، المسمى، النوع، المشرف، المدير، المباشرة/الاستقالة — لا تُقرأ الهوية ولا البريد ولا الجوال. الرفع يستبدل القائمة السابقة.</small>`);
+        tvUpUpdateGo(); return; } }
     /* ملف «مميزات وسياسات الجهات التمويلية» (ورقتا «مميزات» و«سياسات» — xlsx أو xlsb) */
     if(file.size<=5*1024*1024){ let bp=null;
       try{ await loadSheetJS(); bp=tvBankPolicyParse(XLSX.read(new Uint8Array(await file.arrayBuffer()),{type:"array"})); }catch(_){ bp=null; }
@@ -12342,7 +12422,22 @@ async function tvUpGoPol(){
     setTimeout(tvUpClose,1800);
   }catch(e){ tvUpMsg(e.message||String(e),"err"); tvUpUpdateGo(); }
 }
+async function tvUpGoRos(){
+  $("tvUpGo").disabled=true;
+  try{
+    await tvUpEnsureCreds();
+    tvUpMsg("جارٍ رفع بيانات الموظفين…");
+    let r; try{ r=await sbCall("admin_load_tv_ops",{p_admin:tvUpCreds.u,p_pass:tvUpCreds.p,p_table:"roster",p_rows:tvUpRos.rows,p_reset:true}); }
+    catch(e){ throw new Error("تعذّر الرفع: "+(e.message||e)+" — شغّل tv_ops.sql على القاعدة"); }
+    if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
+    tvUpMsg(`✓ حُفظت بيانات ${fmt(r.count||0)} موظفاً — أداء الموظفين بالصفحة التشغيلية يتحدّث`,"ok");
+    tvUpRos=null; $("tvUpFile").value=""; $("tvUpAtRow").style.display="";
+    tvOpsCache={}; tvOpsLoad(true);
+    setTimeout(tvUpClose,1800);
+  }catch(e){ tvUpMsg(e.message||String(e),"err"); tvUpUpdateGo(); }
+}
 async function tvUpGo(){
+  if(tvUpRos) return tvUpGoRos();
   if(tvUpPol) return tvUpGoPol();
   if(tvUpRev) return tvUpGoRev();
   if(tvUpAlloc) return tvUpGoAlloc();
