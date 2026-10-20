@@ -33,6 +33,12 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
   const errs=[]; page.on('pageerror',e=>errs.push(e.message));
   await page.route('**/rest/v1/**',async route=>{
     const url=route.request().url(); let body=null;
+    { const mm=url.match(/rpc\/(get_tv_ops)$/); if(mm){ const q=JSON.parse(route.request().postData()||'{}');
+        if(process.env.NOOPS) return route.fulfill({status:404,contentType:'application/json',body:'{"message":"Could not find the function public.get_tv_ops"}'});
+        const L=v=>v==null?'null':"'"+String(v).replace(/'/g,"''")+"'";
+        const sql=`select get_tv_ops(${L(q.p_from)}::date,${L(q.p_to)}::date,${L(q.p_sector)},${L(q.p_kind)},${L(q.p_dest)},${L(q.p_project)},${L(q.p_channel)})`;
+        const out=require('child_process').execFileSync('psql',['-h','/tmp','-p','5499','-U','postgres','-d','t','-At','-c',sql]).toString();
+        return route.fulfill({status:200,contentType:'application/json',body:out}); } }
     const m=url.match(/rpc\/([a-z_]+)/);
     if(m){ const fn=m[1]; const q=JSON.parse(route.request().postData()||'{}'); const sec=q.p_sector??null;
       if(fn==='get_tv_contracts'){ if(process.env.NOFC) return route.fulfill({status:404,contentType:'application/json',body:'{"message":"no fn"}'});

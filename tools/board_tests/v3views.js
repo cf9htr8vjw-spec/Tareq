@@ -83,7 +83,7 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
   await page.screenshot({path:process.env.OUT}); console.log('villa ok', await page.evaluate(()=>document.getElementById('tvDestTot').innerText));
   await page.click('#tvBandSeg button[data-v="prod"]'); await page.waitForTimeout(300);
   await page.screenshot({path:process.env.OUT2}); console.log('OVERFLOW:',JSON.stringify(await require('/tmp/pwtest/overflow.js')(page),null,0));
-  await page.click('#tvBandSeg button[data-v="emp"]'); await page.waitForTimeout(300); await page.screenshot({path:process.env.OUT3});
+  console.log('emp band removed:',await page.evaluate(()=>!document.querySelector('#tvBandSeg button[data-v="emp"]')));
   console.log('ERR',errs.length,errs.slice(0,2)); await browser.close(); return;
   await page.screenshot({path:''+(process.env.OUT||'/tmp/pwtest/tv_page1.png')+''}); console.log('OVERFLOW:',JSON.stringify(await require('/tmp/pwtest/overflow.js')(page),null,0)); console.log('GAUGES:\n'+await page.evaluate(()=>[...document.querySelectorAll('.tvGauge')].map(g=>g.innerText.replace(/\n+/g,' | ')).join('\n')));
   console.log('lead scroll running:',await page.evaluate(()=>document.getElementById('tvLeaders').classList.contains('run')));
