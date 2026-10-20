@@ -107,21 +107,21 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
   await page.goto(process.env.URL,{waitUntil:'load'}); await page.waitForTimeout(1300);
   const D=process.env.OUTDIR||'/tmp/pwtest/opsm'; require('fs').mkdirSync(D,{recursive:true});
   if(process.env.TVMSG){ await page.click('#tvPageDots i:nth-child(3)'); await page.waitForTimeout(1200); console.log('tv msg:',(await page.textContent('#tvOpsKpis')).slice(0,120)); console.log('PAGE ERRORS:',errs.length,errs.join(' | ')); await browser.close(); return; }
-  await page.click('#mNav button[data-tab="analysis"]'); await page.click('#mAnSeg button[data-an="ops"]'); await page.waitForTimeout(1500);
+  await page.click('#mNav button[data-tab="ops"]'); await page.waitForTimeout(1500);
   const ov=async()=>page.evaluate(()=>({docW:document.documentElement.scrollWidth,W:document.documentElement.clientWidth}));
-  console.log('ops mobile',JSON.stringify(await ov()),'| text:',(await page.textContent('#mAnBody')).replace(/\s+/g,' ').slice(0,260));
+  console.log('ops mobile',JSON.stringify(await ov()),'| text:',(await page.textContent('#mOpsBody')).replace(/\s+/g,' ').slice(0,260));
   await page.screenshot({path:D+'/ops.png',fullPage:true});
-  await page.click('#mAnBody button[data-op="year"]'); await page.waitForTimeout(1200);
-  await page.click('#mAnBody [data-oc="مركز بيع"]'); await page.waitForTimeout(1200);
-  await page.selectOption('#mAnBody select[data-ops="dest"]','خزام'); await page.waitForTimeout(1200);
-  console.log('after filters:',JSON.stringify(await ov()),(await page.textContent('#mAnBody .mK6')).replace(/\s+/g,' ').slice(0,160));
-  if(await page.$('#mAnBody .mRow[data-emp]')){ await page.click('#mAnBody .mRow[data-emp]'); await page.waitForTimeout(700); console.log('emp sheet:',(await page.textContent('#mDetailTitle')).slice(0,60),(await page.textContent('#mDetailBody')).replace(/\s+/g,' ').slice(0,80)); }
-  else console.log('no employees:',(await page.textContent('#mAnBody')).match(/ملف التخصيص بلا عمودي[^—]*/)?.[0]);
+  await page.click('#mOpsBody button[data-op="year"]'); await page.waitForTimeout(1200);
+  await page.click('#mOpsBody [data-oc="مركز بيع"]'); await page.waitForTimeout(1200);
+  await page.selectOption('#mOpsBody select[data-ops="dest"]','خزام'); await page.waitForTimeout(1200);
+  console.log('after filters:',JSON.stringify(await ov()),(await page.textContent('#mOpsBody .mK6')).replace(/\s+/g,' ').slice(0,160));
+  if(await page.$('#mOpsBody .mRow[data-emp]')){ await page.click('#mOpsBody .mRow[data-emp]'); await page.waitForTimeout(700); console.log('emp sheet:',(await page.textContent('#mDetailTitle')).slice(0,60),(await page.textContent('#mDetailBody')).replace(/\s+/g,' ').slice(0,80)); }
+  else console.log('no employees:',(await page.textContent('#mOpsBody')).match(/ملف التخصيص بلا عمودي[^—]*/)?.[0]);
   await page.evaluate(()=>document.getElementById('mDetailSheet').classList.remove('on'));
   await page.screenshot({path:D+'/ops_filtered.png',fullPage:true});
-  await page.selectOption('#mAnBody select[data-ops="dest"]',''); await page.waitForTimeout(900); await page.click('#mAnBody button[data-oc=""]'); await page.waitForTimeout(1200);
-  if(await page.$('#mAnBody button[data-ev="zero"]')){ await page.click('#mAnBody button[data-ev="zero"]'); await page.waitForTimeout(500);
-    console.log('zero view:',JSON.stringify(await ov()),(await page.evaluate(()=>[...document.querySelectorAll('#mAnBody .mZg>b')].map(b=>b.innerText).join(' | '))).slice(0,200));
+  await page.selectOption('#mOpsBody select[data-ops="dest"]',''); await page.waitForTimeout(900); await page.click('#mOpsBody button[data-oc=""]'); await page.waitForTimeout(1200);
+  if(await page.$('#mOpsBody button[data-ev="zero"]')){ await page.click('#mOpsBody button[data-ev="zero"]'); await page.waitForTimeout(500);
+    console.log('zero view:',JSON.stringify(await ov()),(await page.evaluate(()=>[...document.querySelectorAll('#mOpsBody .mZg>b')].map(b=>b.innerText).join(' | '))).slice(0,200));
     await page.screenshot({path:D+'/ops_zero.png',fullPage:true}); }
-  console.log('initiatives card:',(await page.evaluate(()=>{ const c=[...document.querySelectorAll('#mAnBody .mCard')].find(x=>/المبادرات/.test(x.querySelector('.mCardHd')?.innerText||'')); return c?c.innerText.replace(/\s+/g,' '):'-'; })).slice(0,200));
+  console.log('initiatives card:',(await page.evaluate(()=>{ const c=[...document.querySelectorAll('#mOpsBody .mCard')].find(x=>/المبادرات/.test(x.querySelector('.mCardHd')?.innerText||'')); return c?c.innerText.replace(/\s+/g,' '):'-'; })).slice(0,200));
   console.log('PAGE ERRORS:',errs.length,errs.join(' | ')); await browser.close(); })();

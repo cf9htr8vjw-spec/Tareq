@@ -106,7 +106,7 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
       document.querySelectorAll('#mApp *').forEach(el=>{ const cs=getComputedStyle(el); if(cs.display==='none'||el.closest('.mSheet')) return;
         const r=el.getBoundingClientRect(); if(r.width<1) return; if(r.right>W+1||r.left<-1){ let p=el.parentElement,ok=false; while(p){ const o=getComputedStyle(p).overflowX; if(o==='auto'||o==='scroll'||o==='hidden'){ok=true;break;} p=p.parentElement;} if(!ok) bad.push((el.id||el.className||el.tagName)+':'+Math.round(r.left)+'-'+Math.round(r.right)); } });
       return {docW:document.documentElement.scrollWidth,W,H:document.documentElement.scrollHeight,bad:bad.slice(0,8)}; });
-  for(const tab of ['today','projects','charts','analysis','regions']){
+  for(const tab of ['today','projects','charts','ops','analysis','map']){
     await page.click('#mNav button[data-tab="'+tab+'"]'); await page.waitForTimeout(500);
     console.log(tab,JSON.stringify(await ov()));
     await page.screenshot({path:D+'/'+tab+'.png',fullPage:true});
