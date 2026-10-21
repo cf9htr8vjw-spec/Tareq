@@ -4640,8 +4640,8 @@ function initMap(){
   satLayer=L.layerGroup([
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       {maxZoom:20, attribution:'© Esri'}),
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png",
-      {maxZoom:20, detectRetina:true, subdomains:"abcd"})
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+      {maxZoom:20})
   ]);
   streetLayer.addTo(map);
   layer=L.layerGroup().addTo(map);
@@ -11808,7 +11808,11 @@ function hmMapFor(id){
   let M=hmMaps[id]; if(M&&M.el===el) return M;
   if(M){ try{ M.map.remove(); }catch(e){} }
   const map=L.map(el,{zoomControl:true,attributionControl:true,preferCanvas:true,scrollWheelZoom:!tvMobile}).setView([24.2,44.5],5);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{maxZoom:18,subdomains:"abcd",attribution:"© OpenStreetMap © CARTO"}).addTo(map);
+  /* أساس رمادي فاتح بلا مفتاح (Esri) + أسماء الأماكن؛ وإن فشل التحميل نعود لخريطة OpenStreetMap العادية */
+  const base=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",{maxZoom:16,attribution:"© Esri"}).addTo(map);
+  const ref=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",{maxZoom:16}).addTo(map);
+  let fails=0; base.on("tileerror",()=>{ if(++fails===4){ map.removeLayer(base); map.removeLayer(ref);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:"© OpenStreetMap"}).addTo(map).bringToBack(); } });
   el.addEventListener("click",e=>{ const b=e.target.closest("[data-hmproj]"); if(b) openProjectFromBoard(b.dataset.hmproj); });
   return hmMaps[id]={el,map,layer:L.layerGroup().addTo(map),fitKey:""};
 }
