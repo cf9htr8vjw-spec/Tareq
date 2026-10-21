@@ -9567,7 +9567,7 @@ function enterBoard(){
   $("app").style.display="none"; $("chooser").classList.remove("on");
   document.documentElement.classList.add("tvMode");
   $("tvView").classList.add("on");
-  if(!boardStarted){ boardStarted=true; startTvMode(); }
+  if(!boardStarted){ boardStarted=true; startTvMode(); tvInitUpload(); }
   else { tvSetMobile(tvWantMobile(),false); tvFit(); tvStartRotation(); if(tvLastR) tvRenderAll(); }
 }
 function enterApp(){
@@ -9990,7 +9990,7 @@ async function loadTvDashboard(){
 
   const live=R.live, upd=$("tvUpdated");
   tvLastLive=(live&&live.ok&&!live.empty)?live:null;
-  if(isTvMode()) tvUpRefreshUndo();
+  if(tvUpInited) tvUpRefreshUndo();
   const syncAt=R.sync&&R.sync[0]&&R.sync[0].last_synced_at;
   const syncTxt=syncAt?` · ملف التخصيص: ${new Date(syncAt).toLocaleDateString("ar-SA-u-ca-gregory",{day:"numeric",month:"long"})} ${tvTime(syncAt)}`:"";
   if(live&&live.ok&&!live.empty){
@@ -12505,6 +12505,8 @@ function tvUpRefreshAuth(){
   }
 }
 function tvUpOpen(file){
+  /* أدمن دخل بكلمة مروره في هذه الصفحة: يرفع باسمه مباشرة (كلمة المرور بالذاكرة فقط) */
+  if(!tvUpCreds&&SESSION&&SESSION.admin&&CURPASS) tvUpCreds={u:CURUSER,p:CURPASS,name:SESSION.name||CURUSER};
   $("tvUpModal").classList.add("on");
   if(!$("tvUpAt").value) $("tvUpAt").value=liveNowLocal();
   tvUpRefreshAuth(); tvUpUpdateGo();
@@ -12840,7 +12842,10 @@ async function tvUpGoRev(){
     setTimeout(tvUpClose,1800);
   }catch(e){ tvUpMsg(e.message||String(e),"err"); tvUpUpdateGo(); }
 }
+/* يُربط مرة واحدة عند فتح «العرض الشامل» (بالرابط ?tv=1 أو من الخيار بعد الدخول) */
+let tvUpInited=false;
 function tvInitUpload(){
+  if(tvUpInited) return; tvUpInited=true;
   const view=$("tvView");
   $("tvUpBtn").onclick=()=>tvUpOpen();
   $("tvUpClose").onclick=tvUpClose;
@@ -12859,10 +12864,9 @@ function tvInitUpload(){
   view.addEventListener("drop",e=>{ e.preventDefault(); $("tvUpDrop").classList.remove("over"); const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) tvUpOpen(f); });
   document.addEventListener("keydown",e=>{
     if(e.key==="Escape") tvUpClose();
-    else if((e.key==="u"||e.key==="U")&&!$("tvUpModal").classList.contains("on")&&!/input|textarea/i.test(document.activeElement.tagName)) tvUpOpen();
+    else if((e.key==="u"||e.key==="U")&&uiMode==="board"&&!$("tvUpModal").classList.contains("on")&&!/input|textarea|select/i.test(document.activeElement.tagName)) tvUpOpen();
   });
 }
-if(isTvMode()) tvInitUpload();
 </script>
 </body>
 </html>
