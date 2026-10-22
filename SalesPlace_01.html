@@ -11897,12 +11897,13 @@ function pmCompute(){
   if(!mPS) return null;
   const MK=pmMarket(), rows=hmRows(mScopeOk), P=new Map(), C=new Map();
   rows.forEach(r=>{ const ov=pmOurVal(r), avail=r.avail_p+r.avail_d; const ck=pmCityKey(r.city), mk=MK.get(ck+"\u0001"+r.type);
-    let o=P.get(r.project); if(!o){ o={project:r.project,city:r.city,ck,dest:r.dest,sector:r.sector,kind:r.kind,p:0,w:0,avail:0,gw:0,gs:0,types:new Map()}; P.set(r.project,o); }
+    let o=P.get(r.project); if(!o){ o={project:r.project,city:r.city,ck,dest:r.dest,sector:r.sector,kind:r.kind,lat:r.lat,lon:r.lon,p:0,w:0,avail:0,gw:0,gs:0,mw:0,ms:0,types:new Map()}; P.set(r.project,o); }
     o.avail+=avail; o.types.set(r.type,(o.types.get(r.type)||0)+avail+r.contracts);
-    if(ov){ o.p+=ov.p; o.w+=ov.w; const mv=mk?(pm.metric==="sqm"?mk.sqm:mk.avg):null; if(mv){ const gw=Math.max(1,avail); o.gw+=gw; o.gs+=(ov.v-mv)/mv*100*gw; } }
+    const mv=mk?(pm.metric==="sqm"?mk.sqm:mk.avg):null; if(mv){ const gw=Math.max(1,avail); o.mw+=gw; o.ms+=mv*gw; }
+    if(ov){ o.p+=ov.p; o.w+=ov.w; if(mv){ const gw=Math.max(1,avail); o.gw+=gw; o.gs+=(ov.v-mv)/mv*100*gw; } }
     let c=C.get(ck+"\u0001"+r.type); if(!c){ c={city:r.city,ck,type:r.type,sector:r.sector,p:0,w:0,avail:0,proj:new Set(),up:0,un:0}; C.set(ck+"\u0001"+r.type,c); }
     c.avail+=avail; c.proj.add(r.project); if(ov){ c.p+=ov.p; c.w+=ov.w; } if(r.pa_n){ c.up+=r.pa_sum; c.un+=r.pa_n; } });
-  const pts=[...P.values()].map(o=>{ o.v=o.w?o.p/o.w:null; o.gap=o.gw?o.gs/o.gw:null; o.type=[...o.types].sort((a,b)=>b[1]-a[1]).map(x=>x[0])[0]||""; o.loc=hmLoc(o); return o; }).filter(o=>o.v!=null);
+  const pts=[...P.values()].map(o=>{ o.v=o.w?o.p/o.w:null; o.gap=o.gw?o.gs/o.gw:null; o.mv=o.mw?o.ms/o.mw:null; o.type=[...o.types].sort((a,b)=>b[1]-a[1]).map(x=>x[0])[0]||""; o.loc=hmLoc(o); return o; }).filter(o=>o.v!=null);
   /* المدن: عندنا و/أو بالسوق */
   MK.forEach((m,k)=>{ if(!C.has(k)){ if(!(hmPrm.type==="all"||m.type===hmPrm.type)) return; if(tvRegion&&tvRegion!=="dev"){ const cc=HM_CITY[m.ck]; if(!cc||cc[2]!==tvRegion) return; } C.set(k,{city:m.city,ck:m.ck,type:m.type,sector:(HM_CITY[m.ck]||[])[2]||"",p:0,w:0,avail:0,proj:new Set(),up:0,un:0}); } });
   const cities=[...C.values()].map(c=>{ const m=MK.get(c.ck+"\u0001"+c.type); c.ours=c.w?c.p/c.w:null; c.unit=c.un?c.up/c.un:null; c.mk=m||null; c.mv=m?(pm.metric==="sqm"?m.sqm:m.avg):null;
@@ -11919,7 +11920,7 @@ function pmCompute(){
   pts.forEach(o=>{ distO[pmBandIdx(o.v)]+=Math.max(1,o.avail); }); mpts.forEach(m=>{ distM[pmBandIdx(m.v)]+=m.w; });
   const sec=TV_SECTORS.map(s=>{ const ps=pts.filter(o=>o.sector===s), cs=cities.filter(c=>c.sector===s&&c.mk&&c.mv); const w=ps.reduce((a,o)=>a+o.w,0), mw2=cs.reduce((a,c)=>a+c.mk.deals,0);
     const o=w?ps.reduce((a,x)=>a+x.p,0)/w:null, m=mw2?cs.reduce((a,c)=>a+c.mv*c.mk.deals,0)/mw2:null; return {sector:s,ours:o,mkt:m,gap:o&&m?(o-m)/m*100:null,n:ps.length,deals:mw2}; });
-  return {pts,mpts,cities,sec,ours,mkt,gap,above,below,withGap:withGap.length,distO,distM,noMkt:!tvMkt||!tvMkt.rows.length,weeks:pmWeeks(),lastWk:tvMkt&&tvMkt.weeks.length?tvMkt.weeks[tvMkt.weeks.length-1]:null};
+  return {pts,mpts,cities,sec,ours,mkt,gap,above,below,withGap:withGap.length,distO,distM,noLoc:pts.filter(p=>!p.loc).length,approx:pts.filter(p=>p.loc&&p.loc.src!=="p").length,noMkt:!tvMkt||!tvMkt.rows.length,weeks:pmWeeks(),lastWk:tvMkt&&tvMkt.weeks.length?tvMkt.weeks[tvMkt.weeks.length-1]:null};
 }
 /* الطبقة الحرارية: متوسط القيم مرجّحاً بالمسافة (نواة غاوسية) على شبكة بكسلات — تُرسم على canvas فوق الخريطة */
 const PmHeat=typeof L!=="undefined"?L.Layer.extend({
@@ -11976,21 +11977,22 @@ function pmPopup(o){
   if(o.mk){ const m=o.mk; return `<div class="hmPop"><b>${o.city} — ${o.type}</b><small>السوق · ${m.month?"سعر المتر لشهر "+m.month:""}</small>
     <div><span>سعر المتر</span><b>${m.sqm?fmt(Math.round(m.sqm)):"—"}</b></div><div><span>الصفقات بالفترة</span><b>${fmt(m.deals)}</b></div><div><span>متوسط الصفقة</span><b>${m.avg?tvPriceShort(m.avg):"—"}</b></div>${m.ex?`<div><span>مستبعد (شاذ)</span><b>${fmt(m.ex)}</b></div>`:""}</div>`; }
   return `<div class="hmPop"><b>${o.project}</b><small>${[o.dest,o.city,o.type,o.kind==="nhc"?"NHC":""].filter(Boolean).join(" · ")}</small>
-    <div><span>سعرنا (${PM_BASIS.find(x=>x[0]===pm.basis)[1]})</span><b>${pmV(o.v)}</b></div><div><span>الفجوة عن السوق</span><b class="${pmGapCls(o.gap)}">${pmGapTxt(o.gap)}</b></div><div><span>المتاح</span><b>${fmt(o.avail)}</b></div>
+    <div><span>سعرنا (${PM_BASIS.find(x=>x[0]===pm.basis)[1]})</span><b>${pmV(o.v)}</b></div><div><span>السوق (${o.city} · ${o.type})</span><b>${pmV(o.mv)}</b></div><div><span>الفجوة عن السوق</span><b class="${pmGapCls(o.gap)}">${pmGapTxt(o.gap)}</b></div><div><span>المتاح</span><b>${fmt(o.avail)}</b></div>
     ${o.loc&&o.loc.src!=="p"?`<em>الموقع تقريبي (${o.loc.src==="d"?"مركز الوجهة":"مركز المدينة"})</em>`:""}
     ${tvCanOpenProject()?`<button type="button" data-hmproj="${String(o.project).replace(/"/g,"&quot;")}">↗ صفحة المشروع</button>`:""}</div>`;
 }
 /* أسماء الضواحي وأسعارها على الخريطة: على مستوى الدولة ملصق لكل مدينة، وعند التقريب لكل مشروع — بلا تداخل (الأثقل أولاً) */
 function pmLabelItems(H){
   const V=pm.view, u=pm.metric==="sqm"?" ر/م²":"", items=[];
-  if(V==="market"){ H.mpts.forEach(m=>items.push({lat:m.lat,lon:m.lon,w:m.w,t:`${m.city} · ${m.type}`,s:`${pmV(m.v)}${u} · ${fmt(m.w)} صفقة`,cls:"mk"})); return {items,minZ:0}; }
   const z=arguments[1]||0;
+  if(V==="market") H.mpts.forEach(m=>items.push({lat:m.lat,lon:m.lon,w:1e7+m.w,t:`سوق ${m.city} · ${m.type}`,s:`${pmV(m.v)}${u} · ${fmt(m.w)} صفقة`,cls:"mk"}));
   if(z<8){ const C=new Map();
     H.pts.forEach(o=>{ if(!o.loc) return; let c=C.get(o.ck); if(!c){ c={city:o.city,p:0,w:0,gs:0,gw:0,n:0,lat:0,lon:0}; C.set(o.ck,c); } c.p+=o.p; c.w+=o.w; c.n++; c.lat+=o.loc.lat; c.lon+=o.loc.lon; if(o.gap!=null){ c.gs+=o.gap*Math.max(1,o.avail); c.gw+=Math.max(1,o.avail); } });
     C.forEach(c=>{ const v=c.w?c.p/c.w:null; if(v==null) return; const g=c.gw?c.gs/c.gw:null;
-      items.push({lat:c.lat/c.n,lon:c.lon/c.n,w:c.w+c.n*1e4,t:`${c.city} · ${fmt(c.n)} مشروع`,s:V==="gap"?`${pmV(v)}${u} · ${pmGapTxt(g)} عن السوق`:`${pmV(v)}${u}`,cls:V==="gap"?pmGapCls(g):""}); });
+      if(V!=="market") items.push({lat:c.lat/c.n,lon:c.lon/c.n,w:c.w+c.n*1e4,t:`${c.city} · ${fmt(c.n)} مشروع`,s:V==="gap"?`${pmV(v)}${u} · ${pmGapTxt(g)} عن السوق`:`${pmV(v)}${u}`,cls:V==="gap"?pmGapCls(g):""}); });
     return {items,minZ:0}; }
-  H.pts.filter(o=>o.loc).forEach(o=>items.push({lat:o.loc.lat,lon:o.loc.lon,w:o.avail+1,t:o.project,s:V==="gap"?`${pmV(o.v)}${u} · ${pmGapTxt(o.gap)}`:`${pmV(o.v)}${u}`,cls:o.gap!=null?pmGapCls(o.gap):""}));
+  H.pts.filter(o=>o.loc).forEach(o=>items.push({lat:o.loc.lat,lon:o.loc.lon,w:o.avail+1,t:o.project,
+    s:V==="gap"?`${pmV(o.v)}${u} · ${pmGapTxt(o.gap)}`:V==="market"?(o.mv!=null?`السوق ${pmV(o.mv)}${u} · عندنا ${pmV(o.v)}`:`عندنا ${pmV(o.v)}${u} · لا سوق`):`${pmV(o.v)}${u}`,cls:o.gap!=null?pmGapCls(o.gap):""}));
   return {items,minZ:8};
 }
 function pmLabels(M){
@@ -12005,19 +12007,19 @@ function pmDraw(id,H){
   const M=hmMapFor(id); if(!M) return;
   M.map.invalidateSize(); M.layer.clearLayers();
   if(!M.lbl){ M.lbl=L.layerGroup().addTo(M.map); M.map.on("moveend zoomend",()=>pmLabels(M)); } M.pmH=H;
-  const V=pm.view, ours=H.pts.filter(o=>o.loc&&(V!=="gap"||o.gap!=null));
-  const heatPts=V==="market"?H.mpts.map(m=>({lat:m.lat,lon:m.lon,v:m.v,w:m.w})):ours.map(o=>({lat:o.loc.lat,lon:o.loc.lon,v:V==="gap"?o.gap:o.v,w:o.avail+1}));
+  /* ضواحينا تُرسم دائماً بكل العروض؛ العرض يغيّر اللون فقط: سعرنا · سعر السوق لمدينة الضاحية ونوعها · الفجوة */
+  const V=pm.view, pv=o=>V==="gap"?o.gap:V==="market"?o.mv:o.v, ours=H.pts.filter(o=>o.loc), colored=ours.filter(o=>pv(o)!=null);
+  const heatPts=colored.map(o=>({lat:o.loc.lat,lon:o.loc.lon,v:pv(o),w:o.avail+1}));
+  if(V==="market"){ const has=new Set(colored.map(o=>o.ck+"\u0001"+o.type)); H.mpts.forEach(m=>{ if(!has.has(pmCityKey(m.city)+"\u0001"+m.type)) heatPts.push({lat:m.lat,lon:m.lon,v:m.v,w:m.w}); }); }
   const color=V==="gap"?pmColorGap:pmColorVal;
-  if(PmHeat){ if(!M.heat){ M.heat=new PmHeat(heatPts,color,{radius:V==="market"?70:46}); M.heat.addTo(M.map); } else { M.heat._o.radius=V==="market"?70:46; M.heat.setData(heatPts,color); } }
-  const pts=V==="market"?H.mpts:ours, mx=Math.max(1,...pts.map(p=>V==="market"?p.w:p.avail));
-  pts.forEach(p=>{ const v=V==="gap"?p.gap:p.v, col=color(v), lat=V==="market"?p.lat:p.loc.lat, lon=V==="market"?p.lon:p.loc.lon;
-    const rad=V==="market"?6+16*Math.sqrt(p.w/mx):4+8*Math.sqrt(p.avail/mx);
-    L.circleMarker([lat,lon],{radius:rad,color:"#1f2937",weight:1,fillColor:col,fillOpacity:.9,opacity:.7}).bindPopup(pmPopup(p),{maxWidth:260}).addTo(M.layer); });
-  /* بعرض السوق تبقى ضواحينا ظاهرة كنقاط صغيرة (بسعرنا في النافذة) */
-  if(V==="market") ours.forEach(o=>L.circleMarker([o.loc.lat,o.loc.lon],{radius:3.5,color:"#0B4332",weight:1.2,fillColor:"#fff",fillOpacity:.95,opacity:.9}).bindPopup(pmPopup(o),{maxWidth:260}).addTo(M.layer));
+  if(PmHeat){ if(!M.heat){ M.heat=new PmHeat(heatPts,color,{radius:46}); M.heat.addTo(M.map); } else { M.heat._o.radius=46; M.heat.setData(heatPts,color); } }
+  const mx=Math.max(1,...ours.map(p=>p.avail));
+  if(V==="market"){ const dm=Math.max(1,...H.mpts.map(m=>m.w)); H.mpts.forEach(m=>L.circleMarker([m.lat,m.lon],{radius:8+14*Math.sqrt(m.w/dm),color:"#2A7FB8",weight:2,dashArray:"4 3",fillColor:color(m.v),fillOpacity:.25,opacity:.9}).bindPopup(pmPopup(m),{maxWidth:260}).addTo(M.layer)); }
+  ours.forEach(o=>{ const v=pv(o), col=v==null?"#bdb7a8":color(v), rad=4+8*Math.sqrt(o.avail/mx);
+    L.circleMarker([o.loc.lat,o.loc.lon],{radius:rad,color:"#1f2937",weight:1,fillColor:col,fillOpacity:.9,opacity:.7}).bindPopup(pmPopup(o),{maxWidth:260}).addTo(M.layer); });
   pmLabels(M);
-  const fk="pm|"+(tvRegion||"all")+"|"+pts.length;
-  if(pts.length&&M.fitKey!==fk){ M.map.fitBounds(L.latLngBounds(pts.map(p=>[V==="market"?p.lat:p.loc.lat,V==="market"?p.lon:p.loc.lon])).pad(.12),{maxZoom:10}); M.fitKey=fk; }
+  const all=ours.map(o=>[o.loc.lat,o.loc.lon]).concat(V==="market"?H.mpts.map(m=>[m.lat,m.lon]):[]), fk="pm|"+(tvRegion||"all")+"|"+all.length;
+  if(all.length&&M.fitKey!==fk){ M.map.fitBounds(L.latLngBounds(all).pad(.12),{maxZoom:10}); M.fitKey=fk; }
 }
 function pmFly(id,ck){ const M=hmMaps[id], c=HM_CITY[ck]; if(M&&c) M.map.flyTo([c[0],c[1]],11,{duration:.8}); }
 function hmCtlHtml(){
@@ -12092,7 +12094,7 @@ function tvRenderHm(){
     const H=pmCompute();
     if(!H){ ["tvHmHot","tvHmCold","tvHmSec"].forEach(id=>$(id).innerHTML=`<div class="tvEmpty" style="font-size:15px">${hmEmptyMsg()}</div>`); return; }
     T(`قراءة سريعة <small>${PM_BASIS.find(x=>x[0]===pm.basis)[1]} · ${PM_METRIC.find(x=>x[0]===pm.metric)[1]}</small>`,`المدن: سعرنا مقابل السوق <small>${PM_PER.find(x=>x[0]===pm.mper)[1]} · اضغط المدينة للانتقال إليها</small>`,`الفجوة حسب المنطقة`);
-    $("tvHmTitle").innerHTML=`خريطة ${PM_VIEWS.find(x=>x[0]===pm.view)[1]} <small>${hmScopeLbl()}</small><span class="tot">${pm.view==="market"?`${fmt(H.mpts.length)} مدينة×منتج`:`${fmt(H.pts.length)} مشروعاً`}${H.noMkt?" · لا بيانات سوق بعد":""}</span>`;
+    $("tvHmTitle").innerHTML=`خريطة ${PM_VIEWS.find(x=>x[0]===pm.view)[1]} <small>${hmScopeLbl()}</small><span class="tot">${fmt(H.pts.length)} مشروعاً${pm.view==="market"?` · ${fmt(H.mpts.length)} مدينة×منتج بالسوق`:""}${H.approx?` · ${fmt(H.approx)} بموقع تقريبي`:""}${H.noLoc?` · ${fmt(H.noLoc)} بلا موقع`:""}${H.noMkt?" · لا بيانات سوق بعد":""}</span>`;
     $("tvHmLegend").innerHTML=pmLegendHtml(H);
     $("tvHmHot").innerHTML=pmKpiHtml(H)+(H.noMkt?`<div class="hmNote">ارفع ملف «أسعار صفقات السوق» من «⬆ رفع ملف» لتظهر أسعار السوق والفجوة</div>`:"");
     $("tvHmCold").innerHTML=H.cities.length?H.cities.slice(0,14).map(pmCityRow).join(""):`<div class="tvEmpty" style="font-size:14px">لا مدن بهذه المعايير</div>`;
