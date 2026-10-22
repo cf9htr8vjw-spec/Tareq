@@ -67,7 +67,12 @@
     `admin_backup_list` (الجداول: كل public عدا `app_session`، بترتيب المفاتيح الأجنبية `lvl`)، `admin_backup_rows` (صفحات 4000 صف بترقيم `ctid`)،
     `admin_backup_restore` (أول دفعة تفرّغ وتدرج معاً؛ TRUNCATE إن لم يُشر إليه جدول، وإلا حذف بدفعات 20 ألفاً `more`؛ **`app_users` يُدمج بالاسم ولا يُفرّغ، والتطبيق يستعيده آخراً** حتى لا يُقفل الأدمن)،
     `admin_backup_fix_sequences`. الملف `nhc_backup_YYYY-MM-DD_HHMM.json.gz`: سطر رأس {app,v,at,tables} ثم سطر {t,rows} لكل صفحة (gzip بـ CompressionStream).
-    البيانات فقط — الدوال في ملفات SQL. اختبار: `bktest.js` (يمرّر admin_backup_* إلى Postgres المحلي بقاعدة `t3`، نسخ ثم تخريب ثم استعادة ومطابقة md5). سكربتات `tools/backup_supabase.*` (pg_dump) بديل متقدّم.
+    **منذ 22/10 الملف يحمل هيكل القاعدة كاملاً** (`admin_backup_schema` ⇐ `app_backup_schema_sql()`: الإضافات، enum، العدّادات، الجداول + `add column if not exists`، القيود، الفهارس، RLS، كل الدوال
+    `pg_get_functiondef`، العروض، المشغّلات، السياسات، والصلاحيات كما هي، وسطر حساب `restore_tmp` بكلمة مرور `__TEMP_PASSWORD__`) في سطر الرأس `schema` (v:2).
+    **ضياع الحساب:** شاشة الدخول ← «🛟 إعادة البناء من نسخة احتياطية» (محلي بالكامل): يولّد `nhc_rebuild.sql` (بكلمة المرور المؤقتة) ونسخة من `SalesPlace_01.html`
+    بسطري `SB_URL`/`SB_KEY` للمشروع الجديد (عبر fetch للصفحة؛ من file:// يعطي السطرين للتعديل اليدوي). بعد تشغيل السكربت: دخول `restore_tmp` ← استعادة ⇒ يُحذف `restore_tmp` تلقائياً
+    مع دمج المستخدمين. اختبار السيناريو كاملاً: `drtest.js` (يحتاج `python3 -m http.server 8765` من جذر المستودع؛ SRC=t3 ⇒ DST=t5 فارغة؛ يطابق md5 كل الجداول).
+    دوال النسخ مسحوبة من anon/public (تمرّ عبر البوابة فقط). اختبار: `bktest.js` (يمرّر admin_backup_* إلى Postgres المحلي بقاعدة `t3`، نسخ ثم تخريب ثم استعادة ومطابقة md5). سكربتات `tools/backup_supabase.*` (pg_dump) بديل متقدّم.
 17. **`tv_market.sql`** — صفقات السوق الأسبوعية: `tv_market_weekly(wk,city,unit_type,…)`، `admin_load_tv_market(p_admin,p_pass,p_rows,p_reset)` (يمسح أسابيع الملف نفسها فقط)، `get_tv_market()` (انظر 5.6). يُشغَّل قبل `app_security.sql`.
 
 16. **`app_security.sql`** — **يُشغَّل آخراً وبعد نشر النسخة الجديدة** (يقطع النسخ السابقة فوراً): `app_session`, `login_v2`, `api`, `api_read`, `api_allow`,

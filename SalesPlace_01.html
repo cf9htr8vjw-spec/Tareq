@@ -1482,6 +1482,12 @@ html.noFin .tvMetricSeg,html.noFin .tvRevModeSeg,html.noFin #mPriceCard,html.noF
 #lockBtn,#lockPwSave{width:100%;margin-top:11px;background:var(--green);color:#fff;border-radius:13px;padding:13px;font-size:15px;font-weight:600}
 #lockMsg,#lockPwMsg{margin-top:12px;font-size:12px;min-height:17px;color:#f0a08c}
 #lockNote{margin-top:30px;font-size:10.5px;opacity:.42;max-width:290px;line-height:1.7}
+#lockRbLink{display:block;margin:4px auto 0;background:none;border:none;color:rgba(255,255,255,.45);font-size:11.5px;padding:6px;cursor:pointer}
+#lockRbLink:hover{color:rgba(255,255,255,.8);text-decoration:underline}
+.tvUpModal.rbModal{z-index:6000}.rbModal .tvUpCard{max-height:calc(100vh - 30px);overflow:auto;text-align:right;direction:rtl}
+.rbSteps{font-size:13.5px;color:#5e5a4f;line-height:1.7}.rbSteps ol{margin:6px 18px 0 0;padding:0}.rbSteps li{margin-bottom:3px}
+.rbIn{width:100%;border:1.5px solid #D9D4C7;border-radius:11px;padding:10px 12px;font:inherit;font-size:14px;color:#0B4332;background:#fff}
+.rbSec{border:1.5px solid #0B4332;background:#EAF6EF;color:#0B4332;border-radius:12px;padding:11px;font:inherit;font-weight:800;cursor:pointer}
 #lockPwLink,#lockPwBack{background:none;border:none;color:rgba(255,255,255,.6);font-size:12.5px;text-decoration:underline;padding:6px;margin-top:6px;cursor:pointer}
 #lockPwForm{display:none;width:100%;max-width:290px;margin-top:26px}
 #lockPwCancel{width:100%;margin-top:9px;background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:11px;font-size:13px}
@@ -2446,6 +2452,24 @@ html.tvMob .pmLblIn{font-size:10px;padding:1px 5px}
   <div class="row"><button id="ihGo">تثبيت الآن</button><button id="ihNo">لاحقاً</button></div>
 </div>
 
+<div id="rbModal" class="tvUpModal rbModal">
+  <div class="tvUpCard">
+    <div class="tvUpHead"><b>🛟 إعادة البناء في مشروع Supabase جديد</b><button type="button" id="rbClose" aria-label="إغلاق">✕</button></div>
+    <div class="rbSteps">للطوارئ فقط (ضاع الحساب أو المشروع). يعمل على جهازك بالكامل — لا يتصل بأي قاعدة.
+      <ol><li>أنشئ مشروعاً جديداً في Supabase.</li>
+      <li>اختر ملف النسخة الاحتياطية واكتب كلمة مرور مؤقتة، واضغط «إنشاء ملف الإنشاء» فينزل <b>nhc_rebuild.sql</b>.</li>
+      <li>في المشروع الجديد: SQL Editor ← الصق الملف كاملاً ← Run.</li>
+      <li>من Settings ← API انسخ رابط المشروع والمفتاح العام (publishable / anon) والصقهما هنا ← ينزل <b>SalesPlace_01.html</b> جديد؛ انشره على Netlify.</li>
+      <li>افتح التطبيق الجديد وادخل بـ <b>restore_tmp</b> وكلمة المرور المؤقتة ← «⬆ رفع ملف» ← «استعادة من نسخة» بنفس الملف. يرجع كل شيء، ويُحذف الحساب المؤقت تلقائياً.</li></ol></div>
+    <label class="tvUpDrop" id="rbDrop"><input type="file" id="rbFile" accept=".gz,.json,.ndjson" hidden><span id="rbDropTxt">اختر ملف النسخة الاحتياطية (nhc_backup_….json.gz)</span></label>
+    <input type="text" id="rbPass" class="rbIn" placeholder="كلمة مرور مؤقتة لحساب restore_tmp (8 خانات فأكثر)" autocomplete="off">
+    <button type="button" id="rbGoSql" class="tvUpGo" disabled>⬇ إنشاء ملف الإنشاء (nhc_rebuild.sql)</button>
+    <input type="text" id="rbUrl" class="rbIn" placeholder="رابط المشروع الجديد https://xxxx.supabase.co" autocomplete="off" dir="ltr">
+    <input type="text" id="rbKey" class="rbIn" placeholder="المفتاح العام للمشروع الجديد (publishable / anon)" autocomplete="off" dir="ltr">
+    <button type="button" id="rbGoHtml" class="rbSec">⬇ إنشاء ملف التطبيق للمشروع الجديد</button>
+    <div class="tvUpMsg" id="rbMsg"></div>
+  </div>
+</div>
 <div id="lock">
   <svg class="lockDecor" viewBox="0 0 400 800" preserveAspectRatio="none" aria-hidden="true">
     <path d="M0,40 C130,130 30,300 170,410 C310,520 210,660 400,780" fill="none" stroke="rgba(188,255,187,.3)" stroke-width="2"/>
@@ -2459,6 +2483,7 @@ html.tvMob .pmLblIn{font-size:10px;padding:1px 5px}
     <button id="lockBtn">فتح البيانات</button>
     <div id="lockMsg"></div>
     <button type="button" id="lockPwLink">تغيير كلمة المرور</button>
+    <button type="button" id="lockRbLink">🛟 إعادة البناء من نسخة احتياطية</button>
   </div>
   <div id="lockPwForm">
     <input id="lockPwUser" type="text" placeholder="اسم المستخدم" autocomplete="username">
@@ -9670,6 +9695,12 @@ $("boardBtn").onclick=enterBoard; $("logoutBtn").onclick=doLogout;
 $("userBadge").onclick=()=>{ if(CURUSER) doChangePw(); };
 ["uid","pw"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") tryUnlock(); }));
 /* تغيير كلمة المرور من شاشة الدخول الرئيسية — قبل تسجيل الدخول، لذا نطلب اسم المستخدم صراحةً */
+$("lockRbLink").onclick=()=>{ $("rbModal").classList.add("on"); };
+$("rbClose").onclick=()=>$("rbModal").classList.remove("on");
+$("rbFile").onchange=e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=""; rbPick(f); };
+$("rbPass").oninput=()=>rbUpd();
+$("rbGoSql").onclick=()=>rbGoSql();
+$("rbGoHtml").onclick=()=>rbGoHtml();
 $("lockPwLink").onclick=()=>{
   $("lockForm").style.display="none";
   $("lockPwForm").style.display="block";
@@ -13126,7 +13157,9 @@ async function bkDownload(){
   try{
     bkMsg("جارٍ قراءة قائمة الجداول…","",0);
     const L=await bkRpc("admin_backup_list",{}), T=L.tables||[], total=T.reduce((a,t)=>a+(+t.rows||0),0)||1;
-    const parts=[JSON.stringify({app:"SalesPlace",v:1,at:L.at,db:L.db,tables:T})+"\n"]; let done=0, n=0;
+    bkMsg("جارٍ حفظ هيكل القاعدة (الجداول والدوال والصلاحيات)…","",0);
+    const S=await bkRpc("admin_backup_schema",{});
+    const parts=[JSON.stringify({app:"SalesPlace",v:2,at:L.at,db:L.db,tables:T,schema:S.sql||""})+"\n"]; let done=0, n=0;
     for(const t of T){ let after="";
       for(;;){ const r=await bkRpc("admin_backup_rows",{p_table:t.name,p_after:after,p_limit:4000}); const rows=r.rows||[];
         if(rows.length) parts.push(JSON.stringify({t:t.name,rows})+"\n");
@@ -13136,7 +13169,7 @@ async function bkDownload(){
     if(typeof CompressionStream!=="undefined"){ blob=await new Response(blob.stream().pipeThrough(new CompressionStream("gzip"))).blob(); ext="json.gz"; }
     const d=new Date(), pad=x=>String(x).padStart(2,"0"), name=`nhc_backup_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.${ext}`;
     const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000);
-    bkMsg(`✓ تم: <b>${name}</b> — ${fmt(T.length)} جدولاً · ${fmt(n)} صف · ${(blob.size/1048576).toFixed(1)} MB. احفظه في OneDrive العمل (فيه بيانات المستخدمين — لا تشاركه).`,"ok");
+    bkMsg(`✓ تم: <b>${name}</b> — ${fmt(T.length)} جدولاً · ${fmt(n)} صف + هيكل القاعدة كاملاً · ${(blob.size/1048576).toFixed(1)} MB. احفظه في OneDrive العمل (فيه بيانات المستخدمين — لا تشاركه). يكفي وحده لإعادة البناء في حساب Supabase جديد.`,"ok");
   }catch(e){ bkMsg("تعذّر النسخ: "+((e&&e.message)||e),"err"); }
   bkLock(false);
 }
@@ -13153,7 +13186,7 @@ async function bkRestore(file){
   /* قراءة أولى: الرأس فقط للتأكيد */
   let head=null; try{ await bkReadLines(file,async o=>{ if(!head){ head=o; throw new Error("__HEAD__"); } }); }catch(e){ if(String(e.message)!=="__HEAD__"){ bkMsg("الملف ليس نسخة احتياطية صالحة: "+e.message,"err"); return; } }
   if(!head||head.app!=="SalesPlace"||!Array.isArray(head.tables)){ bkMsg("الملف ليس نسخة احتياطية من هذا التطبيق","err"); return; }
-  const when=head.at?new Date(head.at).toLocaleString("ar-SA-u-nu-latn"):"—", rows=head.tables.reduce((a,t)=>a+(+t.rows||0),0);
+  const when=head.at?new Date(head.at).toLocaleString("ar-SA-u-nu-latn-ca-gregory"):"—", rows=head.tables.reduce((a,t)=>a+(+t.rows||0),0);
   const ok=prompt(`استعادة نسخة ${when}\n${fmt(head.tables.length)} جدولاً · ${fmt(rows)} صف\n\nسيُستبدل محتوى هذه الجداول بالكامل بما في النسخة (والبيانات الأحدث منها ستضيع).\nخذ نسخة احتياطية الآن أولاً إن لم تفعل.\n\nللتأكيد اكتب: استعادة`);
   if((ok||"").trim()!=="استعادة"){ bkMsg("أُلغيت الاستعادة."); return; }
   bkLock(true);
@@ -13174,6 +13207,37 @@ async function bkRestore(file){
     bkMsg(`✓ استُعيدت النسخة: ${fmt(use.length)} جدولاً · ${fmt(n)} صف.${skip.length?` جداول في النسخة غير موجودة بالقاعدة (شغّل ملفات SQL الخاصة بها ثم أعد الاستعادة): ${skip.join("، ")}`:""} حدّث الصفحة.`,"ok");
   }catch(e){ bkMsg("توقفت الاستعادة: "+((e&&e.message)||e)+" — أعد المحاولة بنفس الملف (تبدأ من جديد).","err"); }
   bkLock(false);
+}
+/* ---------- إعادة البناء من نسخة احتياطية (من شاشة الدخول — محلي بالكامل، لا يتصل بأي قاعدة) ----------
+   يقرأ رأس ملف النسخة (فيه سكربت هيكل القاعدة كاملاً منذ الإصدار 2) ⇒ nhc_rebuild.sql بكلمة مرور حساب restore_tmp المؤقت،
+   ويولّد نسخة من هذا الملف تشير لمشروع Supabase الجديد (يغيّر سطري SB_URL وSB_KEY فقط). */
+let rbHead=null;
+function rbMsg(t,cls){ const m=$("rbMsg"); m.className="tvUpMsg"+(cls?" "+cls:""); m.innerHTML=t||""; }
+function rbSave(text,name,type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000); }
+function rbUpd(){ $("rbGoSql").disabled=!(rbHead&&rbHead.schema&&$("rbPass").value.length>=8); }
+async function rbPick(file){
+  rbHead=null; rbUpd(); if(!file) return; $("rbDropTxt").textContent=file.name; rbMsg("جارٍ قراءة الملف…");
+  try{ await bkReadLines(file,async o=>{ if(!rbHead){ rbHead=o; throw new Error("__HEAD__"); } }); }catch(e){ if(String(e.message)!=="__HEAD__"){ rbMsg("الملف ليس نسخة احتياطية صالحة: "+e.message,"err"); return; } }
+  if(!rbHead||rbHead.app!=="SalesPlace"){ rbHead=null; rbMsg("الملف ليس نسخة احتياطية من هذا التطبيق","err"); return; }
+  if(!rbHead.schema){ rbMsg("هذه نسخة قديمة بلا هيكل القاعدة — خذ نسخة جديدة من التطبيق (الإصدار الحالي يحفظ الهيكل)، أو شغّل ملفات SQL من GitHub يدوياً ثم استعد البيانات.","err"); rbUpd(); return; }
+  const rows=(rbHead.tables||[]).reduce((a,t)=>a+(+t.rows||0),0);
+  rbMsg(`✓ نسخة ${rbHead.at?new Date(rbHead.at).toLocaleString("ar-SA-u-nu-latn-ca-gregory"):""} — ${fmt((rbHead.tables||[]).length)} جدولاً · ${fmt(rows)} صف · الهيكل محفوظ. اكتب كلمة مرور مؤقتة.`,"ok"); rbUpd();
+}
+function rbGoSql(){
+  if(!rbHead||!rbHead.schema) return; const pw=$("rbPass").value; if(pw.length<8){ rbMsg("كلمة المرور المؤقتة 8 خانات فأكثر","err"); return; }
+  const sql=rbHead.schema.split("__TEMP_PASSWORD__").join(pw.replace(/'/g,"''"));
+  rbSave(sql,"nhc_rebuild.sql","text/plain;charset=utf-8");
+  rbMsg("✓ نزل nhc_rebuild.sql — الصقه كاملاً في SQL Editor بالمشروع الجديد واضغط Run. بعده أكمل الخطوة 4.","ok");
+}
+async function rbGoHtml(){
+  const url=$("rbUrl").value.trim().replace(/\/+$/,""), key=$("rbKey").value.trim();
+  if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)){ rbMsg("رابط المشروع يجب أن يكون بالشكل https://xxxx.supabase.co","err"); return; }
+  if(key.length<20||/[\s"'<>]/.test(key)){ rbMsg("المفتاح العام غير صحيح — انسخه من Settings ← API","err"); return; }
+  let src=null; try{ const r=await fetch(location.href.split("#")[0].split("?")[0],{cache:"no-store"}); if(r.ok) src=await r.text(); }catch(e){}
+  if(!src||!/window\.SB_URL\s*=/.test(src)){ rbMsg(`تعذّر قراءة ملف التطبيق من هنا (مفتوح من الجهاز مباشرة). افتح SalesPlace_01.html بمحرر نصوص وغيّر السطرين:<br><code dir="ltr">window.SB_URL = "${url}";</code><br><code dir="ltr">window.SB_KEY = "${key}";</code>`,"err"); return; }
+  const out=src.replace(/window\.SB_URL\s*=\s*"[^"]*";/,`window.SB_URL = "${url}";`).replace(/window\.SB_KEY\s*=\s*"[^"]*";/,`window.SB_KEY = "${key}";`);
+  rbSave(out,"SalesPlace_01.html","text/html;charset=utf-8");
+  rbMsg("✓ نزل SalesPlace_01.html للمشروع الجديد — انشره على Netlify (أو افتحه من الجهاز)، وادخل بـ restore_tmp ثم استعد البيانات.","ok");
 }
 async function tvUpUndo(at,tot,btn){
   if(!at) return;
