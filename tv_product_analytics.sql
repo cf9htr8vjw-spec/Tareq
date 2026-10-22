@@ -48,6 +48,10 @@ alter table tv_product_stats add column if not exists avail_n integer not null d
 alter table tv_product_stats add column if not exists c30b integer not null default 0;      -- عقود المستفيدين آخر 30 يوماً
 alter table tv_product_stats add column if not exists c90b integer not null default 0;      -- آخر 90 يوماً
 alter table tv_product_stats add column if not exists cyb integer not null default 0;       -- السنة الحالية
+-- خريطة الأسعار: موقع المشروع من ملف التخصيص إن وُجد عموداه (خط العرض/الطول)، وسعر الوزارة للمتاح ذي المساحة (يُقسم على sqa_s)
+alter table tv_product_stats add column if not exists lat numeric;
+alter table tv_product_stats add column if not exists lon numeric;
+alter table tv_product_stats add column if not exists sqa_m numeric not null default 0;
 drop policy if exists tv_product_stats_read on tv_product_stats;
 create policy tv_product_stats_read on tv_product_stats for select using (true);
 
@@ -86,7 +90,7 @@ begin
   insert into tv_product_stats (project_name, project_code, model, unit_type, beds, developer, kind, sector, city, dest,
     avail_p, avail_d, reserved, contracts, other, c30, c90, cy, b30, months,
     pa_sum, pa_n, ps_sum, ps_n, moh_sum, moh_n, sz_sum, sz_n, sz_min, sz_max, sqa_p, sqa_s, sqs_p, sqs_s, launch,
-    avail_b, avail_n, c30b, c90b, cyb)
+    avail_b, avail_n, c30b, c90b, cyb, lat, lon, sqa_m)
   select btrim(r->>'project_name'), coalesce(btrim(r->>'project_code'), ''), coalesce(btrim(r->>'model'), ''),
          coalesce(btrim(r->>'unit_type'), ''), coalesce(nullif(r->>'beds', '')::int, -1),
          coalesce(btrim(r->>'developer'), ''), coalesce(r->>'kind', 'other'), coalesce(btrim(r->>'sector'), ''),
@@ -105,7 +109,8 @@ begin
          coalesce((r->>'sqs_p')::numeric, 0), coalesce((r->>'sqs_s')::numeric, 0),
          tv_safe_date(r->>'launch'),
          coalesce((r->>'avail_b')::int, 0), coalesce((r->>'avail_n')::int, 0),
-         coalesce((r->>'c30b')::int, 0), coalesce((r->>'c90b')::int, 0), coalesce((r->>'cyb')::int, 0)
+         coalesce((r->>'c30b')::int, 0), coalesce((r->>'c90b')::int, 0), coalesce((r->>'cyb')::int, 0),
+         nullif(r->>'lat', '')::numeric, nullif(r->>'lon', '')::numeric, coalesce((r->>'sqa_m')::numeric, 0)
   from jsonb_array_elements(p_rows) r
   where nullif(btrim(r->>'project_name'), '') is not null
   on conflict (project_name, project_code, model, unit_type, beds) do update set
@@ -116,7 +121,8 @@ begin
     moh_sum = excluded.moh_sum, moh_n = excluded.moh_n, sz_sum = excluded.sz_sum, sz_n = excluded.sz_n,
     sz_min = excluded.sz_min, sz_max = excluded.sz_max, sqa_p = excluded.sqa_p, sqa_s = excluded.sqa_s,
     sqs_p = excluded.sqs_p, sqs_s = excluded.sqs_s, launch = excluded.launch,
-    avail_b = excluded.avail_b, avail_n = excluded.avail_n, c30b = excluded.c30b, c90b = excluded.c90b, cyb = excluded.cyb, updated_at = now();
+    avail_b = excluded.avail_b, avail_n = excluded.avail_n, c30b = excluded.c30b, c90b = excluded.c90b, cyb = excluded.cyb,
+    lat = excluded.lat, lon = excluded.lon, sqa_m = excluded.sqa_m, updated_at = now();
   get diagnostics v_count = row_count;
   return jsonb_build_object('ok', true, 'msg', 'حُفظ '||v_count||' صفاً', 'count', v_count);
 end;
@@ -137,14 +143,14 @@ as $$
     'cols', jsonb_build_array('project','code','model','type','beds','developer','kind','sector','city','dest',
       'avail_p','avail_d','reserved','contracts','c30','c90','cy','b30','months',
       'pa_sum','pa_n','ps_sum','ps_n','moh_sum','moh_n','sz_sum','sz_n','sz_min','sz_max','sqa_p','sqa_s','sqs_p','sqs_s','launch',
-      'avail_b','avail_n','c30b','c90b','cyb'),
+      'avail_b','avail_n','c30b','c90b','cyb','lat','lon','sqa_m'),
     'rows', coalesce((
       select jsonb_agg(jsonb_build_array(project_name, project_code, model, unit_type, beds, developer, kind,
         coalesce(tv_region(nullif(sector, ''), null), sector), city, dest,
         avail_p, avail_d, reserved, contracts, c30, c90, cy, b30, to_jsonb(months),
         round(pa_sum), pa_n, round(ps_sum), ps_n, round(moh_sum), moh_n, round(sz_sum, 1), sz_n, sz_min, sz_max,
         round(sqa_p), round(sqa_s, 1), round(sqs_p), round(sqs_s, 1), launch,
-        avail_b, avail_n, c30b, c90b, cyb))
+        avail_b, avail_n, c30b, c90b, cyb, lat, lon, round(sqa_m)))
       from tv_product_stats
       where avail_p + avail_d + reserved + contracts > 0
     ), '[]'::jsonb)

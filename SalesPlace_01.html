@@ -2258,6 +2258,7 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
 .hmLegend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-inline-end:5px;vertical-align:-1px;opacity:.85}
 .hmLegend .sz{color:#767368;margin-inline-start:auto}
 .tvHmSide{display:grid;grid-template-rows:minmax(0,1.25fr) minmax(0,.95fr) auto;gap:10px;min-height:0}
+html.pmMode .tvHmSide{grid-template-rows:auto minmax(0,1fr) auto}
 .tvHmList{flex:1;min-height:0;overflow:hidden;margin-top:4px}
 .hmRow{display:grid;grid-template-columns:22px minmax(0,1fr) 52px 52px 84px 70px;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid #F0ECE2;font-size:13px}
 .hmRow .rk{color:#B9B1A0;font-weight:800;text-align:center}
@@ -2275,6 +2276,30 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
 .hmPop div{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0}.hmPop div b{color:#0B4332}
 .hmPop em{display:block;font-style:normal;font-size:11px;color:#9A6B12;margin-top:4px}
 .hmPop button{margin-top:8px;width:100%;border:1.5px solid #0B4332;background:#EAF6EF;color:#0B4332;border-radius:9px;padding:5px;font:inherit;font-weight:800;cursor:pointer}
+/* طبقة الأسعار */
+.pmHeat{z-index:300;mix-blend-mode:multiply}
+.pmBands{display:flex;gap:2px;margin-top:6px;border-radius:8px;overflow:hidden}
+.pmBands .b{min-width:0;padding:5px 4px;color:#fff;text-align:center;line-height:1.15;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.pmBands .b b{display:block;font-size:14px}.pmBands .b span{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.pmBandsNote{font-size:11.5px;color:#767368;margin-top:4px;text-align:center}
+.pmLg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:#5e5a4f;margin-top:6px}
+.pmLg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-inline-end:5px;vertical-align:-1px}.pmLg .sz{margin-inline-start:auto;color:#767368}
+.pmKpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:4px}
+.pmKpis>div{background:#FAF7F1;border-radius:12px;padding:7px 10px;min-width:0}
+.pmKpis span{display:block;font-size:12px;color:#767368;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmKpis b{display:block;font-size:22px;color:#0B4332;line-height:1.2}.pmKpis b.up{color:#167A55}.pmKpis b.dn{color:#C0392B}.pmKpis b.fl{color:#5e5a4f}
+.pmKpis small{display:block;font-size:11px;color:#767368;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmRow{display:grid;grid-template-columns:20px minmax(0,1fr) 66px 66px 58px 74px;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid #F0ECE2;font-size:13px;cursor:pointer}
+.pmRow:hover{background:#FAF7F1}
+.pmRow .rk{color:#B9B1A0;font-weight:800;text-align:center}
+.pmRow .n{font-weight:800;color:#0B4332;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmRow .n small{display:block;font-weight:600;color:#767368;font-size:11px}
+.pmRow .m{text-align:center;line-height:1.1}.pmRow .m b{display:block;font-size:14px;color:#0B4332}.pmRow .m small{font-size:10.5px;color:#767368}
+.pmRow .m.g.up b{color:#167A55}.pmRow .m.g.dn b{color:#C0392B}.pmRow .m.g.fl b{color:#5e5a4f}
+.pmRow i.up,.pmRow i.dn,.pmRow i.fl{font-style:normal;font-weight:800}.pmRow i.up{color:#167A55}.pmRow i.dn{color:#C0392B}
+.hmSecR .up{color:#167A55}.hmSecR .dn{color:#C0392B}.hmSecR .fl{color:#5e5a4f}
+#mApp .pmKpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+#mApp .pmRow{grid-template-columns:18px minmax(0,1fr) 54px 54px 48px 62px;gap:4px;font-size:12px}#mApp .pmRow .m b{font-size:13px}
+#mApp .pmBands .b b{font-size:12px}#mApp .pmBands .b span{font-size:9px}
 .mHmCtl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .mHmCtl .tvSeg{flex-wrap:wrap}.mHmCtl .hmBand{max-width:100%}
 .mHmMap{height:360px;border-radius:12px;overflow:hidden;margin-top:6px;background:#EEF2F0}
@@ -3696,9 +3721,9 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
     <div class="tvHmGrid">
       <div class="tvCard tvHmMapCard"><div class="tvCardTitle" id="tvHmTitle">خريطة الطلب والمعروض</div><div class="tvHmMap" id="tvHmMap"></div><div class="hmLegend" id="tvHmLegend"></div></div>
       <div class="tvHmSide">
-        <div class="tvCard tvHmHotCard"><div class="tvCardTitle">الأعلى طلباً مقابل المتاح <small>أولويات الفتح · بالوجهة والمنتج · الأحمر = جوع</small></div><div class="tvHmList" id="tvHmHot"></div></div>
-        <div class="tvCard tvHmColdCard"><div class="tvCardTitle">فائض — متاح كثير وطلب ضعيف <small>الأزرق = أكثر من سنة تصريف</small></div><div class="tvHmList" id="tvHmCold"></div></div>
-        <div class="tvCard tvHmSecCard"><div class="tvCardTitle">المتاح حسب المنطقة والشريحة</div><div id="tvHmSec"></div></div>
+        <div class="tvCard tvHmHotCard"><div class="tvCardTitle" id="tvHmHotT">الأعلى طلباً مقابل المتاح</div><div class="tvHmList" id="tvHmHot"></div></div>
+        <div class="tvCard tvHmColdCard"><div class="tvCardTitle" id="tvHmColdT">فائض — متاح كثير وطلب ضعيف</div><div class="tvHmList" id="tvHmCold"></div></div>
+        <div class="tvCard tvHmSecCard"><div class="tvCardTitle" id="tvHmSecT">المتاح حسب المنطقة والشريحة</div><div id="tvHmSec"></div></div>
       </div>
     </div>
   </div>
@@ -3806,7 +3831,7 @@ html.tvMob #mApp{max-width:760px;margin:0 auto}
   <button type="button" id="tvUpBtn" class="tvUpBtn">⬆ رفع ملف</button>
   <div id="tvUpModal" class="tvUpModal">
     <div class="tvUpCard">
-      <div class="tvUpHead"><b>رفع ملف — داشبورد NHC أو ملف التخصيص أو جدول الإيرادات</b><button type="button" id="tvUpClose" aria-label="إغلاق">✕</button></div>
+      <div class="tvUpHead"><b>رفع ملف — التخصيص · داشبورد NHC · الإيرادات · البنوك · الموظفين · صفقات السوق</b><button type="button" id="tvUpClose" aria-label="إغلاق">✕</button></div>
       <div class="tvUpAuth" id="tvUpAuth">
         <input type="text" id="tvUpUser" placeholder="اسم المستخدم (أدمن)" autocomplete="username">
         <input type="password" id="tvUpPass" placeholder="كلمة المرور" autocomplete="current-password">
@@ -6715,7 +6740,7 @@ const ALLOC_DROP_HEADERS=["land_number","floor","apartment_number","Number_of_Ba
 function allocDropCols(rows){ const D=new Set(ALLOC_DROP_HEADERS.map(normalizeHeaderKey)); const ks=rows.length?Object.keys(rows[0]).filter(k=>D.has(normalizeHeaderKey(k))||/هويه|هوية|national.?id/i.test(k)):[];
   if(ks.length) for(const r of rows) for(const k of ks) delete r[k]; return rows; }
 /* keepHeaders (اختياري): لا يُقرأ إلا هذه الأعمدة — لملفات فيها بيانات شخصية (هوية/بريد/جوال) */
-async function xlsxStreamRows(file,wantHeaders,onProgress,dropHeaders,keepHeaders){
+async function xlsxStreamRows(file,wantHeaders,onProgress,dropHeaders,keepHeaders,allSheets){
   if(typeof DecompressionStream==="undefined") throw new Error("المتصفح لا يدعم قراءة الملفات الكبيرة — استخدم Chrome أو Edge حديث");
   const buf=new Uint8Array(await file.arrayBuffer()), dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);
   /* فهرس zip المركزي */
@@ -6766,14 +6791,18 @@ async function xlsxStreamRows(file,wantHeaders,onProgress,dropHeaders,keepHeader
   };
   /* يحلّل صفوف ورقة: limit=1 لقراءة صف العناوين فقط (لاختيار الورقة) */
   const parseSheet=async(path,limit)=>{
-    let tail="", header=null, dropIdx=[]; const out=[]; let done=false, bytes=0;
+    let tail="", header=null, dropIdx=[]; const out=[]; let done=false, bytes=0, emptyRun=0;   /* emptyRun: صفوف فارغة متتالية بعد البيانات ⇒ نهاية الورقة (ملفات بمليون صف منسّق فارغ) */
     const total=entries[path]?entries[path].csize*8:1;
     const cellRe=/<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g;
     const rowRe=/<(?:\w+:)?row\b[^>]*?(?:\/>|>([\s\S]*?)<\/(?:\w+:)?row>)/g;
     await streamText(path,chunk=>{
       bytes+=chunk.length; tail+=chunk;
+      /* نهاية البيانات: </sheetData>، أو ذيل من صفوف فارغة ذاتية الإغلاق فقط (<row .../> بمئات الآلاف بلا </row>) */
+      const sdEnd=tail.indexOf("</sheetData>"); let endSeen=false; if(sdEnd>=0){ tail=tail.slice(0,sdEnd); endSeen=true; }
       const l1=tail.lastIndexOf("</row>"), l2=tail.lastIndexOf(":row>"), last=Math.max(l1,l2);
-      if(last<0) return false;
+      if(last<0){ if(endSeen){ done=true; return true; }
+        if(out.length&&tail.length>150000&&!/<row\b[^>]*[^\/]>/.test(tail)&&(tail.match(/<row\b[^>]*\/>/g)||[]).length>=400){ done=true; return true; }
+        return false; }
       const cut=last===l1?l1+6:l2+5, work=tail.slice(0,cut); tail=tail.slice(cut);
       let m; rowRe.lastIndex=0;
       while((m=rowRe.exec(work))){
@@ -6783,15 +6812,24 @@ async function xlsxStreamRows(file,wantHeaders,onProgress,dropHeaders,keepHeader
             if(dropHeaders){ const D=new Set(dropHeaders.map(normalizeHeaderKey)); dropIdx=header.map(h=>D.has(normalizeHeaderKey(h))||/هويه|هوية|national.?id/i.test(h)); }
             if(keepHeaders){ const K=new Set(keepHeaders.map(normalizeHeaderKey)); dropIdx=header.map(h=>!K.has(normalizeHeaderKey(h))||/هويه|هوية|national.?id|mail|بريد|ايميل|جوال|mobile|phone/i.test(h)); }
             if(limit===1){ done=true; return true; } } continue; }
-        if(!cells.some(v=>v!=null&&v!=="")) continue;
+        if(!cells.some(v=>v!=null&&v!=="")){ if(out.length&&++emptyRun>=400){ done=true; return true; } continue; }
+        emptyRun=0;
         const o={}; header.forEach((h,i)=>{ if(h&&!dropIdx[i]) o[h]=cells[i]===undefined?null:cells[i]; }); out.push(o);
       }
+      if(done) return true;
       if(onProgress&&limit!==1) onProgress(Math.min(99,Math.round(bytes/total*100)), out.length);
+      if(endSeen){ done=true; return true; }
       return false;
     });
     return {header:header||[],rows:out};
   };
   const want=new Set((wantHeaders||[]).map(normalizeHeaderKey));
+  /* allSheets: كل الأوراق التي فيها كل الأعمدة المطلوبة (ملف أسابيع السوق: ورقة لكل أسبوع) */
+  if(allSheets==="sniff"){ const out=[]; for(const sh of sheets){ const {header}=await parseSheet(sh.path,1); out.push({name:sh.name,header}); } return {headers:out,sheetCount:sheets.length}; }
+  if(allSheets){ const out=[];
+    for(const sh of sheets){ const {header}=await parseSheet(sh.path,1); if(!header.length||[...want].some(w=>!header.some(h=>normalizeHeaderKey(h)===w))) continue;
+      const {rows}=await parseSheet(sh.path,0); out.push({name:sh.name,rows}); }
+    return {sheets:out,sheetCount:sheets.length}; }
   let best=sheets[0], bestScore=-1;
   if(sheets.length>1) for(const sh of sheets){ const {header}=await parseSheet(sh.path,1);
     const sc=header.filter(h=>want.has(normalizeHeaderKey(h))).length*1e9+(entries[sh.path]?entries[sh.path].csize:0);
@@ -11054,6 +11092,8 @@ function mInit(){
     const oc=e.target.closest("[data-oc]"); if(oc){ tvOpsSet("chan",oc.dataset.oc&&oc.dataset.oc!==tvOps.chan?oc.dataset.oc:null); return; }
     const opj=e.target.closest("[data-openproj]"); if(opj){ openProjectFromBoard(tvOps.proj); return; }
     const hmb=e.target.closest("[data-hm]"); if(hmb){ hmSet(hmb.dataset.hm,hmb.dataset.v); return; }
+    const pmb=e.target.closest("[data-pm]"); if(pmb){ pmSet(pmb.dataset.pm,pmb.dataset.v); return; }
+    const pmc=e.target.closest("[data-pmcity]"); if(pmc){ pmFly("mHmMap",pmc.dataset.pmcity); $("mHmMap").scrollIntoView({behavior:"smooth",block:"start"}); return; }
     const ev=e.target.closest("[data-ev]"); if(ev){ tvOps.ev=ev.dataset.ev; tvOpsSave(); mRenderAnalysis(); return; }
     const md=e.target.closest("[data-md]"); if(md){ mOpenModel(+md.dataset.md); return; }
     const pg=e.target.closest("[data-pg]"); if(pg){ mOpenGroup(+pg.getAttribute("data-pg")); return; }
@@ -11241,7 +11281,8 @@ async function mLoadPS(force){
   mPSLoading=true;
   try{ const r=await sbCall("get_tv_product_stats",{}); if(!r||!r.ok) throw new Error("استجابة فارغة");
     const C=r.cols; mPS={asOf:r.as_of,year:r.year,rows:(r.rows||[]).map(a=>{ const o={}; C.forEach((c,i)=>o[c]=a[i]);
-      ["avail_p","avail_d","reserved","contracts","c30","c90","cy","b30","pa_sum","pa_n","ps_sum","ps_n","moh_sum","moh_n","sz_sum","sz_n","sqa_p","sqa_s","sqs_p","sqs_s","beds","avail_b","avail_n","c30b","c90b","cyb"].forEach(k=>o[k]=Number(o[k])||0);
+      ["avail_p","avail_d","reserved","contracts","c30","c90","cy","b30","pa_sum","pa_n","ps_sum","ps_n","moh_sum","moh_n","sz_sum","sz_n","sqa_p","sqa_s","sqs_p","sqs_s","beds","avail_b","avail_n","c30b","c90b","cyb","sqa_m"].forEach(k=>o[k]=Number(o[k])||0);
+      o.lat=o.lat==null?null:+o.lat; o.lon=o.lon==null?null:+o.lon;
       o.hasSeg=C.includes("avail_b");
       if(o.beds===0&&a[C.indexOf("beds")]==null) o.beds=-1; o.months=(o.months||[]).map(Number); o.sector=tvSecNorm(o.sector); return o; })};
     mPSAt=Date.now(); mPSErr=""; }
@@ -11573,7 +11614,9 @@ function startTvMode(){
   $("tvOpsProj").onchange=()=>tvOpsSet("proj",$("tvOpsProj").value||null);
   $("tvOpsOpen").onclick=()=>openProjectFromBoard(tvOps.proj);
   /* الصفحة 4: معايير الخريطة */
-  $("tvPage4").addEventListener("click",e=>{ const b=e.target.closest("[data-hm]"); if(b) hmSet(b.dataset.hm,b.dataset.v); });
+  $("tvPage4").addEventListener("click",e=>{ const b=e.target.closest("[data-hm]"); if(b){ hmSet(b.dataset.hm,b.dataset.v); return; }
+    const q=e.target.closest("[data-pm]"); if(q){ pmSet(q.dataset.pm,q.dataset.v); return; }
+    const c=e.target.closest("[data-pmcity]"); if(c) pmFly("tvHmMap",c.dataset.pmcity); });
   $("tvPage4").addEventListener("change",e=>{ const s=e.target.closest("[data-hmband]"); if(s) hmSet("band",s.value); });
   $("tvPageDots").querySelectorAll("i").forEach((el,i)=>el.onclick=()=>{ tvPinnedPage=i+1; tvStartRotation(); });
   tvTickClock(); setInterval(tvTickClock,15000);
@@ -11721,15 +11764,21 @@ function openProjectFromBoard(name){
    الطلب = عقود الفترة (30 يوماً / 90 يوماً / السنة) بمعدّل شهري · المعروض = المتاح الآن (منصة + لدى المطور) للشريحة المختارة
    (target_segments: للمستفيدين / لغير المستفيدين) · الفجوة = أشهر تصريف المتاح بمعدّل الطلب:
    نفد/أقل من 3 أشهر «جوع» (فرصة فتح) · 3–6 ضيق · 6–12 متوازن · أكثر من 12 أو بلا طلب «فائض». */
-const HM_CITY={"الرياض":[24.71,46.68],"جده":[21.54,39.17],"مكهالمكرمه":[21.39,39.86],"مكه":[21.39,39.86],"المدينهالمنوره":[24.47,39.61],"المدينه":[24.47,39.61],
-  "الدمام":[26.42,50.09],"الخبر":[26.28,50.21],"الظهران":[26.29,50.11],"الاحساء":[25.38,49.59],"الهفوف":[25.38,49.59],"المبرز":[25.41,49.58],"الجبيل":[27.01,49.66],"القطيف":[26.56,50.0],
-  "تبوك":[28.38,36.57],"ابها":[18.22,42.5],"خميسمشيط":[18.3,42.73],"جازان":[16.89,42.55],"نجران":[17.49,44.13],"الطائف":[21.27,40.42],"بريده":[26.33,43.97],"عنيزه":[26.08,43.99],
-  "حائل":[27.52,41.69],"ينبع":[24.09,38.06],"الخرج":[24.15,47.31],"سكاكا":[29.97,40.2],"عرعر":[30.98,41.04],"الباحه":[20.01,41.47],"حفرالباطن":[28.43,45.96],"المجمعه":[25.9,45.35],"رابغ":[22.8,39.03]};
-const HM_LAYERS=[["gap","الفجوة"],["demand","الطلب"],["supply","المعروض"]];
+/* مدن المملكة (عرض، طول، القطاع) — المفتاح بعد tvArNorm؛ تُستعمل لمواقع المشاريع التقريبية ولصفقات السوق */
+const HM_CITY_LIST=[["الرياض",24.71,46.68,"الأوسط"],["جدة",21.54,39.17,"الغربي"],["مكة المكرمة",21.39,39.86,"الغربي"],["المدينة المنورة",24.47,39.61,"الغربي"],["الدمام",26.42,50.09,"الشرقي"],["الخبر",26.28,50.21,"الشرقي"],["الظهران",26.29,50.11,"الشرقي"],
+["الاحساء",25.38,49.59,"الشرقي"],["الهفوف",25.38,49.59,"الشرقي"],["المبرز",25.41,49.58,"الشرقي"],["الجبيل",27.01,49.66,"الشرقي"],["القطيف",26.56,50.0,"الشرقي"],["صفوى",26.65,49.95,"الشرقي"],["سيهات",26.48,50.04,"الشرقي"],["رأس تنورة",26.64,50.16,"الشرقي"],["بقيق",25.93,49.67,"الشرقي"],["الخفجي",28.43,48.49,"الشرقي"],["حفر الباطن",28.43,45.96,"الشرقي"],["النعيرية",27.47,48.49,"الشرقي"],["قرية العليا",28.0,46.5,"الشرقي"],
+["تبوك",28.38,36.57,"الغربي"],["تيماء",27.63,38.54,"الغربي"],["أملج",25.02,37.27,"الغربي"],["الوجه",26.24,36.45,"الغربي"],["ضباء",27.35,35.69,"الغربي"],["حقل",29.29,34.94,"الغربي"],["البدع",28.44,35.0,"الغربي"],["العلا",26.6,37.92,"الغربي"],["خيبر",25.7,39.29,"الغربي"],["بدر",23.78,38.79,"الغربي"],["المهد",23.5,40.87,"الغربي"],["العيص",25.15,37.75,"الغربي"],["وادي الفرع",23.95,39.55,"الغربي"],["الحناكية",24.86,40.52,"الغربي"],["ينبع",24.09,38.06,"الغربي"],["رابغ",22.8,39.03,"الغربي"],["الطائف",21.27,40.42,"الغربي"],["تربة",21.21,41.63,"الغربي"],["رنية",21.26,42.86,"الغربي"],["الخرمة",21.93,42.05,"الغربي"],["الليث",20.15,40.27,"الغربي"],["القنفذة",19.13,41.08,"الغربي"],
+["أبها",18.22,42.5,"الغربي"],["خميس مشيط",18.3,42.73,"الغربي"],["بيشة",20.0,42.6,"الغربي"],["تثليث",19.54,43.5,"الغربي"],["بلقرن",19.9,41.9,"الغربي"],["محايل",18.55,42.05,"الغربي"],["النماص",19.14,42.13,"الغربي"],["رجال ألمع",18.2,42.3,"الغربي"],["أحد رفيدة",18.2,42.83,"الغربي"],["سراة عبيدة",18.08,43.1,"الغربي"],["ظهران الجنوب",17.67,43.5,"الغربي"],["طريب",18.9,43.3,"الغربي"],["الباحة",20.01,41.47,"الغربي"],["بلجرشي",19.86,41.56,"الغربي"],["المخواة",19.78,41.4,"الغربي"],["المندق",20.16,41.28,"الغربي"],["قلوة",19.75,41.4,"الغربي"],
+["جازان",16.89,42.55,"الغربي"],["صبيا",17.15,42.63,"الغربي"],["أبو عريش",16.97,42.83,"الغربي"],["صامطة",16.6,42.94,"الغربي"],["بيش",17.37,42.53,"الغربي"],["الدرب",17.72,42.25,"الغربي"],["الريث",17.4,42.9,"الغربي"],["الدائر",17.3,43.12,"الغربي"],["فيفا",17.26,43.1,"الغربي"],["العارضة",17.05,43.0,"الغربي"],["أحد المسارحة",16.71,42.95,"الغربي"],["العيدابي",17.25,42.88,"الغربي"],["الحرث",16.8,43.1,"الغربي"],["نجران",17.49,44.13,"الغربي"],["شرورة",17.47,47.11,"الغربي"],["حبونا",17.78,44.08,"الغربي"],["يدمة",18.1,44.6,"الغربي"],
+["بريدة",26.33,43.97,"الأوسط"],["عنيزة",26.08,43.99,"الأوسط"],["الرس",25.87,43.5,"الأوسط"],["المذنب",25.86,44.22,"الأوسط"],["البكيرية",26.13,43.66,"الأوسط"],["البدائع",25.98,43.75,"الأوسط"],["رياض الخبراء",26.09,43.55,"الأوسط"],["عيون الجواء",26.5,43.7,"الأوسط"],["الاسياح",26.6,44.3,"الأوسط"],["النبهانية",25.92,42.95,"الأوسط"],["عقلة الصقور",25.85,42.2,"الأوسط"],["ضرية",25.07,43.55,"الأوسط"],["الشماسية",26.2,44.6,"الأوسط"],["دخنة",24.9,44.3,"الأوسط"],["حائل",27.52,41.69,"الأوسط"],["بقعاء",27.95,42.4,"الأوسط"],["الشنان",27.7,42.6,"الأوسط"],["الغزالة",26.85,41.3,"الأوسط"],
+["الخرج",24.15,47.31,"الأوسط"],["الدلم",23.99,47.16,"الأوسط"],["الأفلاج",22.28,46.73,"الأوسط"],["وادي الدواسر",20.47,44.78,"الأوسط"],["السليل",20.46,45.57,"الأوسط"],["الزلفي",26.3,44.8,"الأوسط"],["المجمعة",25.9,45.35,"الأوسط"],["الغاط",26.03,44.96,"الأوسط"],["شقراء",25.24,45.25,"الأوسط"],["الدوادمي",24.5,44.39,"الأوسط"],["عفيف",23.91,42.93,"الأوسط"],["القويعية",24.07,45.27,"الأوسط"],["الحريق",23.62,46.52,"الأوسط"],["حوطة بني تميم",23.52,46.84,"الأوسط"],["رماح",25.57,47.15,"الأوسط"],["الرين",23.58,45.5,"الأوسط"],["ثادق",25.29,45.88,"الأوسط"],["حريملاء",25.12,46.1,"الأوسط"],["ضرماء",24.62,46.1,"الأوسط"],["المزاحمية",24.47,46.27,"الأوسط"],["العيينة",24.9,46.4,"الأوسط"],["مرات",25.07,45.46,"الأوسط"],
+["سكاكا",29.97,40.2,"الأوسط"],["القريات",31.33,37.37,"الأوسط"],["دومة الجندل",29.81,39.87,"الأوسط"],["طبرجل",30.5,38.22,"الأوسط"],["عرعر",30.98,41.04,"الأوسط"],["رفحاء",29.63,43.5,"الأوسط"],["طريف",31.68,38.65,"الأوسط"],["العويقيلة",30.33,42.25,"الأوسط"]];
+const HM_CITY=(()=>{ const m={}; HM_CITY_LIST.forEach(([n,la,lo,sec])=>{ m[tvArNorm(n)]=[la,lo,sec]; }); m[tvArNorm("مكة")]=m[tvArNorm("مكة المكرمة")]; m[tvArNorm("المدينة")]=m[tvArNorm("المدينة المنورة")]; m[tvArNorm("جده")]=m[tvArNorm("جدة")]; return m; })();
+const HM_LAYERS=[["price","الأسعار"],["gap","الطلب والمعروض"],["demand","الطلب"],["supply","المعروض"]];
 const HM_SEGS=[["all","الكل"],["b","المستفيدون"],["n","غير المستفيدين"]];
 const HM_PERS=[["30","30 يوماً"],["90","90 يوماً"],["y","السنة"]];
 const HM_TYPES=[["all","كل المنتجات"],["شقة","شقق"],["فيلا","فلل"],["تاون هاوس","تاون هاوس"]];
-let hmPrm=(()=>{ const d={layer:"gap",seg:"all",type:"all",band:-1,per:"90"}; try{ return Object.assign(d,JSON.parse(localStorage.getItem("tv_hm")||"{}")); }catch(e){ return d; } })();
+let hmPrm=(()=>{ const d={layer:"price",seg:"all",type:"all",band:-1,per:"90"}; try{ return Object.assign(d,JSON.parse(localStorage.getItem("tv_hm")||"{}")); }catch(e){ return d; } })();
 function hmSave(){ try{ localStorage.setItem("tv_hm",JSON.stringify(hmPrm)); }catch(e){} }
 function hmSet(k,v){ hmPrm[k]=k==="band"?+v:v; hmSave(); hmRenderAll(); }
 function hmPerMonths(){ if(hmPrm.per==="30") return 1; if(hmPrm.per==="90") return 3; const n=new Date(); return Math.max(.5,(n-new Date(n.getFullYear(),0,1))/864e5/30.44); }
@@ -11760,7 +11809,8 @@ function hmGeo(){ if(hmGeoC) return hmGeoC;
 function hmLoc(o){
   const G=hmGeo(); if(G.byP.has(o.project)) return G.byP.get(o.project);
   let loc=null;
-  if(G.hasCat){ const pid=findProjectId(o.project), p=pid!=null?DATA.find(x=>x.id===pid):null; if(p&&p.lat!=null&&!isNaN(+p.lat)) loc={lat:+p.lat,lon:+p.lon,src:"p",pid}; }
+  if(o.lat!=null&&o.lon!=null&&!isNaN(o.lat)) loc={lat:+o.lat,lon:+o.lon,src:"p"};
+  if(!loc&&G.hasCat){ const pid=findProjectId(o.project), p=pid!=null?DATA.find(x=>x.id===pid):null; if(p&&p.lat!=null&&!isNaN(+p.lat)) loc={lat:+p.lat,lon:+p.lon,src:"p",pid}; }
   if(!loc){ const a=G.dest.get(tvArNorm(o.dest||"")); if(a) loc={lat:a.la/a.n,lon:a.lo/a.n,src:"d"}; }
   if(!loc){ const c=HM_CITY[tvArNorm(o.city||"")]; if(c) loc={lat:c[0]+((o.project.length%7)-3)*.012,lon:c[1]+((o.project.length%5)-2)*.012,src:"c"}; }
   G.byP.set(o.project,loc); return loc;
@@ -11787,8 +11837,160 @@ function hmCompute(){
   return {pts,areas,hot,cold,sec,noLoc:pts.filter(p=>!p.loc).length,approx:pts.filter(p=>p.loc&&p.loc.src!=="p").length,hasSeg:mPS.rows.some(r=>r.hasSeg),hasCat:hmGeo().hasCat};
 }
 const hmInvTxt=x=>x.rate>0&&!x.avail?"نفد":x.inv===Infinity?"بلا طلب":x.inv<1?"أقل من شهر":`${(Math.round(x.inv*10)/10).toLocaleString("en-US")} شهر`;
+/* ---------- خريطة الأسعار: أسعارنا مقابل السوق (طبقة «الأسعار» بصفحة الخريطة) ----------
+   أسعارنا من تحليل المنتجات (ملف التخصيص): سعر المتر = مجموع السعر ÷ مجموع المساحة للوحدات المتاحة ذات المساحة
+   (الأساس: سعر الوزارة moh_price للمستفيدين · السعر الكامل price · أو سعر المباع)، أو سعر الوحدة (المتوسط).
+   السوق من ملف «أسعار صفقات السوق» الأسبوعي (tv_market.sql): سعر المتر الشهري وعدد الصفقات وقيمتها لكل مدينة ونوع —
+   السكني فقط، وتُستبعد الصفقات الشاذة (أقل من 200 ألف أو أكثر من 15 مليون للصفقة الواحدة) من المتوسطات.
+   الفجوة = (سعرنا − السوق) ÷ السوق لنفس المدينة والنوع. الطبقة الحرارية = متوسط مرجّح بالمسافة على الخريطة. */
+const PM_VIEWS=[["ours","أسعارنا"],["market","السوق"],["gap","الفجوة"]];
+const PM_BASIS=[["moh","سعر الوزارة"],["full","السعر الكامل"],["sold","المباع"]];
+const PM_METRIC=[["sqm","سعر المتر"],["unit","سعر الوحدة"]];
+const PM_PER=[["w","آخر أسبوع"],["4w","4 أسابيع"],["y","كل الأسابيع"]];
+const PM_COLORS=["#2A7FB8","#5DB3C9","#A9D8C4","#F2D16B","#F0973C","#D9532B","#9E1B1B"];
+const PM_SQM=[[0,2000,"< 2,000"],[2000,3000,"2–3 ألف"],[3000,4000,"3–4 ألف"],[4000,5000,"4–5 ألف"],[5000,6000,"5–6 ألف"],[6000,8000,"6–8 ألف"],[8000,Infinity,"> 8,000"]];
+let pm=(()=>{ const d={view:"gap",basis:"moh",metric:"sqm",mper:"4w"}; try{ return Object.assign(d,JSON.parse(localStorage.getItem("tv_pm")||"{}")); }catch(e){ return d; } })();
+function pmSet(k,v){ pm[k]=v; try{ localStorage.setItem("tv_pm",JSON.stringify(pm)); }catch(e){} hmRenderAll(); }
+/* السوق: التحميل (ذاكرة 10 دقائق) */
+let tvMkt=null, mktAt=0, mktFailAt=0, mktBusy=false, mktErr="";
+async function mktLoad(force){
+  if(mktBusy) return; if(tvMkt&&!force&&Date.now()-mktAt<6e5) return; if(!force&&mktErr&&Date.now()-mktFailAt<6e4) return;
+  mktBusy=true;
+  try{ const r=await sbCall("get_tv_market",{}); if(!r||!r.ok) throw new Error("استجابة فارغة");
+    const C=r.cols||["wk","city","type","deals","value","month","sqm","excluded"];
+    tvMkt={asOf:r.as_of,weeks:(r.weeks||[]).map(Number).sort((a,b)=>a-b),rows:(r.rows||[]).map(a=>{ const o={}; C.forEach((c,i)=>o[c]=a[i]); o.wk=+o.wk; o.deals=+o.deals||0; o.value=+o.value||0; o.sqm=o.sqm==null?null:+o.sqm; o.excluded=+o.excluded||0; o.ck=pmCityKey(o.city); return o; })};
+    mktAt=Date.now(); mktErr=""; }
+  catch(e){ mktErr=String((e&&e.message)||e); mktFailAt=Date.now(); }
+  mktBusy=false; hmRenderAll();
+}
+const PM_ALIAS={"مكه":"مكهالمكرمه","المدينه":"المدينهالمنوره","الهفوف":"الاحساء","المبرز":"الاحساء"};
+function pmCityKey(c){ const k=tvArNorm(c||""); return PM_ALIAS[k]||k; }
+function pmWeeks(){ if(!tvMkt||!tvMkt.weeks.length) return []; const W=tvMkt.weeks; return pm.mper==="w"?W.slice(-1):pm.mper==="4w"?W.slice(-4):W; }
+/* السوق لكل مدينة × نوع بالفترة: صفقات، قيمة، سعر المتر (آخر أسبوع فيه قيمة)، الاتجاه (آخر أسبوع مقابل الذي قبله) */
+function pmMarket(){
+  const M=new Map(); if(!tvMkt) return M;
+  const W=new Set(pmWeeks()), all=tvMkt.weeks, last=all[all.length-1], prev=all[all.length-2];
+  tvMkt.rows.forEach(r=>{ const k=r.ck+"\u0001"+r.type; let o=M.get(k); if(!o){ o={city:r.city,ck:r.ck,type:r.type,deals:0,value:0,sqm:null,sqmWk:0,ex:0,dLast:0,dPrev:0,month:""}; M.set(k,o); }
+    if(W.has(r.wk)){ o.deals+=r.deals; o.value+=r.value; o.ex+=r.excluded; if(r.sqm&&r.wk>=o.sqmWk){ o.sqm=r.sqm; o.sqmWk=r.wk; o.month=r.month||""; } }
+    if(r.wk===last) o.dLast+=r.deals; if(prev&&r.wk===prev) o.dPrev+=r.deals; });
+  M.forEach(o=>{ o.avg=o.deals?o.value/o.deals:null; o.trend=o.dPrev?Math.round((o.dLast-o.dPrev)/o.dPrev*100):null; });
+  return M;
+}
+function pmOurVal(r){ const B=pm.basis;
+  if(pm.metric==="sqm"){ if(B==="sold") return r.sqs_s?{v:r.sqs_p/r.sqs_s,w:r.sqs_s,p:r.sqs_p}:null; if(!r.sqa_s) return null; return {v:(B==="moh"?r.sqa_m:r.sqa_p)/r.sqa_s,w:r.sqa_s,p:B==="moh"?r.sqa_m:r.sqa_p}; }
+  if(B==="sold") return r.ps_n?{v:r.ps_sum/r.ps_n,w:r.ps_n,p:r.ps_sum}:null;
+  if(B==="moh") return r.moh_n?{v:r.moh_sum/r.moh_n,w:r.moh_n,p:r.moh_sum}:null;
+  return r.pa_n?{v:r.pa_sum/r.pa_n,w:r.pa_n,p:r.pa_sum}:null;
+}
+function pmBands(){ return pm.metric==="sqm"?PM_SQM:M_BAND.price; }
+function pmBandIdx(v){ const B=pmBands(); const i=B.findIndex(([lo,hi])=>v>=lo&&v<hi); return i<0?B.length-1:i; }
+function pmColorVal(v){ const B=pmBands(), i=pmBandIdx(v), [lo,hi]=B[i]; const f=hi===Infinity?.5:Math.max(0,Math.min(1,(v-lo)/(hi-lo))); const c0=PM_COLORS[i], c1=PM_COLORS[Math.min(PM_COLORS.length-1,i+1)]; return hmMix(c0,c1,f*.6); }
+function pmColorGap(g){ const t=Math.max(-30,Math.min(30,g))/30; return t<0?hmMix("#F3EFE4","#167A55",-t):hmMix("#F3EFE4","#C0392B",t); }
+function pmCompute(){
+  if(!mPS) return null;
+  const MK=pmMarket(), rows=hmRows(mScopeOk), P=new Map(), C=new Map();
+  rows.forEach(r=>{ const ov=pmOurVal(r), avail=r.avail_p+r.avail_d; const ck=pmCityKey(r.city), mk=MK.get(ck+"\u0001"+r.type);
+    let o=P.get(r.project); if(!o){ o={project:r.project,city:r.city,ck,dest:r.dest,sector:r.sector,kind:r.kind,p:0,w:0,avail:0,gw:0,gs:0,types:new Map()}; P.set(r.project,o); }
+    o.avail+=avail; o.types.set(r.type,(o.types.get(r.type)||0)+avail+r.contracts);
+    if(ov){ o.p+=ov.p; o.w+=ov.w; const mv=mk?(pm.metric==="sqm"?mk.sqm:mk.avg):null; if(mv){ const gw=Math.max(1,avail); o.gw+=gw; o.gs+=(ov.v-mv)/mv*100*gw; } }
+    let c=C.get(ck+"\u0001"+r.type); if(!c){ c={city:r.city,ck,type:r.type,sector:r.sector,p:0,w:0,avail:0,proj:new Set(),up:0,un:0}; C.set(ck+"\u0001"+r.type,c); }
+    c.avail+=avail; c.proj.add(r.project); if(ov){ c.p+=ov.p; c.w+=ov.w; } if(r.pa_n){ c.up+=r.pa_sum; c.un+=r.pa_n; } });
+  const pts=[...P.values()].map(o=>{ o.v=o.w?o.p/o.w:null; o.gap=o.gw?o.gs/o.gw:null; o.type=[...o.types].sort((a,b)=>b[1]-a[1]).map(x=>x[0])[0]||""; o.loc=hmLoc(o); return o; }).filter(o=>o.v!=null);
+  /* المدن: عندنا و/أو بالسوق */
+  MK.forEach((m,k)=>{ if(!C.has(k)){ if(!(hmPrm.type==="all"||m.type===hmPrm.type)) return; if(tvRegion&&tvRegion!=="dev"){ const cc=HM_CITY[m.ck]; if(!cc||cc[2]!==tvRegion) return; } C.set(k,{city:m.city,ck:m.ck,type:m.type,sector:(HM_CITY[m.ck]||[])[2]||"",p:0,w:0,avail:0,proj:new Set(),up:0,un:0}); } });
+  const cities=[...C.values()].map(c=>{ const m=MK.get(c.ck+"\u0001"+c.type); c.ours=c.w?c.p/c.w:null; c.unit=c.un?c.up/c.un:null; c.mk=m||null; c.mv=m?(pm.metric==="sqm"?m.sqm:m.avg):null;
+    c.gap=c.ours!=null&&c.mv?(c.ours-c.mv)/c.mv*100:null; c.loc=HM_CITY[c.ck]||null; return c; }).filter(c=>c.ours!=null||(c.mk&&c.mk.deals));
+  cities.sort((a,b)=>((b.mk?b.mk.deals:0)+b.avail*.5)-((a.mk?a.mk.deals:0)+a.avail*.5));
+  const mpts=cities.filter(c=>c.mv&&c.loc&&c.mk&&c.mk.deals).map(c=>({city:c.city,type:c.type,lat:c.loc[0],lon:c.loc[1],v:c.mv,w:c.mk.deals,mk:c.mk}));
+  /* قراءة سريعة */
+  const ow=pts.reduce((a,o)=>a+o.w,0), ours=ow?pts.reduce((a,o)=>a+o.p,0)/ow:null;
+  const mw=mpts.reduce((a,m)=>a+m.w,0), mkt=mw?mpts.reduce((a,m)=>a+m.v*m.w,0)/mw:null;
+  const withGap=pts.filter(o=>o.gap!=null), above=withGap.filter(o=>o.gap>5).length, below=withGap.filter(o=>o.gap<-5).length;
+  const gap=withGap.length?withGap.reduce((a,o)=>a+o.gap*Math.max(1,o.avail),0)/withGap.reduce((a,o)=>a+Math.max(1,o.avail),0):null;
+  /* توزيع الفئات: عندنا بالوحدات المتاحة، والسوق بالصفقات */
+  const B=pmBands(), distO=B.map(()=>0), distM=B.map(()=>0);
+  pts.forEach(o=>{ distO[pmBandIdx(o.v)]+=Math.max(1,o.avail); }); mpts.forEach(m=>{ distM[pmBandIdx(m.v)]+=m.w; });
+  const sec=TV_SECTORS.map(s=>{ const ps=pts.filter(o=>o.sector===s), cs=cities.filter(c=>c.sector===s&&c.mk&&c.mv); const w=ps.reduce((a,o)=>a+o.w,0), mw2=cs.reduce((a,c)=>a+c.mk.deals,0);
+    const o=w?ps.reduce((a,x)=>a+x.p,0)/w:null, m=mw2?cs.reduce((a,c)=>a+c.mv*c.mk.deals,0)/mw2:null; return {sector:s,ours:o,mkt:m,gap:o&&m?(o-m)/m*100:null,n:ps.length,deals:mw2}; });
+  return {pts,mpts,cities,sec,ours,mkt,gap,above,below,withGap:withGap.length,distO,distM,noMkt:!tvMkt||!tvMkt.rows.length,weeks:pmWeeks(),lastWk:tvMkt&&tvMkt.weeks.length?tvMkt.weeks[tvMkt.weeks.length-1]:null};
+}
+/* الطبقة الحرارية: متوسط القيم مرجّحاً بالمسافة (نواة غاوسية) على شبكة بكسلات — تُرسم على canvas فوق الخريطة */
+const PmHeat=typeof L!=="undefined"?L.Layer.extend({
+  initialize:function(pts,color,opts){ this._pts=pts||[]; this._color=color; this._o=opts||{}; },
+  onAdd:function(map){ this._map=map; const c=this._c=L.DomUtil.create("canvas","pmHeat"); c.style.position="absolute"; c.style.pointerEvents="none"; map.getPanes().overlayPane.appendChild(c); map.on("moveend zoomend resize",this._draw,this); this._draw(); },
+  onRemove:function(map){ L.DomUtil.remove(this._c); map.off("moveend zoomend resize",this._draw,this); },
+  setData:function(pts,color){ this._pts=pts||[]; if(color) this._color=color; this._draw(); },
+  _draw:function(){ const map=this._map, c=this._c; if(!map||!c) return; const sz=map.getSize(); L.DomUtil.setPosition(c,map.containerPointToLayerPoint([0,0])); c.width=sz.x; c.height=sz.y;
+    const ctx=c.getContext("2d"); ctx.clearRect(0,0,sz.x,sz.y); if(!this._pts.length) return;
+    const off=document.createElement("canvas"); off.width=sz.x; off.height=sz.y; const octx=off.getContext("2d");
+    const z=map.getZoom(), R=Math.max(40,Math.min(130,(this._o.radius||46)+9*(z-5))), s2=2*(R/2.2)*(R/2.2), cell=5;
+    const P=this._pts.map(p=>{ const q=map.latLngToContainerPoint([p.lat,p.lon]); return {x:q.x,y:q.y,v:p.v,w:Math.sqrt(Math.max(1,p.w||1))}; }).filter(p=>p.x>-R&&p.y>-R&&p.x<sz.x+R&&p.y<sz.y+R);
+    if(!P.length) return;
+    for(let y=0;y<sz.y;y+=cell) for(let x=0;x<sz.x;x+=cell){ let sw=0, sv=0, near=0;
+      for(const p of P){ const dx=p.x-x, dy=p.y-y, d2=dx*dx+dy*dy; if(d2>R*R*1.4) continue; const k=Math.exp(-d2/s2)*p.w; sw+=k; sv+=k*p.v; if(d2<R*R) near+=Math.exp(-d2/s2); }
+      if(sw<=0||near<.02) continue; const a=Math.min(.78,.12+near*.9);
+      octx.fillStyle=this._color(sv/sw); octx.globalAlpha=a; octx.fillRect(x,y,cell,cell); }
+    try{ ctx.filter="blur(4px)"; }catch(e){} ctx.drawImage(off,0,0); try{ ctx.filter="none"; }catch(e){} }
+}):null;
+function pmLegendHtml(H){
+  const B=pmBands(), lbl=pm.metric==="sqm"?"ر/م²":"", dist=pm.view==="market"?H.distM:H.distO, tot=dist.reduce((a,b)=>a+b,0)||1;
+  if(pm.view==="gap") return `<div class="pmLg gapLg"><span><i style="background:#167A55"></i>أرخص من السوق بـ30%+</span><span><i style="background:#8FBFA6"></i>أرخص</span><span><i style="background:#F3EFE4;border:1px solid #ddd"></i>مثل السوق</span><span><i style="background:#D88A7A"></i>أغلى</span><span><i style="background:#C0392B"></i>أغلى بـ30%+</span><span class="sz">${H.withGap?`${fmt(H.withGap)} مشروعاً لها سعر سوق لمدينتها ونوعها`:"لا بيانات سوق مطابقة — ارفع ملف صفقات السوق"}</span></div>`;
+  return `<div class="pmBands">${B.map(([lo,hi,l],i)=>{ const pc=Math.round(dist[i]/tot*100); return `<div class="b" style="flex:${Math.max(9,pc)};background:${PM_COLORS[i]}" title="${l}${lbl?" "+lbl:""}: ${pc}%"><b>${pc}%</b><span>${l}</span></div>`; }).join("")}</div><div class="pmBandsNote">${pm.view==="market"?"حصة صفقات السوق":"حصة وحداتنا المتاحة"} في كل فئة${pm.metric==="sqm"?" سعرية للمتر":" سعرية"}</div>`;
+}
+function pmCtlHtml(){
+  const seg=(k,list,cur)=>`<span class="tvSeg hmSeg">${list.map(([v,l])=>`<button type="button" data-pm="${k}" data-v="${v}" class="${cur===v?"on":""}">${l}</button>`).join("")}</span>`;
+  return `${seg("view",PM_VIEWS,pm.view)}${seg("basis",PM_BASIS,pm.basis)}${seg("metric",PM_METRIC,pm.metric)}${seg("mper",PM_PER,pm.mper)}`;
+}
+const pmV=v=>v==null?"—":pm.metric==="sqm"?fmt(Math.round(v)):tvPriceShort(v);
+const pmGapTxt=g=>g==null?"—":`${g>0?"+":""}${Math.round(g)}%`;
+const pmGapCls=g=>g==null?"":g>5?"dn":g<-5?"up":"fl";
+function pmWkLbl(wk){ return wk?`الأسبوع ${wk%100}`:""; }
+function pmKpiHtml(H){
+  const u=pm.metric==="sqm"?"ر/م²":"", bas=PM_BASIS.find(x=>x[0]===pm.basis)[1];
+  return `<div class="pmKpis">
+    <div><span>سعرنا (${bas})</span><b>${pmV(H.ours)}</b><small>${u} · ${fmt(H.pts.length)} مشروعاً</small></div>
+    <div><span>السوق</span><b>${pmV(H.mkt)}</b><small>${u} · ${H.weeks.length?`${H.weeks.length} أسبوع · حتى ${pmWkLbl(H.lastWk)}`:"لا بيانات"}</small></div>
+    <div><span>الفجوة</span><b class="${pmGapCls(H.gap)}">${pmGapTxt(H.gap)}</b><small>سعرنا مقابل السوق بنفس المدينة والنوع</small></div>
+    <div><span>أغلى من السوق</span><b class="dn">${fmt(H.above)}</b><small>مشروعاً (+5% فأكثر)</small></div>
+    <div><span>أرخص من السوق</span><b class="up">${fmt(H.below)}</b><small>مشروعاً (−5% فأقل)</small></div>
+    <div><span>قريب من السوق</span><b>${fmt(H.withGap-H.above-H.below)}</b><small>ضمن ±5%</small></div></div>`;
+}
+function pmCityRow(c,i){
+  const m=c.mk;
+  return `<div class="pmRow" data-pmcity="${c.ck}"><span class="rk">${i+1}</span><span class="n">${c.city}<small>${c.type}${c.proj.size?` · ${fmt(c.proj.size)} مشروع · ${fmt(c.avail)} متاح`:" · لا مشاريع لنا"}</small></span>
+    <span class="m"><b>${pmV(c.ours)}</b><small>عندنا</small></span><span class="m"><b>${pmV(c.mv)}</b><small>السوق</small></span>
+    <span class="m g ${pmGapCls(c.gap)}"><b>${pmGapTxt(c.gap)}</b><small>الفجوة</small></span>
+    <span class="m"><b>${m?fmt(m.deals):"—"}</b><small>صفقة${m&&m.trend!=null?` <i class="${m.trend>0?"up":m.trend<0?"dn":"fl"}">${m.trend>0?"▲":m.trend<0?"▼":"◆"}${Math.abs(m.trend)}%</i>`:""}</small></span></div>`;
+}
+function pmSecHtml(H){
+  return `<div class="hmSec"><div class="hmSecR h"><span>المنطقة</span><span>سعرنا</span><span>السوق</span><span>الفجوة</span><span>صفقات السوق</span></div>${H.sec.map(s=>`<div class="hmSecR"><span class="n">${s.sector}</span><b>${pmV(s.ours)}</b><b>${pmV(s.mkt)}</b><span class="${pmGapCls(s.gap)}" style="font-weight:800">${pmGapTxt(s.gap)}</span><span>${fmt(s.deals)}</span></div>`).join("")}</div>`;
+}
+function pmPopup(o){
+  if(o.mk){ const m=o.mk; return `<div class="hmPop"><b>${o.city} — ${o.type}</b><small>السوق · ${m.month?"سعر المتر لشهر "+m.month:""}</small>
+    <div><span>سعر المتر</span><b>${m.sqm?fmt(Math.round(m.sqm)):"—"}</b></div><div><span>الصفقات بالفترة</span><b>${fmt(m.deals)}</b></div><div><span>متوسط الصفقة</span><b>${m.avg?tvPriceShort(m.avg):"—"}</b></div>${m.ex?`<div><span>مستبعد (شاذ)</span><b>${fmt(m.ex)}</b></div>`:""}</div>`; }
+  return `<div class="hmPop"><b>${o.project}</b><small>${[o.dest,o.city,o.type,o.kind==="nhc"?"NHC":""].filter(Boolean).join(" · ")}</small>
+    <div><span>سعرنا (${PM_BASIS.find(x=>x[0]===pm.basis)[1]})</span><b>${pmV(o.v)}</b></div><div><span>الفجوة عن السوق</span><b class="${pmGapCls(o.gap)}">${pmGapTxt(o.gap)}</b></div><div><span>المتاح</span><b>${fmt(o.avail)}</b></div>
+    ${o.loc&&o.loc.src!=="p"?`<em>الموقع تقريبي (${o.loc.src==="d"?"مركز الوجهة":"مركز المدينة"})</em>`:""}
+    ${tvCanOpenProject()?`<button type="button" data-hmproj="${String(o.project).replace(/"/g,"&quot;")}">↗ صفحة المشروع</button>`:""}</div>`;
+}
+function pmDraw(id,H){
+  const M=hmMapFor(id); if(!M) return;
+  M.map.invalidateSize(); M.layer.clearLayers();
+  const V=pm.view, ours=H.pts.filter(o=>o.loc&&(V!=="gap"||o.gap!=null));
+  const heatPts=V==="market"?H.mpts.map(m=>({lat:m.lat,lon:m.lon,v:m.v,w:m.w})):ours.map(o=>({lat:o.loc.lat,lon:o.loc.lon,v:V==="gap"?o.gap:o.v,w:o.avail+1}));
+  const color=V==="gap"?pmColorGap:pmColorVal;
+  if(PmHeat){ if(!M.heat){ M.heat=new PmHeat(heatPts,color,{radius:V==="market"?70:46}); M.heat.addTo(M.map); } else { M.heat._o.radius=V==="market"?70:46; M.heat.setData(heatPts,color); } }
+  const pts=V==="market"?H.mpts:ours, mx=Math.max(1,...pts.map(p=>V==="market"?p.w:p.avail));
+  pts.forEach(p=>{ const v=V==="gap"?p.gap:p.v, col=color(v), lat=V==="market"?p.lat:p.loc.lat, lon=V==="market"?p.lon:p.loc.lon;
+    const rad=V==="market"?6+16*Math.sqrt(p.w/mx):4+8*Math.sqrt(p.avail/mx);
+    L.circleMarker([lat,lon],{radius:rad,color:"#1f2937",weight:1,fillColor:col,fillOpacity:.9,opacity:.7}).bindPopup(pmPopup(p),{maxWidth:260}).addTo(M.layer); });
+  const fk="pm|"+(tvRegion||"all")+"|"+pts.length;
+  if(pts.length&&M.fitKey!==fk){ M.map.fitBounds(L.latLngBounds(pts.map(p=>[V==="market"?p.lat:p.loc.lat,V==="market"?p.lon:p.loc.lon])).pad(.12),{maxZoom:10}); M.fitKey=fk; }
+}
+function pmFly(id,ck){ const M=hmMaps[id], c=HM_CITY[ck]; if(M&&c) M.map.flyTo([c[0],c[1]],11,{duration:.8}); }
 function hmCtlHtml(){
   const P=hmPrm, seg=(k,list)=>`<span class="tvSeg hmSeg">${list.map(([v,l])=>`<button type="button" data-hm="${k}" data-v="${v}" class="${String(P[k])===String(v)?"on":""}">${l}</button>`).join("")}</span>`;
+  if(P.layer==="price") return `${seg("layer",HM_LAYERS)}${pmCtlHtml()}${seg("type",HM_TYPES)}`;
   return `${seg("layer",HM_LAYERS)}${seg("seg",HM_SEGS)}${seg("per",HM_PERS)}${seg("type",HM_TYPES)}
     <select class="tvOpsSel hmBand" data-hmband="1"><option value="-1">كل الأسعار</option>${M_BAND.price.map(([,,l],i)=>`<option value="${i}"${+P.band===i?" selected":""}>${l}</option>`).join("")}</select>`;
 }
@@ -11822,7 +12024,7 @@ function hmMapFor(id){
 }
 function hmDraw(id,H){
   const M=hmMapFor(id); if(!M) return;
-  M.map.invalidateSize(); M.layer.clearLayers();
+  M.map.invalidateSize(); M.layer.clearLayers(); if(M.heat){ M.map.removeLayer(M.heat); M.heat=null; }
   const P=hmPrm, pts=H.pts.filter(p=>p.loc&&(P.layer==="demand"?p.sold>0:P.layer==="supply"?p.avail>0:true));
   const val=p=>P.layer==="demand"?p.sold:P.layer==="supply"?p.avail:p.sold+p.avail;
   const mx=Math.max(1,...pts.map(val)), rmx=Math.max(1e-9,...pts.map(p=>p.rate));
@@ -11851,6 +12053,21 @@ function hmEmptyMsg(){ return mPSErr?(/404|Could not find|does not exist/i.test(
 function tvRenderHm(){
   if(!mPS) mLoadPS();
   $("tvHmBar").innerHTML=`<span class="tvOpsLbl">الخريطة</span>${hmCtlHtml()}<span class="tvOpsNote">${mPS&&mPS.asOf?"ملف التخصيص حتى "+tvDmy(String(mPS.asOf)):""}</span>`;
+  const T=(a,b,c)=>{ $("tvHmHotT").innerHTML=a; $("tvHmColdT").innerHTML=b; $("tvHmSecT").innerHTML=c; };
+  document.documentElement.classList.toggle("pmMode",hmPrm.layer==="price");
+  if(hmPrm.layer==="price"){
+    if(!tvMkt) mktLoad();
+    const H=pmCompute();
+    if(!H){ ["tvHmHot","tvHmCold","tvHmSec"].forEach(id=>$(id).innerHTML=`<div class="tvEmpty" style="font-size:15px">${hmEmptyMsg()}</div>`); return; }
+    T(`قراءة سريعة <small>${PM_BASIS.find(x=>x[0]===pm.basis)[1]} · ${PM_METRIC.find(x=>x[0]===pm.metric)[1]}</small>`,`المدن: سعرنا مقابل السوق <small>${PM_PER.find(x=>x[0]===pm.mper)[1]} · اضغط المدينة للانتقال إليها</small>`,`الفجوة حسب المنطقة`);
+    $("tvHmTitle").innerHTML=`خريطة ${PM_VIEWS.find(x=>x[0]===pm.view)[1]} <small>${hmScopeLbl()}</small><span class="tot">${pm.view==="market"?`${fmt(H.mpts.length)} مدينة×منتج`:`${fmt(H.pts.length)} مشروعاً`}${H.noMkt?" · لا بيانات سوق بعد":""}</span>`;
+    $("tvHmLegend").innerHTML=pmLegendHtml(H);
+    $("tvHmHot").innerHTML=pmKpiHtml(H)+(H.noMkt?`<div class="hmNote">ارفع ملف «أسعار صفقات السوق» من «⬆ رفع ملف» لتظهر أسعار السوق والفجوة</div>`:"");
+    $("tvHmCold").innerHTML=H.cities.length?H.cities.slice(0,14).map(pmCityRow).join(""):`<div class="tvEmpty" style="font-size:14px">لا مدن بهذه المعايير</div>`;
+    $("tvHmSec").innerHTML=pmSecHtml(H);
+    requestAnimationFrame(()=>pmDraw("tvHmMap",H)); return;
+  }
+  T(`الأعلى طلباً مقابل المتاح <small>أولويات الفتح · بالوجهة والمنتج · الأحمر = جوع</small>`,`فائض — متاح كثير وطلب ضعيف <small>الأزرق = أكثر من سنة تصريف</small>`,`المتاح حسب المنطقة والشريحة`);
   const H=hmCompute();
   if(!H){ ["tvHmHot","tvHmCold","tvHmSec"].forEach(id=>$(id).innerHTML=`<div class="tvEmpty" style="font-size:15px">${hmEmptyMsg()}</div>`); return; }
   $("tvHmTitle").innerHTML=`خريطة ${HM_LAYERS.find(x=>x[0]===hmPrm.layer)[1]==="الفجوة"?"الفجوة بين الطلب والمعروض":HM_LAYERS.find(x=>x[0]===hmPrm.layer)[1]} <small>${hmScopeLbl()}</small><span class="tot">${fmt(H.pts.length)} مشروعاً${H.approx?` · ${fmt(H.approx)} بموقع تقريبي`:""}${H.noLoc?` · ${fmt(H.noLoc)} بلا موقع`:""}</span>`;
@@ -11864,6 +12081,17 @@ function tvRenderHm(){
 function mRenderMap(){
   if(!mPS) mLoadPS();
   $("mHmCtl").innerHTML=`<div class="mHmCtl">${hmCtlHtml()}</div>`;
+  if(hmPrm.layer==="price"){
+    if(!tvMkt) mktLoad();
+    const H=pmCompute();
+    if(!H){ $("mHmLists").innerHTML=`<div class="mCard"><div class="mEmpty">${hmEmptyMsg()}</div></div>`; return; }
+    $("mHmHd").innerHTML=`<b>${PM_VIEWS.find(x=>x[0]===pm.view)[1]}</b><span>${hmScopeLbl()}</span>`;
+    $("mHmLeg").innerHTML=pmLegendHtml(H);
+    $("mHmLists").innerHTML=`<div class="mCard">${pmKpiHtml(H)}${H.noMkt?`<div class="mNote">ارفع ملف «أسعار صفقات السوق» من شاشة التلفزيون لتظهر أسعار السوق والفجوة</div>`:""}</div>
+      <div class="mCard"><div class="mCardHd"><b>المدن: سعرنا مقابل السوق</b><span>${PM_PER.find(x=>x[0]===pm.mper)[1]}</span></div>${H.cities.length?H.cities.slice(0,20).map(pmCityRow).join(""):`<div class="mEmpty">لا مدن بهذه المعايير</div>`}</div>
+      <div class="mCard"><div class="mCardHd"><b>الفجوة حسب المنطقة</b></div>${pmSecHtml(H)}</div>`;
+    requestAnimationFrame(()=>pmDraw("mHmMap",H)); return;
+  }
   const H=hmCompute();
   if(!H){ $("mHmLists").innerHTML=`<div class="mCard"><div class="mEmpty">${hmEmptyMsg()}</div></div>`; return; }
   $("mHmHd").innerHTML=`<b>${HM_LAYERS.find(x=>x[0]===hmPrm.layer)[1]==="الفجوة"?"الطلب مقابل المعروض":HM_LAYERS.find(x=>x[0]===hmPrm.layer)[1]}</b><span>${hmScopeLbl()}</span>`;
@@ -12200,6 +12428,9 @@ function tvAllocAggregate(rows,appNameOf){
   const mileKey=resolveHeaderKey(rows,["مبادرة الدعم الإضافى عسكريين - الصندوق","مبادرة الدعم الإضافي عسكريين"],[["اضاف","إضاف"],["عسكري"]]);
   const dhKey=resolveHeaderKey(rows,["منتج ذرى بلس","ذرى بلس"],[["ذرى","ذري"]]);
   const launchKey=resolveHeaderKey(rows,["تاريخ بدء البيع للمشروع","تاريخ بدء البيع"],[["بدء","بداية"],["بيع"]]);
+  /* موقع المشروع إن وُجد بالملف (خريطة الأسعار) */
+  const latKey=resolveHeaderKey(rows,["lat","latitude","خط العرض","دائرة العرض","y"],[["latitude","عرض"]]), lonKey=resolveHeaderKey(rows,["lon","lng","long","longitude","خط الطول","x"],[["longitude","طول"]]);
+  const geoOk=v=>{ const x=num(v); return x===x&&x!==0; };
   const yes1=v=>{ if(v==null||v==="") return false; if(typeof v==="number") return v>0; const t=String(v).trim().toLowerCase(); return t==="1"||t==="yes"||t==="true"||t==="نعم"; };
   const jobCat=v=>{ const t=String(v==null?"":v); return /عسكر/.test(t)?"mil":/حكوم/.test(t)?"gov":/خاص/.test(t)?"pvt":t.trim()?"oth":""; };
   const ops=new Map(), book=new Map();
@@ -12241,16 +12472,17 @@ function tvAllocAggregate(rows,appNameOf){
         let o=prod.get(pk);
         if(!o){ o={project_name:pn,project_code:code,model:md,unit_type:ut1,beds,developer:dev,kind,sector,city:S(row["المدينة"]),dest,launch:launchKey?tvAllocDate(row[launchKey]):null,
           avail_p:0,avail_d:0,reserved:0,contracts:0,other:0,c30:0,c90:0,cy:0,b30:0,months:[0,0,0,0,0,0,0,0,0,0,0,0],
-          avail_b:0,avail_n:0,c30b:0,c90b:0,cyb:0,
+          avail_b:0,avail_n:0,c30b:0,c90b:0,cyb:0,lat:null,lon:null,sqa_m:0,
           pa_sum:0,pa_n:0,ps_sum:0,ps_n:0,moh_sum:0,moh_n:0,sz_sum:0,sz_n:0,sz_min:null,sz_max:null,sqa_p:0,sqa_s:0,sqs_p:0,sqs_s:0}; prod.set(pk,o); }
         const sz=sizeKey?num(row[sizeKey]):NaN, szOk=sz>=20&&sz<=3000;
+        if(o.lat==null&&latKey&&lonKey&&geoOk(row[latKey])&&geoOk(row[lonKey])){ const la=num(row[latKey]), lo=num(row[lonKey]); if(la>15&&la<33&&lo>34&&lo<56){ o.lat=la; o.lon=lo; } }
         if(szOk){ o.sz_sum+=sz; o.sz_n++; o.sz_min=o.sz_min==null?sz:Math.min(o.sz_min,sz); o.sz_max=o.sz_max==null?sz:Math.max(o.sz_max,sz); }
         const bd=tvAllocDate(row["تاريخ الحجز"]); if(bd&&bd>=d30) o.b30++;
         if(st==="متاحة على المنصة"||st==="متاحة لدى المطور"){ if(st==="متاحة على المنصة") o.avail_p++; else o.avail_d++;
           /* لمن يُعرض: target_segments ({beneficiary} للمستفيدين، non_bene/company لغيرهم — الوحدة المعروضة للاثنين تُحسب لكليهما) */
           { const tg=String(row.target_segments==null?"":row.target_segments).toLowerCase(); if(/beneficiary/.test(tg.replace(/non_bene\w*/g,""))) o.avail_b++; if(/non_bene|company/.test(tg)) o.avail_n++; }
           const ap=num(row.price), mp=num(row.moh_price);
-          if(ap>=10000){ o.pa_sum+=ap; o.pa_n++; if(szOk){ o.sqa_p+=ap; o.sqa_s+=sz; } }
+          if(ap>=10000){ o.pa_sum+=ap; o.pa_n++; if(szOk){ o.sqa_p+=ap; o.sqa_s+=sz; o.sqa_m+=mp>=10000?mp:ap; } }
           if(mp>=10000){ o.moh_sum+=mp; o.moh_n++; } }
         else if(st==="حجز") o.reserved++;
         else if(st==="عقد"){ o.contracts++;
@@ -12490,8 +12722,8 @@ function tvUpMsg(t,cls){ const m=$("tvUpMsg"); m.className="tvUpMsg"+(cls?" "+cl
 function tvUpHasAuth(){ return !!(tvUpCreds||($("tvUpUser").value.trim()&&$("tvUpPass").value)); }
 function tvUpUpdateGo(){
   $("tvUpConfirmRow").classList.toggle("on",tvUpSus);
-  $("tvUpGo").textContent=tvUpRos?"رفع بيانات الموظفين":tvUpPol?"رفع نسب وسياسات البنوك":tvUpRev?"رفع جدول الإيرادات وتحديث الشاشة":tvUpAlloc?"رفع ملف التخصيص وتحديث الشاشة":"رفع اللقطة وتحديث الشاشة";
-  $("tvUpGo").disabled=!(((tvUpList&&tvUpList.length)||tvUpAlloc||tvUpRev||tvUpPol||tvUpRos)&&tvUpHasAuth()&&(!tvUpSus||$("tvUpConfirm").checked));
+  $("tvUpGo").textContent=tvUpMkt?"رفع صفقات السوق":tvUpRos?"رفع بيانات الموظفين":tvUpPol?"رفع نسب وسياسات البنوك":tvUpRev?"رفع جدول الإيرادات وتحديث الشاشة":tvUpAlloc?"رفع ملف التخصيص وتحديث الشاشة":"رفع اللقطة وتحديث الشاشة";
+  $("tvUpGo").disabled=!(((tvUpList&&tvUpList.length)||tvUpAlloc||tvUpRev||tvUpPol||tvUpRos||tvUpMkt)&&tvUpHasAuth()&&(!tvUpSus||$("tvUpConfirm").checked));
   tvUpRefreshUndo();
 }
 /* سحوبات اليوم مع حذف أي منها (مثلاً ملف رُفع بفلتر تاريخ خاطئ) — نفس صلاحية الأدمن، بتأكيد صريح.
@@ -12524,7 +12756,7 @@ function tvUpOpen(file){
 }
 function tvUpClose(){ $("tvUpModal").classList.remove("on"); $("tvUpDrop").classList.remove("over"); }
 /* نوع الملف: ملف التخصيص (كبير، أعمدة project_name وحالة الحجز) أو Export داشبورد NHC (اسم المشروع/عدد العقود) */
-let tvUpAlloc=null, tvUpRev=null, tvUpPol=null, tvUpRos=null;
+let tvUpAlloc=null, tvUpRev=null, tvUpPol=null, tvUpRos=null, tvUpMkt=null;
 /* ---------- جدول الإيرادات («المستهدف والمحقق حسب مذكرات الاستثمار — الإيرادات والتحصيل») ----------
    ورقة «المناطق والمشاريع»: لكل مشروع قيمة العقود التراكمية والمستحق الآن نقدي/بنكي ومستهدف المذكرة.
    منه نسبة جدول الدفعات النقدية لكل مشروع = المستحق النقدي ÷ (قيمة العقود − المستحق البنكي ÷ 20%) —
@@ -12675,6 +12907,37 @@ async function tvRosterRead(file){
   const rows=[...by.values()];
   return {rows,sheet:A.sheetName,nRes,active:rows.filter(r=>!r.resigned).length,agents:rows.filter(r=>!r.resigned&&/agent/i.test(r.job)).length};
 }
+/* ملف «أسعار صفقات السوق» الأسبوعي: ورقة لكل أسبوع (التاريخ «Week 42»، المنطقة = المدينة، نوع العقار، اجمالي الصفقات، اجمالي القيمة،
+   شهر بيانات الأسعار، متوسط سعر المتر). السكني فقط؛ الأراضي والتجاري تُهمل. الصفقة الشاذة (متوسطها أقل من 200 ألف أو أكثر من 15 مليون)
+   تُستبعد من المتوسطات وتُعدّ. */
+const TV_MKT_WANT=["التاريخ","المنطقة","نوع العقار","اجمالي الصفقات","اجمالي القيمة"];
+function tvMktHeaders(hdr){ const H=new Set((hdr||[]).map(h=>normalizeHeaderKey(h))); return TV_MKT_WANT.every(w=>H.has(normalizeHeaderKey(w))); }
+function tvMktType(t){ const k=tvArNorm(t); if(/^(شقق|شقه|شقةسكنيه|شققسكنيه)$/.test(k)||/شق/.test(k)&&!/ارض/.test(k)) return "شقة"; if(/^(فلل|فيلا|فله)$/.test(k)||/فل/.test(k)&&!/ارض/.test(k)) return "فيلا"; if(/تاون|دوبلكس/.test(k)) return "تاون هاوس"; return null; }
+function tvMarketParse(sheets){
+  const g=(r,k)=>{ const kk=Object.keys(r).find(x=>normalizeHeaderKey(x)===normalizeHeaderKey(k)); return kk?r[kk]:null; };
+  const rows=[], types=new Map(), weeks=new Set(); let skipped=0, exN=0, exV=0;
+  sheets.forEach(sh=>{ sh.rows.forEach(r=>{
+    const wTxt=String(g(r,"التاريخ")||sh.name||""), wm=wTxt.match(/(\d{1,2})/); if(!wm) return;
+    const month=String(g(r,"شهر بيانات الأسعار")||"").trim(), ym=month.match(/^(\d{4})-(\d{1,2})/);
+    let year=ym?+ym[1]:new Date().getFullYear(); const week=+wm[1]; if(ym&&week<=2&&+ym[2]===12) year++;
+    const city=String(g(r,"المنطقة")||"").trim(), tRaw=String(g(r,"نوع العقار")||"").trim(), type=tvMktType(tRaw);
+    types.set(tRaw,(types.get(tRaw)||0)+1);
+    if(!city||!type){ skipped++; return; }
+    const deals=Number(g(r,"اجمالي الصفقات"))||0, value=Number(g(r,"اجمالي القيمة"))||0, sqm=Number(g(r,"متوسط سعر المتر"))||null;
+    if(!deals) return;
+    const avg=value/deals, bad=avg<200000||avg>15e6;
+    if(bad){ exN+=deals; exV+=value; }
+    rows.push({wk:year*100+week,city,type,deals:bad?0:deals,value:bad?0:value,month,sqm:sqm&&sqm>100?sqm:null,excluded:bad?deals:0,excluded_value:bad?value:0});
+    weeks.add(year*100+week); }); });
+  return {rows,weeks:[...weeks].sort(),types:[...types].sort((a,b)=>b[1]-a[1]),skipped,exN,exV,deals:rows.reduce((a,r)=>a+r.deals,0),value:rows.reduce((a,r)=>a+r.value,0),cities:new Set(rows.map(r=>r.city)).size};
+}
+async function tvUpReadMarket(file){
+  if(file.size<=8*1024*1024){ try{ await loadSheetJS(); const wb=XLSX.read(new Uint8Array(await file.arrayBuffer()),{type:"array"});
+    const sheets=wb.SheetNames.map(n=>({name:n,rows:XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:null})})).filter(sh=>sh.rows.length&&tvMktHeaders(Object.keys(sh.rows[0])));
+    if(sheets.length) return sheets; }catch(_){} }
+  const r=await xlsxStreamRows(file,TV_MKT_WANT,(pct)=>tvUpMsg(`جارٍ قراءة ملف صفقات السوق — ${pct}%…`),null,null,true);
+  return r.sheets;
+}
 async function tvUpReadAlloc(file){
   const WANT=["project_name","حالة الحجز","price","unit_type","developer_name","القطاع"];
   let rows=null, sheet="", sheets=1;
@@ -12684,7 +12947,7 @@ async function tvUpReadAlloc(file){
   return {rows,sheet,sheets};
 }
 async function tvUpHandleFile(file){
-  tvUpList=null; tvUpAlloc=null; tvUpRev=null; tvUpPol=null; tvUpRos=null; tvUpSus=false; tvUpUpdateGo();
+  tvUpList=null; tvUpAlloc=null; tvUpRev=null; tvUpPol=null; tvUpRos=null; tvUpMkt=null; tvUpSus=false; tvUpUpdateGo();
   $("tvUpDropTxt").textContent="📄 "+file.name;
   tvUpMsg("جارٍ قراءة الملف…");
   try{
@@ -12718,11 +12981,22 @@ async function tvUpHandleFile(file){
         tvUpUpdateGo(); return;
       }
     }
+    /* عناوين كل الأوراق (ملف صغير: SheetJS صفّان؛ كبير: القارئ المتدفق يقف عند أول صف) لتمييز صفقات السوق عن التخصيص */
+    let heads=[];
+    try{ if(file.size<=5*1024*1024){ await loadSheetJS(); const wb=XLSX.read(new Uint8Array(await file.arrayBuffer()),{type:"array",sheetRows:2});
+        heads=wb.SheetNames.map(n=>{ const ws=wb.Sheets[n]; return ws?(XLSX.utils.sheet_to_json(ws,{header:1,defval:null})[0]||[]).map(x=>x==null?"":String(x)):[]; }); }
+      else heads=(await xlsxStreamRows(file,[],null,null,null,"sniff")).headers.map(h=>h.header); }catch(_){ heads=[]; }
+    if(heads.some(tvMktHeaders)){
+      const sheets=await tvUpReadMarket(file);
+      const K=tvMarketParse(sheets||[]);
+      if(!K.rows.length) throw new Error("لم أجد صفوف صفقات سكنية بالملف (شقق/فلل/تاون هاوس)");
+      tvUpMkt=K; $("tvUpAtRow").style.display="none";
+      tvUpMsg(`<b>أسعار صفقات السوق</b> · ${fmt(K.weeks.length)} أسبوع (${K.weeks.map(w=>w%100).join("، ")}) · ${fmt(K.cities)} مدينة<br>صفقات سكنية <b>${fmt(K.deals)}</b> بقيمة ${tvMoney(K.value)}${K.exN?` · مستبعد كشاذ ${fmt(K.exN)} صفقة (${tvMoney(K.exV)}) — أقل من 200 ألف أو أكثر من 15 مليون للصفقة`:""}${K.skipped?` · أُهمل ${fmt(K.skipped)} صفاً غير سكني`:""}<br><small>الأنواع بالملف: ${K.types.slice(0,6).map(([t,n])=>`${t} (${n})`).join(" · ")} — يُحفظ السكني فقط. الرفع يستبدل نفس الأسابيع ويبقي غيرها.</small>`);
+      tvUpUpdateGo(); return;
+    }
     /* ملف كبير أو فيه أعمدة التخصيص = ملف التخصيص */
-    let isAlloc=file.size>5*1024*1024;
-    if(!isAlloc){ try{ await loadSheetJS(); const wb=XLSX.read(new Uint8Array(await file.arrayBuffer()),{type:"array",sheetRows:2});
-      const hdr=wb.SheetNames.flatMap(n=>{ const ws=wb.Sheets[n]; return ws?XLSX.utils.sheet_to_json(ws,{header:1,defval:null})[0]||[]:[]; }).map(normalizeHeaderKey);
-      isAlloc=hdr.includes(normalizeHeaderKey("project_name"))&&hdr.includes(normalizeHeaderKey("حالة الحجز")); }catch(_){} }
+    const hdr=heads.flat().map(normalizeHeaderKey);
+    let isAlloc=file.size>5*1024*1024||(hdr.includes(normalizeHeaderKey("project_name"))&&hdr.includes(normalizeHeaderKey("حالة الحجز")));
     $("tvUpAtRow").style.display=isAlloc?"none":"";
     if(isAlloc){
       const r=await tvUpReadAlloc(file);
@@ -12797,7 +13071,23 @@ async function tvUpGoRos(){
     setTimeout(tvUpClose,1800);
   }catch(e){ tvUpMsg(e.message||String(e),"err"); tvUpUpdateGo(); }
 }
+async function tvUpGoMkt(){
+  $("tvUpGo").disabled=true;
+  try{
+    await tvUpEnsureCreds();
+    const L=tvUpMkt.rows, CH=2000;
+    for(let i=0;i<L.length;i+=CH){ tvUpMsg(`جارٍ رفع صفقات السوق — ${Math.min(L.length,i+CH)} من ${L.length}…`);
+      let r; try{ r=await sbCall("admin_load_tv_market",{p_admin:tvUpCreds.u,p_pass:tvUpCreds.p,p_rows:L.slice(i,i+CH),p_reset:i===0}); }
+      catch(e){ throw new Error("تعذّر الرفع: "+tvUpErrTxt(e,"tv_market.sql")); }
+      if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف"); }
+    tvUpMsg(`✓ حُفظت صفقات ${fmt(tvUpMkt.weeks.length)} أسبوع — خريطة الأسعار تتحدّث`,"ok");
+    tvUpMkt=null; $("tvUpFile").value=""; $("tvUpAtRow").style.display="";
+    tvMkt=null; mktLoad(true);
+    setTimeout(tvUpClose,1800);
+  }catch(e){ tvUpMsg(e.message||String(e),"err"); tvUpUpdateGo(); }
+}
 async function tvUpGo(){
+  if(tvUpMkt) return tvUpGoMkt();
   if(tvUpRos) return tvUpGoRos();
   if(tvUpPol) return tvUpGoPol();
   if(tvUpRev) return tvUpGoRev();
