@@ -1716,6 +1716,13 @@ html.tvMode,html.tvMode body{background:#F4F1E9;overflow:hidden}
 .tvUpConfirm.on{display:flex}
 .tvUpConfirm input{width:20px;height:20px;accent-color:#C2491E}
 .tvUpPulls{display:none;border-top:1px solid #EEEAE0;padding-top:8px}
+.tvBk{border-top:1px solid #EEEAE0;padding-top:8px}.tvBk .hd{font-size:13px;font-weight:800;color:#5e5a4f;margin-bottom:6px}
+.tvBk .row{display:flex;gap:8px;flex-wrap:wrap}
+.tvBk button,.tvBk .rs{flex:1;min-width:160px;border:1.5px solid #0B4332;background:#EAF6EF;color:#0B4332;border-radius:11px;padding:9px;font:inherit;font-weight:800;cursor:pointer;text-align:center}
+.tvBk .rs{border-color:#C9C3B3;background:#fff;color:#5e5a4f}
+.tvBk button:disabled,.tvBk .rs.dis{opacity:.5;pointer-events:none}
+.tvBkMsg{font-size:12.5px;color:#767368;margin-top:6px;line-height:1.5}.tvBkMsg.ok{color:#167A55;font-weight:700}.tvBkMsg.err{color:#C0392B;font-weight:700}
+.tvBkBar{height:6px;background:#EEEAE0;border-radius:4px;overflow:hidden;margin-top:5px}.tvBkBar i{display:block;height:100%;background:#009C6D;width:0}
 .tvUpPulls.on{display:block}
 .tvUpPulls .hd{font-size:14px;font-weight:800;color:#5e5a4f;margin-bottom:4px}
 .tvUpPulls .list{max-height:190px;overflow:auto;display:flex;flex-direction:column;gap:4px}
@@ -3870,6 +3877,9 @@ html.tvMob .pmLblIn{font-size:10px;padding:1px 5px}
       <label class="tvUpConfirm" id="tvUpConfirmRow"><input type="checkbox" id="tvUpConfirm">الأرقام صحيحة لعقود اليوم — ارفع رغم التحذير</label>
       <button type="button" id="tvUpGo" class="tvUpGo" disabled>رفع اللقطة وتحديث الشاشة</button>
       <div class="tvUpPulls" id="tvUpPulls"><div class="hd">سحوبات اليوم — احذف أي سحب رُفع بالخطأ</div><div class="list" id="tvUpPullList"></div></div>
+      <div class="tvBk"><div class="hd">نسخة احتياطية لقاعدة البيانات</div>
+        <div class="row"><button type="button" id="tvBkGo">⬇ تنزيل نسخة احتياطية</button><label class="rs" id="tvBkRs">استعادة من نسخة…<input type="file" id="tvBkFile" accept=".gz,.json,.ndjson" hidden></label></div>
+        <div class="tvBkMsg" id="tvBkMsg">ملف واحد يحفظ كل جداول التطبيق — احفظه في OneDrive العمل.</div></div>
     </div>
   </div>
   <div id="tvRevModal" class="tvUpModal">
@@ -13096,6 +13106,75 @@ async function tvUpEnsureCreds(){
   if(!r||!r.ok){ $("tvUpPass").value=""; throw new Error((r&&r.msg)||"بيانات دخول غير صحيحة أو الحساب ليس أدمن"); }
   tvUpCreds={u,p,name:u}; $("tvUpPass").value=""; tvUpRefreshAuth();
 }
+/* ---------- النسخ الاحتياطي من داخل التطبيق (app_backup.sql) ----------
+   تنزيل: كل جداول القاعدة (عدا الجلسات) صفحة صفحة عبر البوابة ⇒ ملف واحد مضغوط gzip، كل سطر JSON:
+   السطر الأول {app,v,at,tables:[{name,rows,lvl}]} ثم {t:"اسم الجدول",rows:[…]} لكل صفحة. لا يمرّ بأي خدمة خارجية.
+   استعادة (بتأكيد مكتوب): كل جدول في النسخة يُستبدل محتواه (أول دفعة تفرّغ وتدرج معاً)، ثم ضبط العدّادات،
+   والمستخدمون آخراً بالدمج (لا يُحذف مستخدم غير موجود في النسخة) — حتى لا يُقفل الأدمن أثناء الاستعادة. */
+let bkBusy=false;
+function bkMsg(t,cls,pc){ const m=$("tvBkMsg"); m.className="tvBkMsg"+(cls?" "+cls:""); m.innerHTML=(t||"")+(pc!=null?`<div class="tvBkBar"><i style="width:${Math.max(2,Math.min(100,pc))}%"></i></div>`:""); }
+function bkLock(on){ bkBusy=on; $("tvBkGo").disabled=on; $("tvBkRs").classList.toggle("dis",on); }
+async function bkRpc(fn,args){
+  await tvUpEnsureCreds(); tvUpMsg("");
+  let r; try{ r=await sbCall(fn,Object.assign({p_admin:tvUpCreds.u,p_pass:tvUpCreds.p},args||{})); }
+  catch(e){ const m=String((e&&e.message)||e); throw new Error(/API_NOFN|HTTP 404|Could not find/.test(m)?"شغّل app_backup.sql على القاعدة أولاً (ثم app_security.sql)":m); }
+  if(!r||r.ok===false){ const m=(r&&r.msg)||"استجابة فارغة"; if(/صلاحية مدير/.test(m)){ tvUpCreds=null; if(CURPASS&&SESSION&&SESSION.admin) CURPASS=""; tvUpRefreshAuth(); } throw new Error(m+(/صلاحية مدير/.test(m)?" — أدخل اسم مستخدم أدمن وكلمة مروره أعلاه":"")); }
+  return r;
+}
+async function bkDownload(){
+  if(bkBusy) return; bkLock(true);
+  try{
+    bkMsg("جارٍ قراءة قائمة الجداول…","",0);
+    const L=await bkRpc("admin_backup_list",{}), T=L.tables||[], total=T.reduce((a,t)=>a+(+t.rows||0),0)||1;
+    const parts=[JSON.stringify({app:"SalesPlace",v:1,at:L.at,db:L.db,tables:T})+"\n"]; let done=0, n=0;
+    for(const t of T){ let after="";
+      for(;;){ const r=await bkRpc("admin_backup_rows",{p_table:t.name,p_after:after,p_limit:4000}); const rows=r.rows||[];
+        if(rows.length) parts.push(JSON.stringify({t:t.name,rows})+"\n");
+        done+=rows.length; n+=rows.length; bkMsg(`جارٍ النسخ: <b>${t.name}</b> — ${fmt(n)} صف`,"",done/total*100);
+        if(r.done||!r.last) break; after=r.last; } }
+    let blob=new Blob(parts,{type:"application/x-ndjson"}), ext="json";
+    if(typeof CompressionStream!=="undefined"){ blob=await new Response(blob.stream().pipeThrough(new CompressionStream("gzip"))).blob(); ext="json.gz"; }
+    const d=new Date(), pad=x=>String(x).padStart(2,"0"), name=`nhc_backup_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.${ext}`;
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000);
+    bkMsg(`✓ تم: <b>${name}</b> — ${fmt(T.length)} جدولاً · ${fmt(n)} صف · ${(blob.size/1048576).toFixed(1)} MB. احفظه في OneDrive العمل (فيه بيانات المستخدمين — لا تشاركه).`,"ok");
+  }catch(e){ bkMsg("تعذّر النسخ: "+((e&&e.message)||e),"err"); }
+  bkLock(false);
+}
+async function bkReadLines(file,onLine){
+  let stream=file.stream(); const gz=/\.gz$/i.test(file.name);
+  if(gz){ if(typeof DecompressionStream==="undefined") throw new Error("المتصفح لا يدعم فك الضغط — استعمل Chrome أو Edge"); stream=stream.pipeThrough(new DecompressionStream("gzip")); }
+  const rd=stream.pipeThrough(new TextDecoderStream()).getReader(); let buf="";
+  for(;;){ const {value,done}=await rd.read(); if(done) break; buf+=value; let i;
+    while((i=buf.indexOf("\n"))>=0){ const ln=buf.slice(0,i); buf=buf.slice(i+1); if(ln.trim()) await onLine(JSON.parse(ln)); } }
+  if(buf.trim()) await onLine(JSON.parse(buf));
+}
+async function bkRestore(file){
+  if(bkBusy||!file) return;
+  /* قراءة أولى: الرأس فقط للتأكيد */
+  let head=null; try{ await bkReadLines(file,async o=>{ if(!head){ head=o; throw new Error("__HEAD__"); } }); }catch(e){ if(String(e.message)!=="__HEAD__"){ bkMsg("الملف ليس نسخة احتياطية صالحة: "+e.message,"err"); return; } }
+  if(!head||head.app!=="SalesPlace"||!Array.isArray(head.tables)){ bkMsg("الملف ليس نسخة احتياطية من هذا التطبيق","err"); return; }
+  const when=head.at?new Date(head.at).toLocaleString("ar-SA-u-nu-latn"):"—", rows=head.tables.reduce((a,t)=>a+(+t.rows||0),0);
+  const ok=prompt(`استعادة نسخة ${when}\n${fmt(head.tables.length)} جدولاً · ${fmt(rows)} صف\n\nسيُستبدل محتوى هذه الجداول بالكامل بما في النسخة (والبيانات الأحدث منها ستضيع).\nخذ نسخة احتياطية الآن أولاً إن لم تفعل.\n\nللتأكيد اكتب: استعادة`);
+  if((ok||"").trim()!=="استعادة"){ bkMsg("أُلغيت الاستعادة."); return; }
+  bkLock(true);
+  try{
+    const live=new Set(((await bkRpc("admin_backup_list",{})).tables||[]).map(t=>t.name)), skip=head.tables.filter(t=>!live.has(t.name)).map(t=>t.name);
+    const use=head.tables.filter(t=>live.has(t.name));
+    /* 1) الجداول التي تشير لغيرها (مفتاح أجنبي) تُفرَّغ أولاً، الأعمق قبل غيره */
+    const reset=async t=>{ for(let k=0;k<500;k++){ const r=await bkRpc("admin_backup_restore",{p_table:t,p_rows:[],p_reset:true}); if(!r.more) return; } };
+    for(const t of use.filter(t=>(t.lvl||0)>0).sort((a,b)=>(b.lvl||0)-(a.lvl||0))){ bkMsg(`جارٍ تفريغ ${t.name}…`,"",1); await reset(t.name); }
+    /* 2) كل جدول: أول دفعة تفرّغه وتدرج معاً، والباقي إدراج. المستخدمون يُجمعون ويُدمجون آخراً (حتى لا يُقفل حسابك أثناء الاستعادة) */
+    let n=0; const tot=rows||1, useSet=new Set(use.map(t=>t.name)), seen=new Set(), users=[];
+    const put=async(t,ch,first)=>{ for(let k=0;k<500;k++){ const r=await bkRpc("admin_backup_restore",{p_table:t,p_rows:ch,p_reset:!!first}); if(!r.more) return; } };
+    await bkReadLines(file,async o=>{ if(!o.t||!useSet.has(o.t)) return; if(o.t==="app_users"){ users.push(...o.rows); return; }
+      for(let i=0;i<o.rows.length;i+=1000){ const ch=o.rows.slice(i,i+1000); await put(o.t,ch,!seen.has(o.t)); seen.add(o.t); n+=ch.length; bkMsg(`جارٍ الاستعادة: <b>${o.t}</b> — ${fmt(n)} صف`,"",n/tot*100); } });
+    for(const t of use) if(!seen.has(t.name)&&t.name!=="app_users"){ bkMsg(`جارٍ تفريغ ${t.name} (فارغ في النسخة)…`,"",99); await reset(t.name); }
+    await bkRpc("admin_backup_fix_sequences",{});
+    if(users.length){ await bkRpc("admin_backup_restore",{p_table:"app_users",p_rows:users,p_reset:false}); n+=users.length; }
+    bkMsg(`✓ استُعيدت النسخة: ${fmt(use.length)} جدولاً · ${fmt(n)} صف.${skip.length?` جداول في النسخة غير موجودة بالقاعدة (شغّل ملفات SQL الخاصة بها ثم أعد الاستعادة): ${skip.join("، ")}`:""} حدّث الصفحة.`,"ok");
+  }catch(e){ bkMsg("توقفت الاستعادة: "+((e&&e.message)||e)+" — أعد المحاولة بنفس الملف (تبدأ من جديد).","err"); }
+  bkLock(false);
+}
 async function tvUpUndo(at,tot,btn){
   if(!at) return;
   if(!confirm(`حذف سحب الساعة ${tvTime(at)} (${fmt(tot)} عقد) نهائياً من الشاشة؟`)) return;
@@ -13214,6 +13293,8 @@ function tvInitUpload(){
   if(tvUpInited) return; tvUpInited=true;
   const view=$("tvView");
   $("tvUpBtn").onclick=()=>tvUpOpen();
+  $("tvBkGo").onclick=bkDownload;
+  $("tvBkFile").onchange=e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=""; bkRestore(f); };
   $("tvUpClose").onclick=tvUpClose;
   $("tvUpModal").onclick=e=>{ if(e.target===$("tvUpModal")) tvUpClose(); };
   $("tvUpFile").onchange=()=>{ const f=$("tvUpFile").files[0]; if(f) tvUpHandleFile(f); };
