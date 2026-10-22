@@ -2275,6 +2275,21 @@ html.pmMode .tvHmSide{grid-template-rows:auto minmax(0,1fr) auto}
 .hmPop>b{display:block;font-size:14px;color:#0B4332}.hmPop>small{display:block;color:#767368;margin-bottom:6px}
 .hmPop div{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0}.hmPop div b{color:#0B4332}
 .hmPop em{display:block;font-style:normal;font-size:11px;color:#9A6B12;margin-top:4px}
+.pmPill{background:none;border:0}
+.pmPillIn{--c:#0B4332;position:relative;direction:rtl;display:inline-flex;flex-direction:column;align-items:center;background:#fff;border:2px solid var(--c);border-radius:14px;padding:3px 10px 2px;font-size:12px;line-height:1.15;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.22);cursor:pointer;max-width:100%}
+.pmPillIn b{font-size:13.5px;font-weight:900;color:#0B4332;font-variant-numeric:tabular-nums;display:flex;gap:4px;align-items:baseline}
+.pmPillIn b i{font-style:normal;font-size:11px;font-weight:800}.pmPillIn b i.g.dn{color:#C0392B}.pmPillIn b i.g.up{color:#167A55}.pmPillIn b i.g.fl{color:#5e5a4f}
+.pmPillIn i.tu{color:#C0392B;font-style:normal;font-size:10px}.pmPillIn i.td{color:#167A55;font-style:normal;font-size:10px}
+.pmPillIn small{font-size:10px;color:#5e5a4f;max-width:150px;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.pmPillIn:after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-6px;border:6px solid transparent;border-top-color:var(--c);border-bottom:0}
+.pmPillIn.dn b{color:#C0392B}.pmPillIn.up b{color:#167A55}
+.pmPillIn.mk{background:#EAF3FA;border-color:#2A7FB8}.pmPillIn.mk b{color:#1d5f8f}.pmPillIn.mk small{color:#1d5f8f}
+.pmPillIn.cl{border-width:3px;border-radius:999px;padding:4px 12px 3px 30px;box-shadow:0 3px 8px rgba(0,0,0,.28)}
+.pmPillIn.cl em{position:absolute;left:5px;top:50%;transform:translateY(-50%);min-width:20px;height:20px;border-radius:999px;background:#0B4332;color:#fff;font-style:normal;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.pmPillIn.cl:after{border-top-color:var(--c)}
+.leaflet-marker-icon.pmPill{display:flex;justify-content:center;align-items:flex-end;width:auto!important}
+html.tvMob .pmPillIn{font-size:11px;padding:2px 8px 1px}html.tvMob .pmPillIn b{font-size:12px}html.tvMob .pmPillIn small{max-width:120px}
+.pmSpark{margin-top:6px;border-top:1px dashed #e4e0d3;padding-top:4px}.pmSpark svg{display:block;width:100%;height:36px}.pmSpark small{display:block;font-size:11px;color:#767368}.pmSpark i{font-style:normal;font-weight:800}.pmSpark i.dn{color:#C0392B}.pmSpark i.up{color:#167A55}
 .pmLbl{background:none;border:0}
 .pmLblIn{direction:rtl;text-align:center;background:rgba(255,255,255,.93);border:1px solid rgba(11,67,50,.28);border-radius:8px;padding:2px 7px;font-size:11px;line-height:1.25;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.18);color:#1f2937;pointer-events:none}
 .pmLblIn b{display:block;font-weight:800;color:#0B4332;max-width:200px;overflow:hidden;text-overflow:ellipsis}
@@ -11877,10 +11892,12 @@ function pmWeeks(){ if(!tvMkt||!tvMkt.weeks.length) return []; const W=tvMkt.wee
 function pmMarket(){
   const M=new Map(); if(!tvMkt) return M;
   const W=new Set(pmWeeks()), all=tvMkt.weeks, last=all[all.length-1], prev=all[all.length-2];
-  tvMkt.rows.forEach(r=>{ const k=r.ck+"\u0001"+r.type; let o=M.get(k); if(!o){ o={city:r.city,ck:r.ck,type:r.type,deals:0,value:0,sqm:null,sqmWk:0,ex:0,dLast:0,dPrev:0,month:""}; M.set(k,o); }
+  tvMkt.rows.forEach(r=>{ const k=r.ck+"\u0001"+r.type; let o=M.get(k); if(!o){ o={city:r.city,ck:r.ck,type:r.type,deals:0,value:0,sqm:null,sqmWk:0,ex:0,dLast:0,dPrev:0,month:"",ser:[]}; M.set(k,o); }
+    o.ser.push({wk:r.wk,sqm:r.sqm,avg:r.deals?r.value/r.deals:null,deals:r.deals});
     if(W.has(r.wk)){ o.deals+=r.deals; o.value+=r.value; o.ex+=r.excluded; if(r.sqm&&r.wk>=o.sqmWk){ o.sqm=r.sqm; o.sqmWk=r.wk; o.month=r.month||""; } }
     if(r.wk===last) o.dLast+=r.deals; if(prev&&r.wk===prev) o.dPrev+=r.deals; });
-  M.forEach(o=>{ o.avg=o.deals?o.value/o.deals:null; o.trend=o.dPrev?Math.round((o.dLast-o.dPrev)/o.dPrev*100):null; });
+  M.forEach(o=>{ o.avg=o.deals?o.value/o.deals:null; o.trend=o.dPrev?Math.round((o.dLast-o.dPrev)/o.dPrev*100):null; o.ser.sort((a,b)=>a.wk-b.wk);
+    const sv=o.ser.map(x=>x.sqm).filter(Boolean); o.ptrend=sv.length>1&&sv[0]?Math.round((sv[sv.length-1]-sv[0])/sv[0]*100):null; });
   return M;
 }
 function pmOurVal(r){ const B=pm.basis;
@@ -11897,13 +11914,13 @@ function pmCompute(){
   if(!mPS) return null;
   const MK=pmMarket(), rows=hmRows(mScopeOk), P=new Map(), C=new Map();
   rows.forEach(r=>{ const ov=pmOurVal(r), avail=r.avail_p+r.avail_d; const ck=pmCityKey(r.city), mk=MK.get(ck+"\u0001"+r.type);
-    let o=P.get(r.project); if(!o){ o={project:r.project,city:r.city,ck,dest:r.dest,sector:r.sector,kind:r.kind,lat:r.lat,lon:r.lon,p:0,w:0,avail:0,gw:0,gs:0,mw:0,ms:0,types:new Map()}; P.set(r.project,o); }
+    let o=P.get(r.project); if(!o){ o={project:r.project,city:r.city,ck,dest:r.dest,sector:r.sector,kind:r.kind,lat:r.lat,lon:r.lon,p:0,w:0,avail:0,gw:0,gs:0,mw:0,ms:0,types:new Map(),mks:new Map()}; P.set(r.project,o); }
     o.avail+=avail; o.types.set(r.type,(o.types.get(r.type)||0)+avail+r.contracts);
-    const mv=mk?(pm.metric==="sqm"?mk.sqm:mk.avg):null; if(mv){ const gw=Math.max(1,avail); o.mw+=gw; o.ms+=mv*gw; }
+    const mv=mk?(pm.metric==="sqm"?mk.sqm:mk.avg):null; if(mv){ const gw=Math.max(1,avail); o.mw+=gw; o.ms+=mv*gw; o.mks.set(r.type,mk); }
     if(ov){ o.p+=ov.p; o.w+=ov.w; if(mv){ const gw=Math.max(1,avail); o.gw+=gw; o.gs+=(ov.v-mv)/mv*100*gw; } }
     let c=C.get(ck+"\u0001"+r.type); if(!c){ c={city:r.city,ck,type:r.type,sector:r.sector,p:0,w:0,avail:0,proj:new Set(),up:0,un:0}; C.set(ck+"\u0001"+r.type,c); }
     c.avail+=avail; c.proj.add(r.project); if(ov){ c.p+=ov.p; c.w+=ov.w; } if(r.pa_n){ c.up+=r.pa_sum; c.un+=r.pa_n; } });
-  const pts=[...P.values()].map(o=>{ o.v=o.w?o.p/o.w:null; o.gap=o.gw?o.gs/o.gw:null; o.mv=o.mw?o.ms/o.mw:null; o.type=[...o.types].sort((a,b)=>b[1]-a[1]).map(x=>x[0])[0]||""; o.loc=hmLoc(o); return o; }).filter(o=>o.v!=null);
+  const pts=[...P.values()].map(o=>{ o.v=o.w?o.p/o.w:null; o.gap=o.gw?o.gs/o.gw:null; o.mv=o.mw?o.ms/o.mw:null; o.type=[...o.types].sort((a,b)=>b[1]-a[1]).map(x=>x[0])[0]||""; o.mk1=o.mks.get(o.type)||[...o.mks.values()][0]||null; o.loc=hmLoc(o); return o; }).filter(o=>o.v!=null);
   /* المدن: عندنا و/أو بالسوق */
   MK.forEach((m,k)=>{ if(!C.has(k)){ if(!(hmPrm.type==="all"||m.type===hmPrm.type)) return; if(tvRegion&&tvRegion!=="dev"){ const cc=HM_CITY[m.ck]; if(!cc||cc[2]!==tvRegion) return; } C.set(k,{city:m.city,ck:m.ck,type:m.type,sector:(HM_CITY[m.ck]||[])[2]||"",p:0,w:0,avail:0,proj:new Set(),up:0,un:0}); } });
   const cities=[...C.values()].map(c=>{ const m=MK.get(c.ck+"\u0001"+c.type); c.ours=c.w?c.p/c.w:null; c.unit=c.un?c.up/c.un:null; c.mk=m||null; c.mv=m?(pm.metric==="sqm"?m.sqm:m.avg):null;
@@ -11922,7 +11939,8 @@ function pmCompute(){
     const o=w?ps.reduce((a,x)=>a+x.p,0)/w:null, m=mw2?cs.reduce((a,c)=>a+c.mv*c.mk.deals,0)/mw2:null; return {sector:s,ours:o,mkt:m,gap:o&&m?(o-m)/m*100:null,n:ps.length,deals:mw2}; });
   return {pts,mpts,cities,sec,ours,mkt,gap,above,below,withGap:withGap.length,distO,distM,noLoc:pts.filter(p=>!p.loc).length,approx:pts.filter(p=>p.loc&&p.loc.src!=="p").length,noMkt:!tvMkt||!tvMkt.rows.length,weeks:pmWeeks(),lastWk:tvMkt&&tvMkt.weeks.length?tvMkt.weeks[tvMkt.weeks.length-1]:null};
 }
-/* الطبقة الحرارية: متوسط القيم مرجّحاً بالمسافة (نواة غاوسية) على شبكة بكسلات — تُرسم على canvas فوق الخريطة */
+/* طبقة خلية النحل: الخريطة تُقسَّم إلى سداسيات متساوية (حجمها يتبع التقريب)، كل سداسي يأخذ متوسط القيم القريبة مرجّحاً بالمسافة
+   (نواة غاوسية) — حدود واضحة بلا ضباب، ويخفت كلما بعد عن المشاريع. تُرسم على canvas فوق الخريطة */
 const PmHeat=typeof L!=="undefined"?L.Layer.extend({
   initialize:function(pts,color,opts){ this._pts=pts||[]; this._color=color; this._o=opts||{}; },
   onAdd:function(map){ this._map=map; const c=this._c=L.DomUtil.create("canvas","pmHeat"); c.style.position="absolute"; c.style.pointerEvents="none"; map.getPanes().overlayPane.appendChild(c); map.on("moveend zoomend resize",this._draw,this); this._draw(); },
@@ -11930,15 +11948,19 @@ const PmHeat=typeof L!=="undefined"?L.Layer.extend({
   setData:function(pts,color){ this._pts=pts||[]; if(color) this._color=color; this._draw(); },
   _draw:function(){ const map=this._map, c=this._c; if(!map||!c) return; const sz=map.getSize(); L.DomUtil.setPosition(c,map.containerPointToLayerPoint([0,0])); c.width=sz.x; c.height=sz.y;
     const ctx=c.getContext("2d"); ctx.clearRect(0,0,sz.x,sz.y); if(!this._pts.length) return;
-    const off=document.createElement("canvas"); off.width=sz.x; off.height=sz.y; const octx=off.getContext("2d");
-    const z=map.getZoom(), R=Math.max(40,Math.min(130,(this._o.radius||46)+9*(z-5))), s2=2*(R/2.2)*(R/2.2), cell=5;
+    const z=map.getZoom(), R=Math.max(40,Math.min(150,(this._o.radius||46)+10*(z-5))), s2=2*(R/2.1)*(R/2.1);
     const P=this._pts.map(p=>{ const q=map.latLngToContainerPoint([p.lat,p.lon]); return {x:q.x,y:q.y,v:p.v,w:Math.sqrt(Math.max(1,p.w||1))}; }).filter(p=>p.x>-R&&p.y>-R&&p.x<sz.x+R&&p.y<sz.y+R);
     if(!P.length) return;
-    for(let y=0;y<sz.y;y+=cell) for(let x=0;x<sz.x;x+=cell){ let sw=0, sv=0, near=0;
-      for(const p of P){ const dx=p.x-x, dy=p.y-y, d2=dx*dx+dy*dy; if(d2>R*R*1.4) continue; const k=Math.exp(-d2/s2)*p.w; sw+=k; sv+=k*p.v; if(d2<R*R) near+=Math.exp(-d2/s2); }
-      if(sw<=0||near<.02) continue; const a=Math.min(.78,.12+near*.9);
-      octx.fillStyle=this._color(sv/sw); octx.globalAlpha=a; octx.fillRect(x,y,cell,cell); }
-    try{ ctx.filter="blur(4px)"; }catch(e){} ctx.drawImage(off,0,0); try{ ctx.filter="none"; }catch(e){} }
+    const hs=Math.max(11,Math.min(30,(tvMobile?8:10)+2.2*(z-5))), hw=Math.sqrt(3)*hs, vs=1.5*hs, rows=Math.ceil(sz.y/vs)+1, cols=Math.ceil(sz.x/hw)+1;
+    ctx.lineWidth=1; ctx.strokeStyle="rgba(255,255,255,.55)";
+    for(let j=0;j<rows;j++){ const cy=j*vs, ox=(j%2)*hw/2;
+      for(let i=0;i<cols;i++){ const cx=i*hw+ox; let sw=0, sv=0, near=0;
+        for(const p of P){ const dx=p.x-cx, dy=p.y-cy, d2=dx*dx+dy*dy; if(d2>R*R*1.5) continue; const k=Math.exp(-d2/s2)*p.w; sw+=k; sv+=k*p.v; if(d2<R*R) near+=Math.exp(-d2/s2); }
+        if(sw<=0||near<.03) continue; const a=Math.min(.82,.14+near*.9);
+        ctx.fillStyle=this._color(sv/sw); ctx.globalAlpha=a; ctx.beginPath();
+        for(let k=0;k<6;k++){ const ang=Math.PI/180*(60*k-30), x=cx+hs*.96*Math.cos(ang), y=cy+hs*.96*Math.sin(ang); k?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+        ctx.closePath(); ctx.fill(); ctx.stroke(); } }
+    ctx.globalAlpha=1; }
 }):null;
 function pmLegendHtml(H){
   const B=pmBands(), lbl=pm.metric==="sqm"?"ر/م²":"", dist=pm.view==="market"?H.distM:H.distO, tot=dist.reduce((a,b)=>a+b,0)||1;
@@ -11973,50 +11995,76 @@ function pmCityRow(c,i){
 function pmSecHtml(H){
   return `<div class="hmSec"><div class="hmSecR h"><span>المنطقة</span><span>سعرنا</span><span>السوق</span><span>الفجوة</span><span>صفقات السوق</span></div>${H.sec.map(s=>`<div class="hmSecR"><span class="n">${s.sector}</span><b>${pmV(s.ours)}</b><b>${pmV(s.mkt)}</b><span class="${pmGapCls(s.gap)}" style="font-weight:800">${pmGapTxt(s.gap)}</span><span>${fmt(s.deals)}</span></div>`).join("")}</div>`;
 }
+function pmSpark(m){
+  if(!m||!m.ser||m.ser.length<2) return "";
+  const key=pm.metric==="sqm"?"sqm":"avg", pts=m.ser.filter(x=>x[key]); if(pts.length<2) return "";
+  const vs=pts.map(x=>x[key]), lo=Math.min(...vs), hi=Math.max(...vs), W=200, Hh=36, sx=i=>4+i*(W-8)/(pts.length-1), sy=v=>hi===lo?Hh/2:4+(Hh-8)*(1-(v-lo)/(hi-lo));
+  const d=pts.map((x,i)=>`${i?"L":"M"}${sx(i).toFixed(1)},${sy(x[key]).toFixed(1)}`).join(""), last=pts[pts.length-1], first=pts[0], ch=first[key]?Math.round((last[key]-first[key])/first[key]*100):null;
+  return `<div class="pmSpark"><svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}"><path d="${d}" fill="none" stroke="#2A7FB8" stroke-width="2"/><circle cx="${sx(pts.length-1)}" cy="${sy(last[key])}" r="3" fill="#2A7FB8"/></svg>
+    <small>سعر السوق ${pmWkLbl(first.wk)} ← ${pmWkLbl(last.wk)}${ch!=null?` <i class="${ch>0?"dn":ch<0?"up":"fl"}">${ch>0?"▲":ch<0?"▼":"◆"}${Math.abs(ch)}%</i>`:""}</small></div>`;
+}
 function pmPopup(o){
   if(o.mk){ const m=o.mk; return `<div class="hmPop"><b>${o.city} — ${o.type}</b><small>السوق · ${m.month?"سعر المتر لشهر "+m.month:""}</small>
-    <div><span>سعر المتر</span><b>${m.sqm?fmt(Math.round(m.sqm)):"—"}</b></div><div><span>الصفقات بالفترة</span><b>${fmt(m.deals)}</b></div><div><span>متوسط الصفقة</span><b>${m.avg?tvPriceShort(m.avg):"—"}</b></div>${m.ex?`<div><span>مستبعد (شاذ)</span><b>${fmt(m.ex)}</b></div>`:""}</div>`; }
+    <div><span>سعر المتر</span><b>${m.sqm?fmt(Math.round(m.sqm)):"—"}</b></div><div><span>الصفقات بالفترة</span><b>${fmt(m.deals)}</b></div><div><span>متوسط الصفقة</span><b>${m.avg?tvPriceShort(m.avg):"—"}</b></div>${m.ex?`<div><span>مستبعد (شاذ)</span><b>${fmt(m.ex)}</b></div>`:""}${pmSpark(m)}</div>`; }
   return `<div class="hmPop"><b>${o.project}</b><small>${[o.dest,o.city,o.type,o.kind==="nhc"?"NHC":""].filter(Boolean).join(" · ")}</small>
     <div><span>سعرنا (${PM_BASIS.find(x=>x[0]===pm.basis)[1]})</span><b>${pmV(o.v)}</b></div><div><span>السوق (${o.city} · ${o.type})</span><b>${pmV(o.mv)}</b></div><div><span>الفجوة عن السوق</span><b class="${pmGapCls(o.gap)}">${pmGapTxt(o.gap)}</b></div><div><span>المتاح</span><b>${fmt(o.avail)}</b></div>
+    ${pmSpark(o.mk1)}
     ${o.loc&&o.loc.src!=="p"?`<em>الموقع تقريبي (${o.loc.src==="d"?"مركز الوجهة":"مركز المدينة"})</em>`:""}
     ${tvCanOpenProject()?`<button type="button" data-hmproj="${String(o.project).replace(/"/g,"&quot;")}">↗ صفحة المشروع</button>`:""}</div>`;
 }
-/* أسماء الضواحي وأسعارها على الخريطة: على مستوى الدولة ملصق لكل مدينة، وعند التقريب لكل مشروع — بلا تداخل (الأثقل أولاً) */
-function pmLabelItems(H){
-  const V=pm.view, u=pm.metric==="sqm"?" ر/م²":"", items=[];
-  const z=arguments[1]||0;
-  if(V==="market") H.mpts.forEach(m=>items.push({lat:m.lat,lon:m.lon,w:1e7+m.w,t:`سوق ${m.city} · ${m.type}`,s:`${pmV(m.v)}${u} · ${fmt(m.w)} صفقة`,cls:"mk"}));
-  if(z<8){ const C=new Map();
-    H.pts.forEach(o=>{ if(!o.loc) return; let c=C.get(o.ck); if(!c){ c={city:o.city,p:0,w:0,gs:0,gw:0,n:0,lat:0,lon:0}; C.set(o.ck,c); } c.p+=o.p; c.w+=o.w; c.n++; c.lat+=o.loc.lat; c.lon+=o.loc.lon; if(o.gap!=null){ c.gs+=o.gap*Math.max(1,o.avail); c.gw+=Math.max(1,o.avail); } });
-    C.forEach(c=>{ const v=c.w?c.p/c.w:null; if(v==null) return; const g=c.gw?c.gs/c.gw:null;
-      if(V!=="market") items.push({lat:c.lat/c.n,lon:c.lon/c.n,w:c.w+c.n*1e4,t:`${c.city} · ${fmt(c.n)} مشروع`,s:V==="gap"?`${pmV(v)}${u} · ${pmGapTxt(g)} عن السوق`:`${pmV(v)}${u}`,cls:V==="gap"?pmGapCls(g):""}); });
-    return {items,minZ:0}; }
-  H.pts.filter(o=>o.loc).forEach(o=>items.push({lat:o.loc.lat,lon:o.loc.lon,w:o.avail+1,t:o.project,
-    s:V==="gap"?`${pmV(o.v)}${u} · ${pmGapTxt(o.gap)}`:V==="market"?(o.mv!=null?`السوق ${pmV(o.mv)}${u} · عندنا ${pmV(o.v)}`:`عندنا ${pmV(o.v)}${u} · لا سوق`):`${pmV(o.v)}${u}`,cls:o.gap!=null?pmGapCls(o.gap):""}));
-  return {items,minZ:8};
+/* أقراص السعر: كل ضاحية قرص فيه سعرها واسمها ولونه حسب العرض؛ المتقاربة على الشاشة تتجمّع في قرص واحد (العدد والمتوسط)
+   وينفتح بالتقريب أو بالنقر. مدن السوق أقراص زرقاء. يُعاد الحساب مع كل تحريك/تقريب. */
+function pmPillVal(o){ const V=pm.view; return V==="gap"?o.gap:V==="market"?o.mv:o.v; }
+function pmClusters(M,H){
+  const map=M.map, b=map.getBounds().pad(.08), D=tvMobile?54:64, cl=[];
+  H.pts.filter(o=>o.loc&&b.contains([o.loc.lat,o.loc.lon])).sort((a,b)=>b.avail-a.avail).forEach(o=>{
+    const q=map.latLngToContainerPoint([o.loc.lat,o.loc.lon]);
+    let c=cl.find(c=>Math.hypot(c.x-q.x,c.y-q.y)<D);
+    if(!c){ c={x:q.x,y:q.y,items:[],lat:o.loc.lat,lon:o.loc.lon}; cl.push(c); }
+    c.items.push(o); });
+  return cl;
+}
+function pmClusterName(items){
+  const u=(k)=>[...new Set(items.map(o=>o[k]).filter(Boolean))];
+  const d=u("dest"), c=u("city"), sct=u("sector");
+  if(d.length===1&&d[0]) return d[0]; if(c.length===1) return c[0]; if(sct.length===1) return sct[0]+" · "+fmt(c.length)+" مدن"; return fmt(c.length)+" مدن";
 }
 function pmLabels(M){
   if(!M.lbl) return; M.lbl.clearLayers(); const H=M.pmH; if(!H||hmPrm.layer!=="price") return;
-  const map=M.map, z=map.getZoom(), {items}=pmLabelItems(H,z), b=map.getBounds().pad(.05), placed=[], ch=tvMobile?5.6:6.3;
-  items.filter(i=>b.contains([i.lat,i.lon])).sort((a,b)=>b.w-a.w).forEach(i=>{
-    const q=map.latLngToContainerPoint([i.lat,i.lon]), W=Math.min(214,Math.max(i.t.length,i.s.length)*ch+18), Hh=tvMobile?28:32, r={x:q.x-W/2,y:q.y+7,w:W,h:Hh};
-    if(placed.some(p=>!(r.x+r.w<p.x||p.x+p.w<r.x||r.y+r.h<p.y||p.y+p.h<r.y))) return; placed.push(r);
-    L.marker([i.lat,i.lon],{icon:L.divIcon({className:"pmLbl",html:`<div class="pmLblIn ${i.cls}"><b>${i.t}</b><span>${i.s}</span></div>`,iconSize:[W,Hh],iconAnchor:[W/2,-7]}),interactive:false,keyboard:false}).addTo(M.lbl); });
+  const map=M.map, V=pm.view, u=pm.metric==="sqm"?"":"", color=V==="gap"?pmColorGap:pmColorVal;
+  const ch=tvMobile?5.4:6.2, est=(a,b)=>Math.min(230,Math.max(a.length*1.25,b.length)*ch+26);
+  const pill=(lat,lon,html,cls,col,onClick,w)=>{ const mk=L.marker([lat,lon],{icon:L.divIcon({className:"pmPill",html:`<div class="pmPillIn ${cls}" style="--c:${col}">${html}</div>`,iconSize:[w,34],iconAnchor:[w/2,40]}),keyboard:false,zIndexOffset:cls==="cl"?500:0}); mk.on("click",onClick); mk.addTo(M.lbl); return mk; };
+  const clusters=pmClusters(M,H), D=tvMobile?54:64;
+  if(V==="market"){ const b=map.getBounds().pad(.08); H.mpts.filter(m=>b.contains([m.lat,m.lon])).forEach(m=>{
+    const q=map.latLngToContainerPoint([m.lat,m.lon]); if(clusters.some(c=>Math.hypot(c.x-q.x,c.y-q.y)<D*1.3)) return;   /* قرص الضواحي القريب يحمل سعر السوق */
+    const t=pmV(m.v), sub=`سوق ${m.city} · ${m.type} · ${fmt(m.w)} صفقة`;
+    pill(m.lat,m.lon,`<b>${t}</b><small>${sub}${m.mk.ptrend!=null?` <i class="${m.mk.ptrend>0?"tu":m.mk.ptrend<0?"td":""}">${m.mk.ptrend>0?"▲":m.mk.ptrend<0?"▼":""}</i>`:""}</small>`,"mk","#2A7FB8",()=>L.popup({maxWidth:260}).setLatLng([m.lat,m.lon]).setContent(pmPopup(m)).openOn(map),est(t,sub)); }); }
+  clusters.forEach(c=>{
+    if(c.items.length===1){ const o=c.items[0], v=pmPillVal(o), col=v==null?"#bdb7a8":color(v), tr=o.mk1&&o.mk1.ptrend!=null?o.mk1.ptrend:null;
+      const t=pmV(V==="market"?o.mv:o.v)+(V==="gap"?" "+pmGapTxt(o.gap):""), sub=(V==="market"?"سوق ":"")+o.project;
+      pill(o.loc.lat,o.loc.lon,`<b>${pmV(V==="market"?o.mv:o.v)}${V==="gap"?` <i class="g ${pmGapCls(o.gap)}">${pmGapTxt(o.gap)}</i>`:""}${tr!=null&&V!=="gap"?` <i class="${tr>0?"tu":tr<0?"td":""}">${tr>0?"▲":tr<0?"▼":""}</i>`:""}</b><small>${sub}</small>`,
+        V==="gap"?pmGapCls(o.gap):"",col,()=>L.popup({maxWidth:260}).setLatLng([o.loc.lat,o.loc.lon]).setContent(pmPopup(o)).openOn(map),est(t,sub)); return; }
+    const w=c.items.reduce((a,o)=>a+Math.max(1,o.avail),0), vals=c.items.filter(o=>pmPillVal(o)!=null), vw=vals.reduce((a,o)=>a+Math.max(1,o.avail),0);
+    const v=vw?vals.reduce((a,o)=>a+pmPillVal(o)*Math.max(1,o.avail),0)/vw:null, col=v==null?"#8a8574":color(v);
+    const lat=c.items.reduce((a,o)=>a+o.loc.lat,0)/c.items.length, lon=c.items.reduce((a,o)=>a+o.loc.lon,0)/c.items.length;
+    const t=V==="gap"?pmGapTxt(v):pmV(v), sub=(V==="market"?"سوق ":"")+pmClusterName(c.items)+" · "+fmt(c.items.length)+" ضاحية";
+    pill(lat,lon,`<em>${fmt(c.items.length)}</em><b>${t}</b><small>${sub}</small>`,"cl",col,
+      ()=>map.flyToBounds(L.latLngBounds(c.items.map(o=>[o.loc.lat,o.loc.lon])).pad(.3),{maxZoom:Math.min(14,map.getZoom()+3),duration:.6}),est(t,sub)+26); });
 }
 function pmDraw(id,H){
   const M=hmMapFor(id); if(!M) return;
   M.map.invalidateSize(); M.layer.clearLayers();
   if(!M.lbl){ M.lbl=L.layerGroup().addTo(M.map); M.map.on("moveend zoomend",()=>pmLabels(M)); } M.pmH=H;
   /* ضواحينا تُرسم دائماً بكل العروض؛ العرض يغيّر اللون فقط: سعرنا · سعر السوق لمدينة الضاحية ونوعها · الفجوة */
-  const V=pm.view, pv=o=>V==="gap"?o.gap:V==="market"?o.mv:o.v, ours=H.pts.filter(o=>o.loc), colored=ours.filter(o=>pv(o)!=null);
-  const heatPts=colored.map(o=>({lat:o.loc.lat,lon:o.loc.lon,v:pv(o),w:o.avail+1}));
+  const V=pm.view, ours=H.pts.filter(o=>o.loc), colored=ours.filter(o=>pmPillVal(o)!=null);
+  const heatPts=colored.map(o=>({lat:o.loc.lat,lon:o.loc.lon,v:pmPillVal(o),w:o.avail+1}));
   if(V==="market"){ const has=new Set(colored.map(o=>o.ck+"\u0001"+o.type)); H.mpts.forEach(m=>{ if(!has.has(pmCityKey(m.city)+"\u0001"+m.type)) heatPts.push({lat:m.lat,lon:m.lon,v:m.v,w:m.w}); }); }
   const color=V==="gap"?pmColorGap:pmColorVal;
   if(PmHeat){ if(!M.heat){ M.heat=new PmHeat(heatPts,color,{radius:46}); M.heat.addTo(M.map); } else { M.heat._o.radius=46; M.heat.setData(heatPts,color); } }
-  const mx=Math.max(1,...ours.map(p=>p.avail));
-  if(V==="market"){ const dm=Math.max(1,...H.mpts.map(m=>m.w)); H.mpts.forEach(m=>L.circleMarker([m.lat,m.lon],{radius:8+14*Math.sqrt(m.w/dm),color:"#2A7FB8",weight:2,dashArray:"4 3",fillColor:color(m.v),fillOpacity:.25,opacity:.9}).bindPopup(pmPopup(m),{maxWidth:260}).addTo(M.layer)); }
-  ours.forEach(o=>{ const v=pv(o), col=v==null?"#bdb7a8":color(v), rad=4+8*Math.sqrt(o.avail/mx);
-    L.circleMarker([o.loc.lat,o.loc.lon],{radius:rad,color:"#1f2937",weight:1,fillColor:col,fillOpacity:.9,opacity:.7}).bindPopup(pmPopup(o),{maxWidth:260}).addTo(M.layer); });
+  if(V==="market"){ const dm=Math.max(1,...H.mpts.map(m=>m.w)); H.mpts.forEach(m=>L.circleMarker([m.lat,m.lon],{radius:8+14*Math.sqrt(m.w/dm),color:"#2A7FB8",weight:2,dashArray:"4 3",fillColor:color(m.v),fillOpacity:.2,opacity:.9}).bindPopup(pmPopup(m),{maxWidth:260}).addTo(M.layer)); }
+  /* نقطة الموقع الدقيق تحت كل قرص */
+  ours.forEach(o=>{ const v=pmPillVal(o), col=v==null?"#bdb7a8":color(v);
+    L.circleMarker([o.loc.lat,o.loc.lon],{radius:3.5,color:"#1f2937",weight:1,fillColor:col,fillOpacity:1,opacity:.8}).bindPopup(pmPopup(o),{maxWidth:260}).addTo(M.layer); });
   pmLabels(M);
   const all=ours.map(o=>[o.loc.lat,o.loc.lon]).concat(V==="market"?H.mpts.map(m=>[m.lat,m.lon]):[]), fk="pm|"+(tvRegion||"all")+"|"+all.length;
   if(all.length&&M.fitKey!==fk){ M.map.fitBounds(L.latLngBounds(all).pad(.12),{maxZoom:10}); M.fitKey=fk; }

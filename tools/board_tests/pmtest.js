@@ -131,7 +131,7 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
     console.log('kpi:',await tx('#tvHmHot')); console.log('legend:',(await tx('#tvHmLegend')).slice(0,200));
     console.log('cities:',(await tx('#tvHmCold')).slice(0,300)); console.log('sec:',await tx('#tvHmSec'));
     console.log('OVERFLOW:',await ov()); await page.screenshot({path:D+'/gap.png'});
-    const lbls=async id=>page.evaluate(id=>[...document.querySelectorAll('#'+id+' .pmLblIn')].map(e=>e.textContent.trim()),id);
+    const lbls=async id=>page.evaluate(id=>[...document.querySelectorAll('#'+id+' .pmPillIn')].map(e=>e.textContent.trim()),id);
     console.log('labels country:',(await lbls('tvHmMap')).slice(0,6));
     await page.evaluate(()=>{ const c=HM_CITY['الرياض']; hmMaps.tvHmMap.map.setView([c[0],c[1]],10); }); await page.waitForTimeout(900);
     console.log('labels riyadh z10:',(await lbls('tvHmMap')).slice(0,8)); await page.screenshot({path:D+'/gap_riyadh.png'});
