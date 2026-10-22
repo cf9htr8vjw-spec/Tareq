@@ -131,10 +131,15 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
     console.log('kpi:',await tx('#tvHmHot')); console.log('legend:',(await tx('#tvHmLegend')).slice(0,200));
     console.log('cities:',(await tx('#tvHmCold')).slice(0,300)); console.log('sec:',await tx('#tvHmSec'));
     console.log('OVERFLOW:',await ov()); await page.screenshot({path:D+'/gap.png'});
+    const lbls=async id=>page.evaluate(id=>[...document.querySelectorAll('#'+id+' .pmLblIn')].map(e=>e.textContent.trim()),id);
+    console.log('labels country:',(await lbls('tvHmMap')).slice(0,6));
+    await page.evaluate(()=>{ const c=HM_CITY['الرياض']; hmMaps.tvHmMap.map.setView([c[0],c[1]],10); }); await page.waitForTimeout(900);
+    console.log('labels riyadh z10:',(await lbls('tvHmMap')).slice(0,8)); await page.screenshot({path:D+'/gap_riyadh.png'});
+    await page.evaluate(()=>hmMaps.tvHmMap.fitKey=''); 
     for(const [k,v] of [['view','ours']]){ await page.click(`#tvHmBar button[data-pm="${k}"][data-v="${v}"]`); await page.waitForTimeout(700); }
     console.log('ours legend:',(await tx('#tvHmLegend')).slice(0,200)); console.log('OVERFLOW:',await ov()); await page.screenshot({path:D+'/ours.png'});
     await page.click('#tvHmBar button[data-pm="view"][data-v="market"]'); await page.click('#tvHmBar button[data-pm="mper"][data-v="w"]'); await page.waitForTimeout(700);
-    console.log('market title:',await tx('#tvHmTitle'),'| markers:',await layers('tvHmMap')); console.log('market cities:',(await tx('#tvHmCold')).slice(0,200)); await page.screenshot({path:D+'/market.png'});
+    console.log('market title:',await tx('#tvHmTitle'),'| markers:',await layers('tvHmMap'),'| labels:',(await lbls('tvHmMap')).slice(0,4)); console.log('market cities:',(await tx('#tvHmCold')).slice(0,200)); await page.screenshot({path:D+'/market.png'});
     await page.click('#tvHmBar button[data-pm="view"][data-v="gap"]'); await page.click('#tvHmBar button[data-pm="basis"][data-v="full"]'); await page.click('#tvHmBar button[data-pm="metric"][data-v="unit"]'); await page.waitForTimeout(700);
     console.log('gap/full/unit kpi:',(await tx('#tvHmHot')).slice(0,200)); console.log('OVERFLOW:',await ov());
     await page.click('#tvHmBar button[data-hm="type"][data-v="فيلا"]'); await page.waitForTimeout(600); console.log('villa title:',await tx('#tvHmTitle'));
