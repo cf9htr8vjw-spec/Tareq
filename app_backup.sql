@@ -53,8 +53,9 @@ declare r record; v_n bigint; v_out jsonb := '[]'::jsonb;
 begin
   if not app_backup_is_admin(p_admin, p_pass) then return jsonb_build_object('ok', false, 'msg', 'هذا الإجراء يتطلب صلاحية مدير'); end if;
   for r in select * from app_backup_tables() loop
-    /* الجداول الكبيرة: تقدير سريع (للعرض فقط — النسخ نفسه يقرأ كل الصفوف) */
-    select case when c.reltuples >= 20000 then c.reltuples::bigint else null end into v_n from pg_class c where c.oid = format('public.%I', r.name)::regclass;
+    /* الجداول الكبيرة (أكثر من 4MB): تقدير سريع للعرض فقط — العدّ الكامل قد يتجاوز مهلة الطلب. النسخ نفسه يقرأ كل الصفوف */
+    select case when pg_relation_size(c.oid) > 4194304 then case when c.reltuples > 0 then c.reltuples::bigint else (pg_relation_size(c.oid) / 120)::bigint end end
+      into v_n from pg_class c where c.oid = format('public.%I', r.name)::regclass;
     if v_n is null then execute format('select count(*) from public.%I', r.name) into v_n; end if;
     v_out := v_out || jsonb_build_object('name', r.name, 'rows', v_n, 'lvl', r.lvl);
   end loop;
@@ -62,22 +63,24 @@ begin
 end;
 $$;
 
--- صفحة من جدول (ترقيم بموقع الصف ctid — ثابت أثناء النسخ): p_after = آخر ctid من الصفحة السابقة ('' للبداية)
-create or replace function admin_backup_rows(p_admin text, p_pass text, p_table text, p_after text default '', p_limit int default 2000)
+-- صفحة من جدول بنطاق كتل تخزين (TID Range Scan): يقرأ الكتل [p_block, p_block+p_blocks) فقط — زمن ثابت مهما كبر الجدول
+-- (مهلة طلبات Supabase بضع ثوانٍ؛ الترقيم بالترتيب كان يقرأ الجدول كله مع كل صفحة). next = أول كتلة للصفحة التالية، done عند آخر الجدول.
+drop function if exists admin_backup_rows(text, text, text, text, integer);
+create or replace function admin_backup_page(p_admin text, p_pass text, p_table text, p_block integer default 0, p_blocks integer default 64)
 returns jsonb
 language plpgsql
 security definer
 set search_path to 'public', 'extensions'
 as $$
-declare v_rows jsonb; v_last text; v_lim int := least(greatest(coalesce(p_limit, 2000), 1), 5000);
+declare v_rows jsonb; v_b int := greatest(coalesce(p_block, 0), 0); v_n int := least(greatest(coalesce(p_blocks, 64), 1), 4096); v_total bigint;
 begin
   if not app_backup_is_admin(p_admin, p_pass) then return jsonb_build_object('ok', false, 'msg', 'هذا الإجراء يتطلب صلاحية مدير'); end if;
   if not exists (select 1 from app_backup_tables() t where t.name = p_table) then return jsonb_build_object('ok', false, 'msg', 'جدول غير معروف'); end if;
-  execute format(
-    'with p as (select ctid as k, to_jsonb(x) as j from public.%I x where ($1 = '''' or ctid > $1::tid) order by ctid limit $2)
-     select coalesce(jsonb_agg(j order by k), ''[]''::jsonb), (select max(k)::text from p) from p', p_table)
-    into v_rows, v_last using coalesce(p_after, ''), v_lim;
-  return jsonb_build_object('ok', true, 'rows', v_rows, 'last', v_last, 'done', jsonb_array_length(v_rows) < v_lim);
+  v_total := pg_relation_size(format('public.%I', p_table)::regclass) / current_setting('block_size')::int;
+  if v_b >= v_total then return jsonb_build_object('ok', true, 'rows', '[]'::jsonb, 'next', v_b, 'blocks', v_total, 'done', true); end if;
+  execute format('select coalesce(jsonb_agg(to_jsonb(x)), ''[]''::jsonb) from public.%I x where ctid >= format(''(%%s,0)'', $1)::tid and ctid < format(''(%%s,0)'', $2)::tid', p_table)
+    into v_rows using v_b, v_b + v_n;
+  return jsonb_build_object('ok', true, 'rows', v_rows, 'next', v_b + v_n, 'blocks', v_total, 'done', v_b + v_n >= v_total);
 end;
 $$;
 
@@ -314,7 +317,7 @@ $$;
 do $$
 declare f text; v text := 'public' || case when to_regrole('anon') is not null then ', anon' else '' end || case when to_regrole('authenticated') is not null then ', authenticated' else '' end;
 begin
-  foreach f in array array['admin_backup_list(text,text)', 'admin_backup_rows(text,text,text,text,integer)', 'admin_backup_restore(text,text,text,jsonb,boolean)',
+  foreach f in array array['admin_backup_list(text,text)', 'admin_backup_page(text,text,text,integer,integer)', 'admin_backup_restore(text,text,text,jsonb,boolean)',
                            'admin_backup_fix_sequences(text,text)', 'admin_backup_schema(text,text)', 'app_backup_is_admin(text,text)', 'app_backup_tables()', 'app_backup_schema_sql()'] loop
     execute format('revoke all on function %s from %s', f, v);
   end loop;

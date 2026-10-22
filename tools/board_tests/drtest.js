@@ -1,7 +1,7 @@
 // سيناريو ضياع الحساب: نسخة من SRC ← أداة إعادة البناء (شاشة الدخول) ← nhc_rebuild.sql على قاعدة فارغة DST ← استعادة البيانات بحساب restore_tmp ← مطابقة
 const GW=require('/tmp/pwtest/gw.js'); const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
 const cp=require('child_process'), fs=require('fs'); const SRC=process.env.SRC||'t3', DST=process.env.DST||'t5', BASE=process.env.BASE||'http://localhost:8765';
-const psql=(db,sql)=>cp.execFileSync('psql',['-h','/tmp','-p','5499','-U','postgres','-d',db,'-At','-v','ON_ERROR_STOP=1'],{input:sql+';\n',maxBuffer:1<<28}).toString().trim();
+const psql=(db,sql)=>cp.execFileSync('psql',['-h','/tmp','-p','5499','-U','postgres','-d',db,'-At','-q','-v','ON_ERROR_STOP=1'],{input:(process.env.TMO?"set statement_timeout='"+process.env.TMO+"';\n":'')+sql+';\n',maxBuffer:1<<28}).toString().trim();
 const lit=v=>v===null||v===undefined?'null':typeof v==='boolean'||typeof v==='number'?String(v):typeof v==='object'?"'"+JSON.stringify(v).replace(/'/g,"''")+"'::jsonb":"'"+String(v).replace(/'/g,"''")+"'";
 const sums=db=>psql(db,"select string_agg(name||'='||(xpath('/row/m/text()',query_to_xml(format('select md5(coalesce(string_agg(x::text,''|'' order by x::text),'''')) as m from public.%I x',name),false,true,'')))[1]::text,' ' order by name) from app_backup_tables() where name<>'app_users'");
 let DB=SRC;
@@ -18,7 +18,9 @@ let DB=SRC;
   await page.goto(BASE+'/SalesPlace_01.html?tv=1'); await page.waitForTimeout(2500);
   await page.mouse.move(300,300); await page.mouse.move(320,320); await page.waitForTimeout(400); await page.click('#tvUpBtn');
   await page.fill('#tvUpUser','bk'); await page.fill('#tvUpPass','pw');
-  const dlP=page.waitForEvent('download',{timeout:600000}); await page.click('#tvBkGo'); const dl=await dlP; const BK='/tmp/pwtest/dr_'+dl.suggestedFilename(); await dl.saveAs(BK);
+  const dlP=page.waitForEvent('download',{timeout:600000}); await page.click('#tvBkGo');
+  for(let i=0;i<300;i++){ await page.waitForTimeout(2000); const t=await page.textContent('#tvBkMsg'); if(i%10==0) console.log('  msg:',t.slice(0,140)); if(/تم:|تعذّر/.test(t)){ console.log('  final:',t.slice(0,200)); break; } }
+  const dl=await dlP; const BK='/tmp/pwtest/dr_'+dl.suggestedFilename(); await dl.saveAs(BK);
   console.log('1 backup:',(await page.textContent('#tvBkMsg')).slice(0,120)); await page.close();
   // 2) أداة إعادة البناء من شاشة الدخول (بلا جلسة)
   page=await ctx.newPage(); page.on('pageerror',e=>errs.push(e.message)); await page.route('**/rest/v1/**',route);

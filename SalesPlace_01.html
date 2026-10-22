@@ -13160,11 +13160,15 @@ async function bkDownload(){
     bkMsg("جارٍ حفظ هيكل القاعدة (الجداول والدوال والصلاحيات)…","",0);
     const S=await bkRpc("admin_backup_schema",{});
     const parts=[JSON.stringify({app:"SalesPlace",v:2,at:L.at,db:L.db,tables:T,schema:S.sql||""})+"\n"]; let done=0, n=0;
-    for(const t of T){ let after="";
-      for(;;){ const r=await bkRpc("admin_backup_rows",{p_table:t.name,p_after:after,p_limit:4000}); const rows=r.rows||[];
+    /* كل جدول بنطاقات كتل تخزين (حجم الطلب ثابت مهما كبر الجدول)؛ عدد الكتل يتكيّف ليبقى كل طلب نحو 3000 صف */
+    for(const t of T){ let blk=0, nb=64;
+      for(let guard=0;guard<100000;guard++){ let r;
+        try{ r=await bkRpc("admin_backup_page",{p_table:t.name,p_block:blk,p_blocks:nb}); }
+        catch(e){ if(/timeout|مهلة/i.test(String(e.message))&&nb>1){ nb=Math.max(1,nb>>2); continue; } throw new Error(`${t.name}: ${e.message}`); }
+        const rows=r.rows||[];
         if(rows.length) parts.push(JSON.stringify({t:t.name,rows})+"\n");
         done+=rows.length; n+=rows.length; bkMsg(`جارٍ النسخ: <b>${t.name}</b> — ${fmt(n)} صف`,"",done/total*100);
-        if(r.done||!r.last) break; after=r.last; } }
+        if(r.done) break; blk=r.next; nb=Math.max(1,Math.min(1024,Math.round(nb*3000/Math.max(rows.length,50)))); } }
     let blob=new Blob(parts,{type:"application/x-ndjson"}), ext="json";
     if(typeof CompressionStream!=="undefined"){ blob=await new Response(blob.stream().pipeThrough(new CompressionStream("gzip"))).blob(); ext="json.gz"; }
     const d=new Date(), pad=x=>String(x).padStart(2,"0"), name=`nhc_backup_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.${ext}`;
@@ -13200,7 +13204,11 @@ async function bkRestore(file){
     let n=0; const tot=rows||1, useSet=new Set(use.map(t=>t.name)), seen=new Set(), users=[];
     const put=async(t,ch,first)=>{ for(let k=0;k<500;k++){ const r=await bkRpc("admin_backup_restore",{p_table:t,p_rows:ch,p_reset:!!first}); if(!r.more) return; } };
     await bkReadLines(file,async o=>{ if(!o.t||!useSet.has(o.t)) return; if(o.t==="app_users"){ users.push(...o.rows); return; }
-      for(let i=0;i<o.rows.length;i+=1000){ const ch=o.rows.slice(i,i+1000); await put(o.t,ch,!seen.has(o.t)); seen.add(o.t); n+=ch.length; bkMsg(`جارٍ الاستعادة: <b>${o.t}</b> — ${fmt(n)} صف`,"",n/tot*100); } });
+      for(let i=0;i<o.rows.length;){ let sz=Math.min(1000,o.rows.length-i);
+        for(;;){ const ch=o.rows.slice(i,i+sz);
+          try{ await put(o.t,ch,!seen.has(o.t)); break; }
+          catch(e){ if(/timeout|مهلة/i.test(String(e.message))&&sz>25){ sz=Math.max(25,sz>>2); continue; } throw new Error(`${o.t}: ${e.message}`); } }
+        seen.add(o.t); i+=sz; n+=sz; bkMsg(`جارٍ الاستعادة: <b>${o.t}</b> — ${fmt(n)} صف`,"",n/tot*100); } });
     for(const t of use) if(!seen.has(t.name)&&t.name!=="app_users"){ bkMsg(`جارٍ تفريغ ${t.name} (فارغ في النسخة)…`,"",99); await reset(t.name); }
     await bkRpc("admin_backup_fix_sequences",{});
     if(users.length){ await bkRpc("admin_backup_restore",{p_table:"app_users",p_rows:users,p_reset:false}); n+=users.length; }

@@ -1,7 +1,7 @@
 // نسخ احتياطي واستعادة من نافذة الرفع ضد Postgres المحلي (app_backup.sql): DB=t3 (نسخة من t)
 const GW=require('/tmp/pwtest/gw.js'); const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
 const cp=require('child_process'), fs=require('fs'); const DB=process.env.DB||'t3';
-const psql=sql=>cp.execFileSync('psql',['-h','/tmp','-p','5499','-U','postgres','-d',DB,'-At','-v','ON_ERROR_STOP=1'],{input:sql+';\n',maxBuffer:1<<28}).toString().trim();
+const psql=sql=>cp.execFileSync('psql',['-h','/tmp','-p','5499','-U','postgres','-d',DB,'-At','-q','-v','ON_ERROR_STOP=1'],{input:(process.env.TMO?"set statement_timeout='"+process.env.TMO+"';\n":'')+sql+';\n',maxBuffer:1<<28}).toString().trim();
 const lit=v=>v===null||v===undefined?'null':typeof v==='boolean'||typeof v==='number'?String(v):typeof v==='object'?"'"+JSON.stringify(v).replace(/'/g,"''")+"'::jsonb":"'"+String(v).replace(/'/g,"''")+"'";
 const counts=()=>psql("select string_agg(name||'='||(xpath('/row/c/text()',query_to_xml(format('select count(*) as c from public.%I',name),false,true,'')))[1]::text,' ' order by name) from app_backup_tables()");
 (async()=>{
@@ -20,7 +20,7 @@ const counts=()=>psql("select string_agg(name||'='||(xpath('/row/c/text()',query
   await page.mouse.move(300,300); await page.mouse.move(320,320); await page.waitForTimeout(400); await page.click('#tvUpBtn'); await page.waitForTimeout(300);
   await page.fill('#tvUpUser','bk'); await page.fill('#tvUpPass','pw');
   const before=counts();
-  const dlP=page.waitForEvent('download',{timeout:400000}); await page.click('#tvBkGo'); for(let i=0;i<200;i++){ await page.waitForTimeout(1500); const t=await page.textContent('#tvBkMsg'); if(i%10==0) console.log('  msg:',t.slice(0,140)); if(/تم|تعذّر/.test(t)) break; }
+  const dlP=page.waitForEvent('download',{timeout:400000}); await page.click('#tvBkGo'); for(let i=0;i<200;i++){ await page.waitForTimeout(1500); const t=await page.textContent('#tvBkMsg'); if(i%4==0) console.log('  msg:',t.slice(0,160)); if(/تم|تعذّر/.test(t)) break; }
   const dl=await dlP;
   const f='/tmp/pwtest/bk_'+dl.suggestedFilename(); await dl.saveAs(f);
   console.log('download:',dl.suggestedFilename(),fs.statSync(f).size,'bytes | msg:',(await page.textContent('#tvBkMsg')).slice(0,160));

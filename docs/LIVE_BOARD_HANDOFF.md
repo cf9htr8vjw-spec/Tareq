@@ -64,7 +64,7 @@
 14. **`tv_product_analytics.sql`** — `tv_product_stats` (لكل مشروع × نموذج × نوع × غرف؛ + `avail_b/avail_n/c30b/c90b/cyb` لخريطة الطلب والمعروض، و`lat/lon/sqa_m` لخريطة الأسعار)، `admin_load_tv_products`، `get_tv_product_stats()` (42 عموداً مضغوطة)، `get_tv_employee_months(p_employee,p_year)` (انظر 5.2).
 
 18. **`app_backup.sql`** — النسخ الاحتياطي من داخل التطبيق (زر «⬇ تنزيل نسخة احتياطية» و«استعادة من نسخة…» أسفل نافذة «⬆ رفع ملف»؛ أدمن فقط):
-    `admin_backup_list` (الجداول: كل public عدا `app_session`، بترتيب المفاتيح الأجنبية `lvl`)، `admin_backup_rows` (صفحات 4000 صف بترقيم `ctid`)،
+    `admin_backup_list` (الجداول: كل public عدا `app_session`، بترتيب المفاتيح الأجنبية `lvl`)، `admin_backup_page` (نطاق كتل تخزين `ctid >= (b,0) and ctid < (b+n,0)` = TID Range Scan بزمن ثابت مهما كبر الجدول؛ التطبيق يكيّف عدد الكتل ليبقى الطلب ~3000 صف ويصغّره عند انتهاء المهلة. **لا تستعمل ترتيب ctid مع limit: يقرأ الجدول كله في كل صفحة ويتجاوز مهلة Supabase — حدث فعلاً 22/10**)،
     `admin_backup_restore` (أول دفعة تفرّغ وتدرج معاً؛ TRUNCATE إن لم يُشر إليه جدول، وإلا حذف بدفعات 20 ألفاً `more`؛ **`app_users` يُدمج بالاسم ولا يُفرّغ، والتطبيق يستعيده آخراً** حتى لا يُقفل الأدمن)،
     `admin_backup_fix_sequences`. الملف `nhc_backup_YYYY-MM-DD_HHMM.json.gz`: سطر رأس {app,v,at,tables} ثم سطر {t,rows} لكل صفحة (gzip بـ CompressionStream).
     **منذ 22/10 الملف يحمل هيكل القاعدة كاملاً** (`admin_backup_schema` ⇐ `app_backup_schema_sql()`: الإضافات، enum، العدّادات، الجداول + `add column if not exists`، القيود، الفهارس، RLS، كل الدوال
@@ -72,7 +72,7 @@
     **ضياع الحساب:** شاشة الدخول ← «🛟 إعادة البناء من نسخة احتياطية» (محلي بالكامل): يولّد `nhc_rebuild.sql` (بكلمة المرور المؤقتة) ونسخة من `SalesPlace_01.html`
     بسطري `SB_URL`/`SB_KEY` للمشروع الجديد (عبر fetch للصفحة؛ من file:// يعطي السطرين للتعديل اليدوي). بعد تشغيل السكربت: دخول `restore_tmp` ← استعادة ⇒ يُحذف `restore_tmp` تلقائياً
     مع دمج المستخدمين. اختبار السيناريو كاملاً: `drtest.js` (يحتاج `python3 -m http.server 8765` من جذر المستودع؛ SRC=t3 ⇒ DST=t5 فارغة؛ يطابق md5 كل الجداول).
-    دوال النسخ مسحوبة من anon/public (تمرّ عبر البوابة فقط). اختبار: `bktest.js` (يمرّر admin_backup_* إلى Postgres المحلي بقاعدة `t3`، نسخ ثم تخريب ثم استعادة ومطابقة md5). سكربتات `tools/backup_supabase.*` (pg_dump) بديل متقدّم.
+    دوال النسخ مسحوبة من anon/public (تمرّ عبر البوابة فقط). الاختبارات بمهلة صارمة: `TMO=1500ms node bktest.js` / `drtest.js`. اختبار: `bktest.js` (يمرّر admin_backup_* إلى Postgres المحلي بقاعدة `t3`، نسخ ثم تخريب ثم استعادة ومطابقة md5). سكربتات `tools/backup_supabase.*` (pg_dump) بديل متقدّم.
 17. **`tv_market.sql`** — صفقات السوق الأسبوعية: `tv_market_weekly(wk,city,unit_type,…)`، `admin_load_tv_market(p_admin,p_pass,p_rows,p_reset)` (يمسح أسابيع الملف نفسها فقط)، `get_tv_market()` (انظر 5.6). يُشغَّل قبل `app_security.sql`.
 
 16. **`app_security.sql`** — **يُشغَّل آخراً وبعد نشر النسخة الجديدة** (يقطع النسخ السابقة فوراً): `app_session`, `login_v2`, `api`, `api_read`, `api_allow`,
