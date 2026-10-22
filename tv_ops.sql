@@ -104,6 +104,20 @@ select r->>'bank', (r->>'ord')::int, r->>'month', r->'data'
 from jsonb_array_elements('[{"bank": "alinma", "ord": 1, "month": "سبتمبر 2026م", "data": {"key": "alinma", "name": "مصرف الانماء", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.0395, "sub_nt": 0.0505, "uns_t": 0.0395, "uns_nt": 0.0505}, "non_transfer": true, "note": null, "init": {"min_margin": false, "easy_inst": true, "support_eq": true, "mod": true, "dhura": true, "guarantee": true}, "pol": {"amount": "10,000,000", "term": "30 سنة", "age": "75 سنة", "sal": {"gov_t": "3,000", "gov_nt": "6000", "pvt_t": "3,000", "pvt_nt": "6000", "ret_t": "3000", "ret_nt": "7000"}, "svc": {"gov_t": "شهر", "gov_nt": "6أشهر", "pvt_t": "3اشهر", "pvt_nt": "12شهر"}}}}, {"bank": "saib", "ord": 2, "month": "سبتمبر 2026م", "data": {"key": "saib", "name": "البنك الاستثمار", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.0416, "sub_nt": null, "uns_t": 0.0416, "uns_nt": null}, "non_transfer": false, "note": null, "init": {"min_margin": false, "easy_inst": false, "support_eq": false, "mod": true, "dhura": false, "guarantee": true}, "pol": {"amount": "200,0000 - 4,000,000", "term": "25", "age": "21-75", "sal": {"gov_t": "5,000", "gov_nt": "لا يوجد", "pvt_t": "5,000", "pvt_nt": "لا يوجد", "ret_t": "5,000", "ret_nt": "لا يوجد"}, "svc": {"gov_t": "بدون حد ادنى", "gov_nt": "لا يوجد", "pvt_t": "3اشهر", "pvt_nt": "لا يوجد"}}}}, {"bank": "jazira", "ord": 3, "month": "سبتمبر 2026م", "data": {"key": "jazira", "name": "بنك الجزيرة", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.045, "sub_nt": 0.0464, "uns_t": 0.045, "uns_nt": 0.0464}, "non_transfer": true, "note": null, "init": {"min_margin": false, "easy_inst": false, "support_eq": true, "mod": false, "dhura": false, "guarantee": null}, "pol": {"amount": "8,000,000", "term": "25 سنة", "age": "75 سنه", "sal": {"gov_t": "3,000", "gov_nt": "7500", "pvt_t": "3,000", "pvt_nt": "7500", "ret_t": "3,000", "ret_nt": "7500"}, "svc": {"gov_t": "من اول تعيين", "gov_nt": "6 اشهر", "pvt_t": "6 اشهر", "pvt_nt": "6 اشهر"}}}}, {"bank": "anb", "ord": 4, "month": "سبتمبر 2026م", "data": {"key": "anb", "name": "البنك العربي", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.0449, "sub_nt": null, "uns_t": 0.0449, "uns_nt": null}, "non_transfer": false, "note": null, "init": {"min_margin": false, "easy_inst": false, "support_eq": false, "mod": true, "dhura": false, "guarantee": true}, "pol": {"amount": "200,000 - 5,000,000", "term": "5سنوات- 30 سنة", "age": "18- 75", "sal": {"gov_t": "7,000", "gov_nt": "لايوجد", "pvt_t": "7,000", "pvt_nt": "لايوجد", "ret_t": "5,000", "ret_nt": "لا يوجد"}, "svc": {"gov_t": "شهر", "gov_nt": "لايوجد", "pvt_t": "3أشهر", "pvt_nt": "لايوجد"}}}}, {"bank": "alt", "ord": 5, "month": "سبتمبر 2026م", "data": {"key": "alt", "name": "التمويل البديل - البنك الأهلي", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.0375, "sub_nt": 0.0375, "uns_t": null, "uns_nt": null}, "non_transfer": true, "note": "الشروط : - تحديد سقف سعر الوحدة السكنية بما لا يتجاوز 1,150,000 ريال سعودي", "init": {"min_margin": false, "easy_inst": false, "support_eq": true, "mod": true, "dhura": false, "guarantee": true}, "pol": {"amount": "220,000- 3,500,000", "term": "10سنة - 30 سنة", "age": "20 - 75", "sal": {"gov_t": "3,000", "gov_nt": "3000", "pvt_t": "3,000", "pvt_nt": "3000", "ret_t": "3,000", "ret_nt": "3000"}, "svc": {"gov_t": "فور التعيين", "gov_nt": "فور التعيين", "pvt_t": "3أشهر", "pvt_nt": "3أشهر"}}}}, {"bank": "snb", "ord": 6, "month": "سبتمبر 2026م", "data": {"key": "snb", "name": "البنك الأهلي", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.0468, "sub_nt": 0.0518, "uns_t": 0.0518, "uns_nt": 0.0568}, "non_transfer": true, "note": "2.99%", "init": {"min_margin": false, "easy_inst": true, "support_eq": true, "mod": true, "dhura": true, "guarantee": false}, "pol": {"amount": "100,000 - 7,000,000", "term": "سنة - 30 سنة", "age": "20 - 75", "sal": {"gov_t": "5,000", "gov_nt": "10000", "pvt_t": "5,000", "pvt_nt": "10000", "ret_t": "4,000", "ret_nt": "X"}, "svc": {"gov_t": "شهر", "gov_nt": "12أشهر", "pvt_t": "3أشهر", "pvt_nt": "12أشهر"}}}}, {"bank": "riyad", "ord": 7, "month": "سبتمبر 2026م", "data": {"key": "riyad", "name": "بنك الرياض", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.046, "sub_nt": 0.0465, "uns_t": 0.049, "uns_nt": 0.057}, "non_transfer": true, "note": null, "init": {"min_margin": false, "easy_inst": true, "support_eq": true, "mod": false, "dhura": false, "guarantee": false}, "pol": {"amount": "5,000,000", "term": "25", "age": "75", "sal": {"gov_t": "5,000", "gov_nt": "8000", "pvt_t": "5,000", "pvt_nt": "8000", "ret_t": "شهر", "ret_nt": "3أشهر"}, "svc": {"gov_t": "شهر", "gov_nt": "3أشهر", "pvt_t": "3أشهر", "pvt_nt": "3أشهر"}}}}, {"bank": "bilad", "ord": 8, "month": "سبتمبر 2026م", "data": {"key": "bilad", "name": "بنك البلاد", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.046, "sub_nt": 0.056, "uns_t": 0.046, "uns_nt": 0.056}, "non_transfer": true, "note": "يتم إضافة 100 نقطة للعملاء الراغبين في تقسيط الدفعة المقدمة خلال فترة بناء المشروع", "init": {"min_margin": false, "easy_inst": true, "support_eq": true, "mod": true, "dhura": true, "guarantee": false}, "pol": {"amount": "200,000 - 5,000,000", "term": "سنة - 25 سنة", "age": "65-18سنة", "sal": {"gov_t": "3,000", "gov_nt": "15000", "pvt_t": "7,000", "pvt_nt": "15000", "ret_t": "5,000", "ret_nt": "لايوجد"}, "svc": {"gov_t": "شهر", "gov_nt": "شهر", "pvt_t": "6أشهر", "pvt_nt": "12شهر"}}}}, {"bank": "bsf", "ord": 9, "month": "سبتمبر 2026م", "data": {"key": "bsf", "name": "بنك الفرنسي", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.043, "sub_nt": null, "uns_t": 0.043, "uns_nt": null}, "non_transfer": false, "note": "اعلى من 20 الف 4.20%", "init": {"min_margin": false, "easy_inst": true, "support_eq": false, "mod": true, "dhura": false, "guarantee": true}, "pol": {"amount": "5,000,000", "term": "للمدعوم 30 سنة - غير المدعوم 25 سنة", "age": "من 21 الى 80 سنة", "sal": {"gov_t": "4,000", "gov_nt": "لايوجد", "pvt_t": "4,000", "pvt_nt": "لايوجد", "ret_t": "4,000", "ret_nt": "لايوجد"}, "svc": {"gov_t": "شهر", "gov_nt": "لا يوجد", "pvt_t": "3اشهر", "pvt_nt": "لا يوجد"}}}}, {"bank": "rajhi", "ord": 10, "month": "سبتمبر 2026م", "data": {"key": "rajhi", "name": "مصرف الراجحي", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.039, "sub_nt": 0.039, "uns_t": 0.039, "uns_nt": 0.039}, "non_transfer": true, "note": "تبدا من 5 خمس سنوات 2.89% الى 10 سنوات2.99% بدون خاصية المتزايد", "init": {"min_margin": false, "easy_inst": false, "support_eq": true, "mod": true, "dhura": false, "guarantee": true}, "pol": {"amount": "5,000,000", "term": "30 سنة", "age": "77 المتقاعد-75على راس العمل", "sal": {"gov_t": "5,000صافي الراتب بشرط الإجمالي 6000 في التعريف", "gov_nt": "10,000 للمتقاعد -7000 على راس العمل", "pvt_t": "7000 على راس العمل", "pvt_nt": "10000", "ret_t": "6,000", "ret_nt": "10000"}, "svc": {"gov_t": "شهر", "gov_nt": "3أشهر", "pvt_t": "12شهر", "pvt_nt": "سنتين"}}}}, {"bank": "sab", "ord": 11, "month": "سبتمبر 2026م", "data": {"key": "sab", "name": "البنك الأول", "feat": true, "down_pkg": true, "rates": {"sub_t": 0.041, "sub_nt": null, "uns_t": 0.041, "uns_nt": null}, "non_transfer": false, "note": "3.45% للعملاء بصافي راتب 25,000 ريال وأعلى", "init": {"min_margin": false, "easy_inst": true, "support_eq": false, "mod": null, "dhura": true, "guarantee": true, "mod_note": "جاري العمل عليها وسيتم اطلاقها قريباً"}, "pol": {"amount": "150,000- 5,000,000", "term": "سنتين - 30 سنة", "age": "21 - 77", "sal": {"gov_t": "3,500", "gov_nt": "لايوجد", "pvt_t": "3500", "pvt_nt": "لايوجد", "ret_t": "3,500", "ret_nt": "لايوجد"}, "svc": {"gov_t": "3أشهر", "gov_nt": "لايوجد", "pvt_t": "شهر", "pvt_nt": "لايوجد"}}}}]'::jsonb) r
 where not exists (select 1 from tv_bank_policy);
 
+-- تاريخ آمن: نص غير صالح (30 فبراير، شهر 13...) ⇒ null بدل أن يُفشل دفعة الرفع كلها
+create or replace function tv_safe_date(p text)
+returns date
+language plpgsql
+immutable
+as $$
+begin
+  if p is null or btrim(p) = '' then return null; end if;
+  return p::date;
+exception when others then
+  return null;
+end;
+$$;
+
 -- رفع على دفعات (الأولى تمسح القديم) — يتطلّب صلاحية أدمن فعلية
 create or replace function admin_load_tv_ops(p_admin text, p_pass text, p_table text, p_rows jsonb, p_reset boolean)
 returns jsonb
@@ -128,7 +142,7 @@ begin
                               cnt, val_sum, val_n, rate_sum, rate_n, term_sum, term_n, ben, days_sum, days_n,
                               fa_sum, fa_n, sal_sum, sal_n, inst_sum, inst_n, fam_sum, fam_n, job_mil, job_gov, job_pvt, job_oth,
                               dp_n, dp_sum, ik_n, ik_sum, mil_n, mile_n, dh_n, flat_sum, flat_n)
-    select (r->>'d')::date, coalesce(btrim(r->>'p'), ''), coalesce(btrim(r->>'dest'), ''), coalesce(btrim(r->>'s'), ''),
+    select tv_safe_date(r->>'d'), coalesce(btrim(r->>'p'), ''), coalesce(btrim(r->>'dest'), ''), coalesce(btrim(r->>'s'), ''),
            coalesce(r->>'k', 'other'), coalesce(btrim(r->>'ch'), ''), coalesce(btrim(r->>'e'), ''), coalesce(btrim(r->>'w'), ''),
            coalesce(btrim(r->>'b'), ''),
            sum(coalesce((r->>'n')::int, 0)), sum(coalesce((r->>'vs')::numeric, 0)), sum(coalesce((r->>'vn')::int, 0)),
@@ -142,7 +156,7 @@ begin
            sum(coalesce((r->>'mil')::int, 0)), sum(coalesce((r->>'mile')::int, 0)), sum(coalesce((r->>'dh')::int, 0)),
            sum(coalesce((r->>'fls')::numeric, 0)), sum(coalesce((r->>'fln')::int, 0))
     from jsonb_array_elements(p_rows) r
-    where nullif(r->>'d', '') is not null
+    where tv_safe_date(r->>'d') is not null
     group by 1, 2, 3, 4, 5, 6, 7, 8, 9
     on conflict (contract_date, project_name, dest, sector, kind, channel, employee, work, bank) do update set
       cnt = tv_ops_daily.cnt + excluded.cnt, val_sum = tv_ops_daily.val_sum + excluded.val_sum, val_n = tv_ops_daily.val_n + excluded.val_n,
@@ -164,12 +178,12 @@ begin
   elsif p_table = 'book' then
     if p_reset then delete from tv_ops_book where true; end if;
     insert into tv_ops_book (booking_date, project_name, dest, sector, kind, channel, status, cnt, ist, days_sum, days_n)
-    select (r->>'d')::date, coalesce(btrim(r->>'p'), ''), coalesce(btrim(r->>'dest'), ''), coalesce(btrim(r->>'s'), ''),
+    select tv_safe_date(r->>'d'), coalesce(btrim(r->>'p'), ''), coalesce(btrim(r->>'dest'), ''), coalesce(btrim(r->>'s'), ''),
            coalesce(r->>'k', 'other'), coalesce(btrim(r->>'ch'), ''), r->>'st',
            sum(coalesce((r->>'n')::int, 0)), sum(coalesce((r->>'ist')::int, 0)),
            sum(coalesce((r->>'ds')::numeric, 0)), sum(coalesce((r->>'dn')::int, 0))
     from jsonb_array_elements(p_rows) r
-    where nullif(r->>'d', '') is not null and r->>'st' in ('c', 'r')
+    where tv_safe_date(r->>'d') is not null and r->>'st' in ('c', 'r')
     group by 1, 2, 3, 4, 5, 6, 7
     on conflict (booking_date, project_name, dest, sector, kind, channel, status) do update set
       cnt = tv_ops_book.cnt + excluded.cnt, ist = tv_ops_book.ist + excluded.ist,
@@ -186,7 +200,7 @@ begin
     insert into tv_employee_roster (name, district, site, job, type, supervisor, manager, start_date, resigned, resigned_at)
     select distinct on (btrim(r->>'name')) btrim(r->>'name'), coalesce(btrim(r->>'district'), ''), coalesce(btrim(r->>'site'), ''),
            coalesce(btrim(r->>'job'), ''), coalesce(btrim(r->>'type'), ''), coalesce(btrim(r->>'sup'), ''), coalesce(btrim(r->>'mgr'), ''),
-           nullif(r->>'start', '')::date, coalesce((r->>'resigned')::boolean, false), nullif(r->>'resigned_at', '')::date
+           tv_safe_date(r->>'start'), coalesce((r->>'resigned')::boolean, false), tv_safe_date(r->>'resigned_at')
     from jsonb_array_elements(p_rows) r
     where nullif(btrim(r->>'name'), '') is not null
     order by btrim(r->>'name'), coalesce((r->>'resigned')::boolean, false)

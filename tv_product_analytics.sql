@@ -51,6 +51,20 @@ alter table tv_product_stats add column if not exists cyb integer not null defau
 drop policy if exists tv_product_stats_read on tv_product_stats;
 create policy tv_product_stats_read on tv_product_stats for select using (true);
 
+-- تاريخ آمن: نص غير صالح (30 فبراير، شهر 13...) ⇒ null بدل أن يُفشل دفعة الرفع كلها
+create or replace function tv_safe_date(p text)
+returns date
+language plpgsql
+immutable
+as $$
+begin
+  if p is null or btrim(p) = '' then return null; end if;
+  return p::date;
+exception when others then
+  return null;
+end;
+$$;
+
 -- رفع على دفعات (الأولى تمسح القديم) — يتطلّب صلاحية أدمن فعلية
 create or replace function admin_load_tv_products(p_admin text, p_pass text, p_rows jsonb, p_reset boolean)
 returns jsonb
@@ -89,7 +103,7 @@ begin
          nullif(r->>'sz_min', '')::numeric, nullif(r->>'sz_max', '')::numeric,
          coalesce((r->>'sqa_p')::numeric, 0), coalesce((r->>'sqa_s')::numeric, 0),
          coalesce((r->>'sqs_p')::numeric, 0), coalesce((r->>'sqs_s')::numeric, 0),
-         nullif(r->>'launch', '')::date,
+         tv_safe_date(r->>'launch'),
          coalesce((r->>'avail_b')::int, 0), coalesce((r->>'avail_n')::int, 0),
          coalesce((r->>'c30b')::int, 0), coalesce((r->>'c90b')::int, 0), coalesce((r->>'cyb')::int, 0)
   from jsonb_array_elements(p_rows) r

@@ -11616,6 +11616,9 @@ function tvBankKey(name){
 }
 function tvBankName(key,raw){ const b=TV_BANKS.find(x=>x[0]===key); return b?b[1]:(raw?tvBankLabel(raw):"—"); }
 /* حاسبة «Effective Rate to Flat Rate»: القسط الشهري PMT(r/12, سنوات×12)، إجمالي الربح = القسط × الأشهر − المبلغ، الثابتة = (إجمالي الربح ÷ المبلغ) ÷ السنوات */
+/* العكس: النسبة الثابتة (Flat) المعلنة ⇒ الفعلية المكافئة بنفس المدة (القسط نفسه) — بالتنصيف */
+function tvEffFromFlat(f,years){ if(!(f>0)||!(years>0)) return null; const n=Math.round(years*12), emi=(1+f*years)/n;
+  let lo=0, hi=.5; for(let k=0;k<60;k++){ const r=(lo+hi)/2, i=r/12, e=i/(1-Math.pow(1+i,-n)); if(e<emi) lo=r; else hi=r; } return (lo+hi)/2; }
 function tvFlatRate(r,years){ if(!(r>0)||!(years>0)) return null; const n=Math.round(years*12), i=r/12, emi=i/(1-Math.pow(1+i,-n)); return (emi*n-1)/years; }
 function tvBankPolicyParse(wb){
   const sh=re=>wb.SheetNames.find(n=>re.test(tvArNorm(n)));
@@ -11688,11 +11691,12 @@ function tvOpsDerive(D){
     const pub=P&&P.rates?P.rates.sub_t:null, bt=b.tn?Number(b.ts)/Number(b.tn):null;
     return {key:k,name:tvBankName(k,b.b),raw:b.b,n:+b.n,share:pct(+b.n,bTot),d:dlt(+b.n,+b.prev),rate:r,flat:b.fn?Number(b.fs)/Number(b.fn):tvFlatRate(r,bt||term),rn:+b.rn||0,
       fa:b.fan?Number(b.fa)/Number(b.fan):null,sal:b.saln?Number(b.sal)/Number(b.saln):null,mil:(+b.jm||0)+(+b.jg||0)+(+b.jp||0)?(+b.jm||0)/((+b.jm||0)+(+b.jg||0)+(+b.jp||0))*100:null,dpn:+b.dpn||0,
-      term:bt,pub,pubFlat:tvFlatRate(pub,bt||term),pubNt:P&&P.rates?P.rates.sub_nt:null,uns:P&&P.rates?P.rates.uns_t:null,
-      gap:r!=null&&pub!=null?(r-pub)*100:null,P}; });
+      term:bt,pub,pubEff:tvEffFromFlat(pub,bt||term),pubNt:P&&P.rates?P.rates.sub_nt:null,uns:P&&P.rates?P.rates.uns_t:null,P}; });
+  /* المعلن بملف السياسات نسبة ثابتة (Flat) ⇒ الفرق = ثابت العقود − المعلن (ثابت مقابل ثابت) */
+  banks.forEach(b=>{ b.gap=b.flat!=null&&b.pub!=null?(b.flat-b.pub)*100:null; });
   /* جهات معلنة بلا عقود بالفترة — للمقارنة */
   (D.policy||[]).forEach(p=>{ if(seen.has(p.bank)) return; const P=p.data||{}, pub=P.rates?P.rates.sub_t:null;
-    banks.push({key:p.bank,name:tvBankName(p.bank,P.name),n:0,share:0,d:null,rate:null,flat:null,rn:0,term:null,pub,pubFlat:tvFlatRate(pub,term),pubNt:P.rates?P.rates.sub_nt:null,uns:P.rates?P.rates.uns_t:null,gap:null,P}); });
+    banks.push({key:p.bank,name:tvBankName(p.bank,P.name),n:0,share:0,d:null,rate:null,flat:null,rn:0,term:null,pub,pubEff:tvEffFromFlat(pub,term),pubNt:P.rates?P.rates.sub_nt:null,uns:P.rates?P.rates.uns_t:null,gap:null,P}); });
   const cash=(D.banks||[]).find(b=>!b.b);
   const rated=banks.reduce((a,b)=>a+b.rn,0), rateAvg=rated?banks.reduce((a,b)=>a+(b.rate||0)*b.rn,0)/rated:null;
   const jt=(+K.jm||0)+(+K.jg||0)+(+K.jp||0)+(+K.jo||0);
@@ -11968,14 +11972,14 @@ function tvRenderOps(){
       +(!D.has_emp?`<div class="tvEmpty" style="font-size:15px">أضف عمودي «موقع العمل» و«Employee Name» لملف التخصيص ثم ارفعه</div>`:E.length?E.map(empRow).join(""):`<div class="tvEmpty" style="font-size:15px">لا عقود بأسماء موظفين لهذه الفترة</div>`)
       +(D.has_emp&&!M.has?`<div class="tvOpsFinS">ارفع ملف «بيانات الموظفين» من «⬆ رفع ملف» لإظهار من لم يسجّل عقداً</div>`:"");
   /* البنوك: الفعلية بالعقود، والثابت المكافئ بمدة كل عقد من الملف، مقابل المعلن؛ والمبادرات كمجاميع أسفل الجدول */
-  el("tvOpsBankTitle").innerHTML=`البنوك — ${per}${sc?` · ${sc}`:""} <small>الثابت (Flat) بمدة كل عقد من الملف${X.avgTerm?` · متوسط ${Math.round(X.avgTerm*10)/10} سنة`:""} · المعلنة${X.month?` ${X.month}`:""} للمدعوم محوّل الراتب</small><span class="tot">${fmt(X.bTot)} عقد ممول · نقدي ${fmt(X.cash)}</span>`;
+  el("tvOpsBankTitle").innerHTML=`البنوك — ${per}${sc?` · ${sc}`:""} <small>العقود: فعلية (Effective) ⇒ ثابت بمدة كل عقد${X.avgTerm?` (متوسط ${Math.round(X.avgTerm*10)/10} سنة)`:""} · المعلنة${X.month?` ${X.month}`:""} ثابتة (Flat) للمدعوم محوّل الراتب · المقارنة ثابت مقابل ثابت</small><span class="tot">${fmt(X.bTot)} عقد ممول · نقدي ${fmt(X.cash)}</span>`;
   const inits=tvOpsInits(X);
-  el("tvOpsBanks").innerHTML=`<div class="tvOpsBT"><div class="tvOpsB h"><span>الجهة</span><span>العقود</span><span>الحصة</span><span>النسبة الفعلية بالعقود</span><span>الثابت المكافئ بالعقود</span><span>متوسط مدة العقود</span><span>النسبة المعلنة</span><span>ثابت المعلنة</span><span>الفرق: فعلي − معلن</span><span>معلنة: غير محوّل / غير مدعوم</span><span>متوسط التمويل · الراتب</span><span>أدنى راتب حكومي</span></div>`
+  el("tvOpsBanks").innerHTML=`<div class="tvOpsBT"><div class="tvOpsB h"><span>الجهة</span><span>العقود</span><span>الحصة</span><span>النسبة الفعلية بالعقود</span><span>الثابت المكافئ بالعقود</span><span>متوسط مدة العقود</span><span>المعلنة (ثابت)</span><span>المعلنة تعادل فعلي</span><span>الفرق: ثابت العقود − المعلن</span><span>معلنة ثابت: غير محوّل / غير مدعوم</span><span>متوسط التمويل · الراتب</span><span>أدنى راتب حكومي</span></div>`
     +X.banks.map(b=>{ const P=b.P||{}, pol=P.pol||{};
       const tip=[b.raw&&b.raw!==b.name?`بملف التخصيص: ${b.raw}`:"",b.rn?`${fmt(b.rn)} عقداً بنسبة ربح`:"",P.note||""].filter(Boolean).join(" · ");
       return `<div class="tvOpsB${b.n?"":" off"}" title="${tip.replace(/"/g,"&quot;")}"><span class="n">${b.name}</span><b>${b.n?fmt(b.n):"—"}</b><span>${b.n?`${Math.round(b.share)}% ${tvDl(b.d)}`:""}</span>
         <span class="r">${b.rate!=null?tvPctS(b.rate*100):"—"}</span><span class="f">${b.flat!=null?tvPctS(b.flat*100):"—"}</span><span class="s">${b.term?`${Math.round(b.term*10)/10} سنة`:"—"}</span>
-        <span class="r">${b.pub!=null?tvPctS(b.pub*100):"—"}</span><span class="f">${b.pubFlat!=null?tvPctS(b.pubFlat*100):"—"}</span>
+        <span class="f">${b.pub!=null?tvPctS(b.pub*100):"—"}</span><span class="r">${b.pubEff!=null?tvPctS(b.pubEff*100):"—"}</span>
         <span class="g ${b.gap==null?"":b.gap>0.05?"dn":b.gap<-0.05?"up":"fl"}">${b.gap==null?"—":`${b.gap>0?"+":""}${b.gap.toFixed(2)}`}</span>
         <span class="s">${b.pubNt!=null?tvPctS(b.pubNt*100):"—"} / ${b.uns!=null?tvPctS(b.uns*100):"—"}</span>
         <span class="s">${FIN?`${b.fa?tvPriceShort(b.fa):"—"} · ${b.sal?fmt(Math.round(b.sal)):"—"}`:"—"}</span><span class="s">${tvShort((pol.sal&&pol.sal.gov_t)||"—",14)}</span></div>`; }).join("")
@@ -12009,11 +12013,11 @@ function mRenderOps(){
         <div class="mBars">${[["باقة دعم الدفعة المقدمة",F.dpn],["الدعم العيني",F.ikn],["مبادرة العسكريين",F.mil],["الدعم الإضافي للعسكريين",F.mile],["ذرى بلس",F.dh]].filter((p,i)=>i<2||p[1]>0).map(([l,v])=>`<div class="r"><span class="n">${l}</span><span class="bar"><i style="width:${n?v/n*100:0}%;background:#C99A2E"></i></span><span class="v"><b>${fmt(v)}</b>${n?` · ${Math.round(v/n*100)}%`:""}</span></div>`).join("")}</div>
         ${F.instPct?`<div class="mNote">القسط ≈ ${Math.round(F.instPct)}% من الراتب بالمتوسط</div>`:""}</div>`; })():""}
     <div class="mCard"><div class="mCardHd"><b>البنوك — ${per}</b><span>${X.avgTerm?`متوسط المدة ${Math.round(X.avgTerm*10)/10} سنة`:""}</span></div>
-      <div class="mNote">الفعلية = متوسط «نسبة الأرباح» بالعقود · الثابت = Effective→Flat بمدة كل عقد من ملف التخصيص · المعلنة = مدعوم لمحوّل الراتب</div>
+      <div class="mNote">العقود: فعلية (Effective) من ملف التخصيص ⇒ ثابت بمدة كل عقد · المعلنة ثابتة (Flat) للمدعوم محوّل الراتب · الفرق = ثابت العقود − المعلن</div>
       ${X.banks.map(b=>{ const P=b.P||{}, pol=P.pol||{};
         return `<div class="mBank${b.n?"":" off"}"><div class="t"><b>${b.name}</b><span>${b.n?`${fmt(b.n)} عقد · ${Math.round(b.share)}%`:"بلا عقود بالفترة"}</span></div>
-          <div class="g"><div>الفعلية بالعقود<b>${b.rate!=null?tvPctS(b.rate*100):"—"}</b><small>ثابت ${b.flat!=null?tvPctS(b.flat*100):"—"}</small></div><div>المعلنة<b>${b.pub!=null?tvPctS(b.pub*100):"—"}</b><small>ثابت ${b.pubFlat!=null?tvPctS(b.pubFlat*100):"—"}</small></div>
-          <div>الفرق<b class="${b.gap==null?"":b.gap>0.05?"dn":b.gap<-0.05?"up":""}">${b.gap==null?"—":`${b.gap>0?"+":""}${b.gap.toFixed(2)}`}</b><small>نقطة مئوية</small></div></div>
+          <div class="g"><div>الفعلية بالعقود<b>${b.rate!=null?tvPctS(b.rate*100):"—"}</b><small>ثابت ${b.flat!=null?tvPctS(b.flat*100):"—"}</small></div><div>المعلنة (ثابت)<b>${b.pub!=null?tvPctS(b.pub*100):"—"}</b><small>تعادل فعلي ${b.pubEff!=null?tvPctS(b.pubEff*100):"—"}</small></div>
+          <div>الفرق<b class="${b.gap==null?"":b.gap>0.05?"dn":b.gap<-0.05?"up":""}">${b.gap==null?"—":`${b.gap>0?"+":""}${b.gap.toFixed(2)}`}</b><small>ثابت العقود − المعلن</small></div></div>
           <div class="s">${[b.term&&`متوسط مدة العقود ${Math.round(b.term*10)/10} سنة`,FIN&&b.fa&&`التمويل ${tvPriceShort(b.fa)}`,FIN&&b.sal&&`الراتب ${fmt(Math.round(b.sal))}`].filter(Boolean).join(" · ")}</div>
           <div class="s">${[(b.pubNt!=null||b.uns!=null)&&`غير محوّل ${b.pubNt!=null?tvPctS(b.pubNt*100):"—"} · غير مدعوم ${b.uns!=null?tvPctS(b.uns*100):"—"}`,pol.sal&&pol.sal.gov_t&&`أدنى راتب ${pol.sal.gov_t}`].filter(Boolean).join(" · ")}</div></div>`; }).join("")}
       ${!D.has_rate?`<div class="mNote">لا يوجد عمود «نسبة الربح» بملف التخصيص — المعروض النسب المعلنة فقط</div>`:""}</div>`;
@@ -12155,11 +12159,14 @@ function tvAllocDate(v){
   if(v==null||v==="") return null;
   const p2=n=>String(n).padStart(2,"0");
   if(v instanceof Date&&!isNaN(v)) return `${v.getFullYear()}-${p2(v.getMonth()+1)}-${p2(v.getDate())}`;
-  if(typeof v==="number"){ const d=XLSX.SSF.parse_date_code(v); return d?`${d.y}-${p2(d.m)}-${p2(d.d)}`:null; }
-  const t=String(v).trim(); let m;
-  if((m=t.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/))) return `${m[1]}-${p2(m[2])}-${p2(m[3])}`;
-  if((m=t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/))) return `${m[3]}-${p2(m[2])}-${p2(m[1])}`;
-  return null;
+  if(typeof v==="number"){ const d=v>0&&v<80000?XLSX.SSF.parse_date_code(v):null; return d&&d.y>=1990&&d.y<=2100?`${d.y}-${p2(d.m)}-${p2(d.d)}`:null; }
+  const t=String(v).trim(); let m, y, mo, d;
+  if((m=t.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/))){ y=+m[1]; mo=+m[2]; d=+m[3]; }
+  else if((m=t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/))){ y=+m[3]; mo=+m[2]; d=+m[1]; if(mo>12&&d<=12){ const x=mo; mo=d; d=x; } }   /* يوم/شهر، وإن كان الشهر >12 فهو شهر/يوم */
+  else return null;
+  /* تاريخ مستحيل (30 فبراير، شهر 13...) يُهمل بدل أن يُفشل الرفع كله على السيرفر */
+  const dt=new Date(y,mo-1,d);
+  return y>=1990&&y<=2100&&dt.getFullYear()===y&&dt.getMonth()===mo-1&&dt.getDate()===d?`${y}-${p2(mo)}-${p2(d)}`:null;
 }
 function tvAllocAggregate(rows,appNameOf){
   const S=v=>String(v==null?"":v).trim();
@@ -12331,6 +12338,8 @@ function tvAllocAggregate(rows,appNameOf){
   return {opsDaily,opsBook,rateKey,termKey,finKeys:{faKey,salKey,instKey,jobKey,famKey,dpKey,ikKey,milKey,mileKey,dhKey,launchKey},contracts,status,banks:bankKey?banks:null,value:bankKey?value:null,channels,employees,prices,availTypes,products,modelKey,bedsKey,sizeKey,chanKey,empKey,priceKey,bankKey,contractsYear,noDate,secFixed,secUnknown,rows:rows.length};
 }
 /* رفع التجميع: call(fn,body) يضيف بيانات الأدمن (adminCall بالتطبيق، أو sbCall مع بيانات الدخول بالشاشة) */
+/* سبب الفشل كما هو: «شغّل الملف» فقط إن كانت الدالة/الجدول غير موجودة فعلاً، وإلا نص الخطأ من السيرفر */
+function tvUpErrTxt(e,sqlFile){ const m=String((e&&e.message)||e||""); return /404|Could not find|does not exist|API_NOFN/i.test(m)?`شغّل ${sqlFile} على القاعدة`:`السبب: ${m.replace(/^HTTP \d+ — /,"").slice(0,160)}`; }
 async function tvAllocUpload(agg,call,onStatus){
   for(const tbl of ["contracts","status"]){
     const list=agg[tbl]||[], CH=3000;
@@ -12382,7 +12391,7 @@ async function tvAllocUpload(agg,call,onStatus){
           if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
         }
       }
-    }catch(e){ note+=" · تعذّر تحديث الصفحة التشغيلية — شغّل tv_ops.sql على القاعدة"; }
+    }catch(e){ note+=" · تعذّر تحديث الصفحة التشغيلية — "+tvUpErrTxt(e,"tv_ops.sql"); }
   }
   if(agg.products&&agg.products.length){
     try{
@@ -12392,7 +12401,7 @@ async function tvAllocUpload(agg,call,onStatus){
         const r=await call("admin_load_tv_products",{p_rows:list.slice(i,i+CH),p_reset:i===0});
         if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
       }
-    }catch(e){ note+=" · تعذّر تحديث تحليل المنتجات — شغّل tv_product_analytics.sql على القاعدة"; }
+    }catch(e){ note+=" · تعذّر تحديث تحليل المنتجات — "+tvUpErrTxt(e,"tv_product_analytics.sql"); }
   }
   if(agg.banks){
     try{
@@ -12694,7 +12703,7 @@ async function tvUpHandleFile(file){
       try{ await loadSheetJS(); bp=tvBankPolicyParse(XLSX.read(new Uint8Array(await file.arrayBuffer()),{type:"array"})); }catch(_){ bp=null; }
       if(bp){ tvUpPol=bp; $("tvUpAtRow").style.display="none";
         const r20=x=>x!=null?(x*100).toFixed(2)+"%":"—";
-        tvUpMsg(`<b>مميزات وسياسات الجهات التمويلية</b>${bp.month?` · ${bp.month}`:""} · ${fmt(bp.rows.length)} جهة<br>${bp.rows.map(r=>`${tvBankName(r.bank,r.data.name)} ${r20(r.data.rates&&r.data.rates.sub_t)}`).join(" · ")}<br><small>النسبة: المدعوم لمحول الراتب (20 سنة)</small>`);
+        tvUpMsg(`<b>مميزات وسياسات الجهات التمويلية</b>${bp.month?` · ${bp.month}`:""} · ${fmt(bp.rows.length)} جهة<br>${bp.rows.map(r=>`${tvBankName(r.bank,r.data.name)} ${r20(r.data.rates&&r.data.rates.sub_t)}`).join(" · ")}<br><small>النسبة المعلنة ثابتة (Flat): المدعوم لمحوّل الراتب</small>`);
         tvUpUpdateGo(); return; } }
     /* جدول الإيرادات (ملف صغير فيه ورقة «المناطق والمشاريع») */
     if(file.size<=5*1024*1024){ let rv=null;
