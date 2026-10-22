@@ -2290,6 +2290,11 @@ html.pmMode .tvHmSide{grid-template-rows:auto minmax(0,1fr) auto}
 .leaflet-marker-icon.pmPill{display:flex;justify-content:center;align-items:flex-end;width:auto!important}
 html.tvMob .pmPillIn{font-size:11px;padding:2px 8px 1px}html.tvMob .pmPillIn b{font-size:12px}html.tvMob .pmPillIn small{max-width:120px}
 .pmSpark{margin-top:6px;border-top:1px dashed #e4e0d3;padding-top:4px}.pmSpark svg{display:block;width:100%;height:36px}.pmSpark small{display:block;font-size:11px;color:#767368}.pmSpark i{font-style:normal;font-weight:800}.pmSpark i.dn{color:#C0392B}.pmSpark i.up{color:#167A55}
+.pmTxt{background:none;border:0}
+.pmTxtIn{direction:rtl;white-space:nowrap;font-size:13.5px;line-height:1.2;display:flex;gap:5px;align-items:baseline;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 4px #fff,0 1px 2px #fff;cursor:pointer;width:max-content}
+.pmTxtIn b{font-weight:800;color:#1f2937}.pmTxtIn span{font-weight:900;font-variant-numeric:tabular-nums;color:#0B4332}.pmTxtIn small{font-size:10.5px;color:#767368;font-weight:700}
+.pmTxtIn.dn span{color:#C0392B}.pmTxtIn.up span{color:#167A55}.pmTxtIn.fl span{color:#5e5a4f}.pmTxtIn.mk b,.pmTxtIn.mk span{color:#1d5f8f}
+html.tvMob .pmTxtIn{font-size:11px}
 .pmLbl{background:none;border:0}
 .pmLblIn{direction:rtl;text-align:center;background:rgba(255,255,255,.93);border:1px solid rgba(11,67,50,.28);border-radius:8px;padding:2px 7px;font-size:11px;line-height:1.25;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.18);color:#1f2937;pointer-events:none}
 .pmLblIn b{display:block;font-weight:800;color:#0B4332;max-width:200px;overflow:hidden;text-overflow:ellipsis}
@@ -12012,61 +12017,41 @@ function pmPopup(o){
     ${o.loc&&o.loc.src!=="p"?`<em>الموقع تقريبي (${o.loc.src==="d"?"مركز الوجهة":"مركز المدينة"})</em>`:""}
     ${tvCanOpenProject()?`<button type="button" data-hmproj="${String(o.project).replace(/"/g,"&quot;")}">↗ صفحة المشروع</button>`:""}</div>`;
 }
-/* أقراص السعر: كل ضاحية قرص فيه سعرها واسمها ولونه حسب العرض؛ المتقاربة على الشاشة تتجمّع في قرص واحد (العدد والمتوسط)
-   وينفتح بالتقريب أو بالنقر. مدن السوق أقراص زرقاء. يُعاد الحساب مع كل تحريك/تقريب. */
+/* عرض بسيط: نقطة ملوّنة لكل ضاحية (اللون حسب العرض: سعرنا · سعر السوق لمدينتها · الفجوة) وبجانبها الاسم والرقم.
+   بعيداً (تقريب أقل من 8) نقطة لكل مدينة بمتوسطها وعدد ضواحيها؛ قريباً كل ضاحية. الأسماء المتداخلة تُخفى (الأكبر متاحاً أولاً) والنقاط تبقى. */
 function pmPillVal(o){ const V=pm.view; return V==="gap"?o.gap:V==="market"?o.mv:o.v; }
-function pmClusters(M,H){
-  const map=M.map, b=map.getBounds().pad(.08), D=tvMobile?54:64, cl=[];
-  H.pts.filter(o=>o.loc&&b.contains([o.loc.lat,o.loc.lon])).sort((a,b)=>b.avail-a.avail).forEach(o=>{
-    const q=map.latLngToContainerPoint([o.loc.lat,o.loc.lon]);
-    let c=cl.find(c=>Math.hypot(c.x-q.x,c.y-q.y)<D);
-    if(!c){ c={x:q.x,y:q.y,items:[],lat:o.loc.lat,lon:o.loc.lon}; cl.push(c); }
-    c.items.push(o); });
-  return cl;
-}
-function pmClusterName(items){
-  const u=(k)=>[...new Set(items.map(o=>o[k]).filter(Boolean))];
-  const d=u("dest"), c=u("city"), sct=u("sector");
-  if(d.length===1&&d[0]) return d[0]; if(c.length===1) return c[0]; if(sct.length===1) return sct[0]+" · "+fmt(c.length)+" مدن"; return fmt(c.length)+" مدن";
+function pmLabelItems(H,z){
+  const V=pm.view, items=[];
+  if(V==="market") H.mpts.forEach(m=>items.push({lat:m.lat,lon:m.lon,w:1e7+m.w,t:`سوق ${m.city} · ${m.type}`,n:pmV(m.v),x:`${fmt(m.w)} صفقة`,cls:"mk",col:"#2A7FB8",r:7+9*Math.sqrt(m.w/Math.max(1,...H.mpts.map(q=>q.w))),pop:()=>pmPopup(m)}));
+  const color=V==="gap"?pmColorGap:pmColorVal, mx=Math.max(1,...H.pts.map(o=>o.avail));
+  if(z<8){ const C=new Map();
+    H.pts.forEach(o=>{ if(!o.loc) return; let c=C.get(o.ck); if(!c){ c={city:o.city,p:0,w:0,gs:0,gw:0,ms:0,mw:0,n:0,av:0,lat:0,lon:0,items:[]}; C.set(o.ck,c); }
+      c.p+=o.p; c.w+=o.w; c.n++; c.av+=o.avail; c.lat+=o.loc.lat; c.lon+=o.loc.lon; c.items.push(o); const gw=Math.max(1,o.avail);
+      if(o.gap!=null){ c.gs+=o.gap*gw; c.gw+=gw; } if(o.mv!=null){ c.ms+=o.mv*gw; c.mw+=gw; } });
+    C.forEach(c=>{ const v=c.w?c.p/c.w:null; if(v==null) return; const g=c.gw?c.gs/c.gw:null, mv=c.mw?c.ms/c.mw:null, val=V==="gap"?g:V==="market"?mv:v;
+      items.push({lat:c.lat/c.n,lon:c.lon/c.n,w:c.av+c.n*1e4,t:c.city,n:V==="gap"?pmGapTxt(g):pmV(V==="market"?mv:v),x:`${fmt(c.n)} ضاحية`,cls:V==="gap"?pmGapCls(g):"",col:val==null?"#bdb7a8":color(val),r:7+7*Math.sqrt(c.av/Math.max(1,mx*3)),items:c.items}); });
+    return items; }
+  H.pts.filter(o=>o.loc).forEach(o=>{ const v=pmPillVal(o); items.push({lat:o.loc.lat,lon:o.loc.lon,w:o.avail+1,t:o.project,n:V==="gap"?pmGapTxt(o.gap):pmV(V==="market"?o.mv:o.v),x:V==="gap"?pmV(o.v):"",cls:V==="gap"?pmGapCls(o.gap):"",col:v==null?"#bdb7a8":color(v),r:5+6*Math.sqrt(o.avail/mx),pop:()=>pmPopup(o)}); });
+  return items;
 }
 function pmLabels(M){
-  if(!M.lbl) return; M.lbl.clearLayers(); const H=M.pmH; if(!H||hmPrm.layer!=="price") return;
-  const map=M.map, V=pm.view, u=pm.metric==="sqm"?"":"", color=V==="gap"?pmColorGap:pmColorVal;
-  const ch=tvMobile?5.4:6.2, est=(a,b)=>Math.min(230,Math.max(a.length*1.25,b.length)*ch+26);
-  const pill=(lat,lon,html,cls,col,onClick,w)=>{ const mk=L.marker([lat,lon],{icon:L.divIcon({className:"pmPill",html:`<div class="pmPillIn ${cls}" style="--c:${col}">${html}</div>`,iconSize:[w,34],iconAnchor:[w/2,40]}),keyboard:false,zIndexOffset:cls==="cl"?500:0}); mk.on("click",onClick); mk.addTo(M.lbl); return mk; };
-  const clusters=pmClusters(M,H), D=tvMobile?54:64;
-  if(V==="market"){ const b=map.getBounds().pad(.08); H.mpts.filter(m=>b.contains([m.lat,m.lon])).forEach(m=>{
-    const q=map.latLngToContainerPoint([m.lat,m.lon]); if(clusters.some(c=>Math.hypot(c.x-q.x,c.y-q.y)<D*1.3)) return;   /* قرص الضواحي القريب يحمل سعر السوق */
-    const t=pmV(m.v), sub=`سوق ${m.city} · ${m.type} · ${fmt(m.w)} صفقة`;
-    pill(m.lat,m.lon,`<b>${t}</b><small>${sub}${m.mk.ptrend!=null?` <i class="${m.mk.ptrend>0?"tu":m.mk.ptrend<0?"td":""}">${m.mk.ptrend>0?"▲":m.mk.ptrend<0?"▼":""}</i>`:""}</small>`,"mk","#2A7FB8",()=>L.popup({maxWidth:260}).setLatLng([m.lat,m.lon]).setContent(pmPopup(m)).openOn(map),est(t,sub)); }); }
-  clusters.forEach(c=>{
-    if(c.items.length===1){ const o=c.items[0], v=pmPillVal(o), col=v==null?"#bdb7a8":color(v), tr=o.mk1&&o.mk1.ptrend!=null?o.mk1.ptrend:null;
-      const t=pmV(V==="market"?o.mv:o.v)+(V==="gap"?" "+pmGapTxt(o.gap):""), sub=(V==="market"?"سوق ":"")+o.project;
-      pill(o.loc.lat,o.loc.lon,`<b>${pmV(V==="market"?o.mv:o.v)}${V==="gap"?` <i class="g ${pmGapCls(o.gap)}">${pmGapTxt(o.gap)}</i>`:""}${tr!=null&&V!=="gap"?` <i class="${tr>0?"tu":tr<0?"td":""}">${tr>0?"▲":tr<0?"▼":""}</i>`:""}</b><small>${sub}</small>`,
-        V==="gap"?pmGapCls(o.gap):"",col,()=>L.popup({maxWidth:260}).setLatLng([o.loc.lat,o.loc.lon]).setContent(pmPopup(o)).openOn(map),est(t,sub)); return; }
-    const w=c.items.reduce((a,o)=>a+Math.max(1,o.avail),0), vals=c.items.filter(o=>pmPillVal(o)!=null), vw=vals.reduce((a,o)=>a+Math.max(1,o.avail),0);
-    const v=vw?vals.reduce((a,o)=>a+pmPillVal(o)*Math.max(1,o.avail),0)/vw:null, col=v==null?"#8a8574":color(v);
-    const lat=c.items.reduce((a,o)=>a+o.loc.lat,0)/c.items.length, lon=c.items.reduce((a,o)=>a+o.loc.lon,0)/c.items.length;
-    const t=V==="gap"?pmGapTxt(v):pmV(v), sub=(V==="market"?"سوق ":"")+pmClusterName(c.items)+" · "+fmt(c.items.length)+" ضاحية";
-    pill(lat,lon,`<em>${fmt(c.items.length)}</em><b>${t}</b><small>${sub}</small>`,"cl",col,
-      ()=>map.flyToBounds(L.latLngBounds(c.items.map(o=>[o.loc.lat,o.loc.lon])).pad(.3),{maxZoom:Math.min(14,map.getZoom()+3),duration:.6}),est(t,sub)+26); });
+  if(!M.lbl) return; M.lbl.clearLayers(); M.layer.clearLayers(); const H=M.pmH; if(!H||hmPrm.layer!=="price") return;
+  const map=M.map, z=map.getZoom(), items=pmLabelItems(H,z), b=map.getBounds().pad(.08), placed=[], ch=tvMobile?5.6:6.9, LH=tvMobile?16:19;
+  items.filter(i=>b.contains([i.lat,i.lon])).sort((a,b)=>b.w-a.w).forEach(i=>{
+    const dot=L.circleMarker([i.lat,i.lon],{radius:i.r,color:"#fff",weight:2,fillColor:i.col,fillOpacity:1,opacity:1}).addTo(M.layer);
+    if(i.pop) dot.bindPopup(i.pop,{maxWidth:260}); else if(i.items) dot.on("click",()=>map.flyToBounds(L.latLngBounds(i.items.map(o=>[o.loc.lat,o.loc.lon])).pad(.3),{maxZoom:11,duration:.6}));
+    const txt=`${i.t} ${i.n}${i.x?" "+i.x:""}`, W=Math.min(260,txt.length*ch+10), q=map.latLngToContainerPoint([i.lat,i.lon]), r={x:q.x+i.r+4,y:q.y-LH/2,w:W,h:LH};
+    if(placed.some(p=>!(r.x+r.w<p.x||p.x+p.w<r.x||r.y+r.h<p.y||p.y+p.h<r.y))) return; placed.push(r);
+    const mk=L.marker([i.lat,i.lon],{icon:L.divIcon({className:"pmTxt",html:`<div class="pmTxtIn ${i.cls}"><b>${i.t}</b><span style="color:${i.cls?"":i.col}">${i.n}</span>${i.x?`<small>${i.x}</small>`:""}</div>`,iconSize:[W,LH],iconAnchor:[-(i.r+4),LH/2]}),keyboard:false,interactive:!!(i.pop||i.items)});
+    if(i.pop) mk.bindPopup(i.pop,{maxWidth:260}); else if(i.items) mk.on("click",()=>map.flyToBounds(L.latLngBounds(i.items.map(o=>[o.loc.lat,o.loc.lon])).pad(.3),{maxZoom:11,duration:.6}));
+    mk.addTo(M.lbl); });
 }
 function pmDraw(id,H){
   const M=hmMapFor(id); if(!M) return;
-  M.map.invalidateSize(); M.layer.clearLayers();
+  M.map.invalidateSize(); M.layer.clearLayers(); if(M.heat){ M.map.removeLayer(M.heat); M.heat=null; }
   if(!M.lbl){ M.lbl=L.layerGroup().addTo(M.map); M.map.on("moveend zoomend",()=>pmLabels(M)); } M.pmH=H;
-  /* ضواحينا تُرسم دائماً بكل العروض؛ العرض يغيّر اللون فقط: سعرنا · سعر السوق لمدينة الضاحية ونوعها · الفجوة */
-  const V=pm.view, ours=H.pts.filter(o=>o.loc), colored=ours.filter(o=>pmPillVal(o)!=null);
-  const heatPts=colored.map(o=>({lat:o.loc.lat,lon:o.loc.lon,v:pmPillVal(o),w:o.avail+1}));
-  if(V==="market"){ const has=new Set(colored.map(o=>o.ck+"\u0001"+o.type)); H.mpts.forEach(m=>{ if(!has.has(pmCityKey(m.city)+"\u0001"+m.type)) heatPts.push({lat:m.lat,lon:m.lon,v:m.v,w:m.w}); }); }
-  const color=V==="gap"?pmColorGap:pmColorVal;
-  if(PmHeat){ if(!M.heat){ M.heat=new PmHeat(heatPts,color,{radius:46}); M.heat.addTo(M.map); } else { M.heat._o.radius=46; M.heat.setData(heatPts,color); } }
-  if(V==="market"){ const dm=Math.max(1,...H.mpts.map(m=>m.w)); H.mpts.forEach(m=>L.circleMarker([m.lat,m.lon],{radius:8+14*Math.sqrt(m.w/dm),color:"#2A7FB8",weight:2,dashArray:"4 3",fillColor:color(m.v),fillOpacity:.2,opacity:.9}).bindPopup(pmPopup(m),{maxWidth:260}).addTo(M.layer)); }
-  /* نقطة الموقع الدقيق تحت كل قرص */
-  ours.forEach(o=>{ const v=pmPillVal(o), col=v==null?"#bdb7a8":color(v);
-    L.circleMarker([o.loc.lat,o.loc.lon],{radius:3.5,color:"#1f2937",weight:1,fillColor:col,fillOpacity:1,opacity:.8}).bindPopup(pmPopup(o),{maxWidth:260}).addTo(M.layer); });
   pmLabels(M);
-  const all=ours.map(o=>[o.loc.lat,o.loc.lon]).concat(V==="market"?H.mpts.map(m=>[m.lat,m.lon]):[]), fk="pm|"+(tvRegion||"all")+"|"+all.length;
+  const ours=H.pts.filter(o=>o.loc), all=ours.map(o=>[o.loc.lat,o.loc.lon]).concat(pm.view==="market"?H.mpts.map(m=>[m.lat,m.lon]):[]), fk="pm|"+(tvRegion||"all")+"|"+all.length;
   if(all.length&&M.fitKey!==fk){ M.map.fitBounds(L.latLngBounds(all).pad(.12),{maxZoom:10}); M.fitKey=fk; }
 }
 function pmFly(id,ck){ const M=hmMaps[id], c=HM_CITY[ck]; if(M&&c) M.map.flyTo([c[0],c[1]],11,{duration:.8}); }
