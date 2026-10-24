@@ -1,0 +1,20 @@
+// تفضيلات النظام: الوضع الداكن، تقليل الحركة، التباين الأعلى، الإشعارات
+const GW=require('/tmp/pwtest/gw.js'); const { chromium } = require('/tmp/pwtest/node_modules/playwright-core');
+(async()=>{ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',headless:true,args:['--no-sandbox']}); const errs=[];
+  let p=await b.newPage({viewport:{width:390,height:844},colorScheme:'dark'}); p.on('pageerror',e=>errs.push(e.message));
+  await p.goto('file:///home/user/Tareq/SalesPlace_01.html'); await p.waitForTimeout(800);
+  console.log('system dark → theme:',await p.evaluate(()=>document.documentElement.getAttribute('data-theme')),'| saved:',await p.evaluate(()=>localStorage.getItem('nhc_theme')));
+  await p.emulateMedia({colorScheme:'light'}); await p.waitForTimeout(300); console.log('system → light live:',await p.evaluate(()=>document.documentElement.getAttribute('data-theme')));
+  await p.evaluate(()=>applyTheme('dark')); await p.emulateMedia({colorScheme:'light'}); console.log('user choice kept:',await p.evaluate(()=>document.documentElement.getAttribute('data-theme')));
+  await p.evaluate(()=>{ toast('حفظ','ok'); toast('خطأ تجريبي','err'); }); await p.waitForTimeout(5200);
+  console.log('after 5.2s → ok toast gone:',await p.evaluate(()=>![...document.querySelectorAll('.toastMsg')].some(e=>e.textContent==='حفظ')),'| error toast kept:',await p.evaluate(()=>[...document.querySelectorAll('.toastMsg')].some(e=>e.textContent==='خطأ تجريبي'&&e.getAttribute('role')==='alert')));
+  await p.evaluate(()=>[...document.querySelectorAll('.toastMsg')].forEach(e=>e.click())); await p.waitForTimeout(400); console.log('tap dismisses:',await p.evaluate(()=>!document.querySelector('.toastMsg')));
+  await p.close();
+  p=await b.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'}); p.on('pageerror',e=>errs.push(e.message));
+  await p.route('**/rest/v1/**',GW(async r=>r.fulfill({status:404,contentType:'application/json',body:'{"message":"x"}'}))); await GW.init(p);
+  await p.goto('file:///home/user/Tareq/SalesPlace_01.html?tv=1&m=1'); await p.waitForTimeout(1500);
+  console.log('reduced motion: animations off:',await p.evaluate(()=>getComputedStyle(document.querySelector('.mNav button')).transitionDuration),'| RM():',await p.evaluate(()=>typeof RM==='function'&&RM()));
+  await p.emulateMedia({contrast:'more'}).catch(()=>{}); await p.waitForTimeout(200);
+  console.log('increase contrast: --mmute =',await p.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--mmute').trim()),'(normal #626875)');
+  console.log('viewport allows zoom:',await p.evaluate(()=>!/maximum-scale/.test(document.querySelector('meta[name=viewport]').content)));
+  console.log('PAGE ERRORS:',errs.length,errs.slice(0,2).join(' | ')); await b.close(); })();
