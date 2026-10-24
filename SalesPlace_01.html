@@ -2306,7 +2306,7 @@ html.tvMob .pmPillIn{font-size:11px;padding:2px 8px 1px}html.tvMob .pmPillIn b{f
 .pmTxt{background:none;border:0}
 .pmTxtIn{direction:rtl;white-space:nowrap;font-size:13.5px;line-height:1.2;display:flex;gap:5px;align-items:baseline;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 4px #fff,0 1px 2px #fff;cursor:pointer;width:max-content}
 .pmTxtIn b{font-weight:800;color:#1f2937}.pmTxtIn span{font-weight:900;font-variant-numeric:tabular-nums;color:#0B4332}.pmTxtIn small{font-size:11px;color:#6B685E;font-weight:700}
-.pmTxtIn.dn span{color:#C0392B}.pmTxtIn.up span{color:#167A55}.pmTxtIn.fl span{color:#5e5a4f}.pmTxtIn.mk b,.pmTxtIn.mk span{color:#1d5f8f}
+.pmTxtIn.mk b::before{content:"◯ ";font-weight:400}
 html.tvMob .pmTxtIn{font-size:11px}
 .pmLbl{background:none;border:0}
 .pmLblIn{direction:rtl;text-align:center;background:rgba(255,255,255,.93);border:1px solid rgba(11,67,50,.28);border-radius:8px;padding:2px 7px;font-size:11px;line-height:1.25;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.18);color:#1f2937;pointer-events:none}
@@ -2334,7 +2334,7 @@ html.tvMob .pmLblIn{font-size:10px;padding:1px 5px}
 .pmRow .rk{color:#706753;font-weight:800;text-align:center}
 .pmRow .n{font-weight:800;color:#0B4332;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmRow .n small{display:block;font-weight:600;color:#6B685E;font-size:11px}
 .pmRow .m{text-align:center;line-height:1.1}.pmRow .m b{display:block;font-size:14px;color:#0B4332}.pmRow .m small{font-size:11px;color:#6B685E}
-.pmRow .m.g.up b{color:#167A55}.pmRow .m.g.dn b{color:#C0392B}.pmRow .m.g.fl b{color:#5e5a4f}
+.pmRow .m.g.gLo b{color:#184f95}.pmRow .m.g.gHi b{color:#941919}.pmRow .m.g.gMid b{color:#5e5a4f}
 .pmRow i.up,.pmRow i.dn,.pmRow i.fl{font-style:normal;font-weight:800}.pmRow i.up{color:#167A55}.pmRow i.dn{color:#C0392B}
 .hmSecR .up{color:#167A55}.hmSecR .dn{color:#C0392B}.hmSecR .fl{color:#5e5a4f}
 #mApp .pmKpis{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -2484,6 +2484,17 @@ html:not(.tvMob) .leaflet-bar a{width:40px;height:40px;line-height:40px;font-siz
 html:not(.tvMob) :is(.pmRow .m small,.pmRow .n small,.tvGauge .gNums .gSub,.tvOpsE .n small,.tvOpsB.h,.pmKpis small,.tvGauge .gWhen,.tvOpsIni .it small,.hmSecR.h,.tvProd .ch.pr.hh,.pmTxtIn small,.tvScopeTop .vsAvg,.tvMixLbl,.tvOpsKpis .agl,.tvOpsKpis .k small){font-size:12px}
 /* شريط التبويبات عند التكبير 200% أو أصغر الشاشات: أيقونات فقط (الاسم يبقى لـ VoiceOver) بدل تداخل الأسماء */
 @media (max-width:330px){ html.tvMob .mNav button{font-size:0;gap:0} html.tvMob .mNav button svg{width:26px;height:26px} }
+/* dataviz: سلّم الألوان (فئات متساوية، لون فوق، اسم وحصة تحت بلون الحبر)، نقطة لون بجانب النص، وفجوة السعر بنص غامق مقروء */
+.hmLegend .dvScale,.dvScale{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:2px;width:100%;margin-top:6px}
+.hmLegend .dvScale .c{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;text-align:center}
+.hmLegend .dvScale .c i,.dvScale .c i{display:block;width:100%;height:12px;border-radius:0;margin:0;opacity:1;vertical-align:0}
+.dvScale .c:first-child i{border-start-start-radius:6px;border-end-start-radius:6px}.dvScale .c:last-child i{border-start-end-radius:6px;border-end-end-radius:6px}
+.dvScale .c b{font-size:12px;font-weight:700;color:#3d3b36;line-height:1.25}.dvScale .c small{font-size:11.5px;color:#6B685E;font-variant-numeric:tabular-nums}
+.dvNote{width:100%;font-size:12px;color:#6B685E;margin-top:4px;text-align:center}
+.dvDot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:5px;vertical-align:0;box-shadow:0 0 0 1.5px #fff}
+.hmRow .m.st b{white-space:nowrap}.hmRow .m.st .dvDot,.mRow .dvDot{width:8px;height:8px;margin-inline-end:3px}
+.gLo{color:#184f95!important}.gHi{color:#941919!important}.gMid{color:#5e5a4f!important}
+html.tvMob .dvScale .c b{font-size:11px}html.tvMob .dvScale .c small{font-size:11px}
 /* إشعار بالضغط للإغلاق */
 .toastMsg{cursor:pointer}
 </style>
@@ -11912,16 +11923,29 @@ function hmVal(r){
   const sold=P.seg==="b"?b:P.seg==="n"?Math.max(0,tot-b):tot;
   return {avail,sold,rate:sold/hmPerMonths()};
 }
+/* ألوان الخرائط (منهج dataviz — مفحوصة بأداة التحقق: لون واحد يتدرّج من فاتح لغامق، فرق إضاءة ≥0.06 بين الدرجات، أفتحها ≥2:1 على أرضية الخريطة):
+   السعر = بنفسجي (مقدار) · الفجوة عن السوق = أزرق (أرخص) ↔ رمادي ↔ أحمر (أغلى) · الطلب = برتقالي · المعروض = أزرق ·
+   التوازن (أشهر التصريف) = برتقالي (نقص) ↔ رمادي ↔ أزرق (فائض). النص دائماً بلون الحبر، واللون للنقطة فقط. */
+const DV={price:["#9895fe","#7c6df9","#6252d2","#4a3aa7","#33237d"],blue:["#6da7ec","#3987e5","#256abf","#184f95","#0d366b"],
+  orange:["#eb8641","#cf6503","#a64f00","#7e3b02","#582802"],red:["#f27b70","#e34942","#bd2e2b","#941919","#6c060a"],mid:"#9c9a93",none:"#c9c7c0"};
+const DV_GAP=[DV.blue[3],DV.blue[1],DV.mid,DV.red[1],DV.red[3]];
+const DV_BAL=[DV.orange[3],DV.orange[1],DV.mid,DV.blue[1],DV.blue[3]];
 function hmStat(x){
-  if(x.rate>0&&!x.avail) return ["نفد","out","#9F1D1D"];
-  if(x.rate>0&&x.inv<3) return ["جوع","hot","#E0412F"];
-  if(x.rate>0&&x.inv<6) return ["ضيق","warm","#F08C2E"];
-  if(x.rate>0&&x.inv<=12) return ["متوازن","ok","#2E9E5B"];
-  return x.avail?["فائض","cold","#2F6FA8"]:["—","none","#B9B1A0"];
+  if(x.rate>0&&!x.avail) return ["نفد","out",DV_BAL[0]];
+  if(x.rate>0&&x.inv<3) return ["جوع","hot",DV_BAL[0]];
+  if(x.rate>0&&x.inv<6) return ["ضيق","warm",DV_BAL[1]];
+  if(x.rate>0&&x.inv<=12) return ["متوازن","ok",DV_BAL[2]];
+  if(x.rate>0&&x.inv<=24) return ["فائض","cold",DV_BAL[3]];
+  return x.avail?["راكد","stale",DV_BAL[4]]:["—","none",DV.none];
+}
+/* سلّم ألوان بفئات متساوية العرض: اللون فوق، الاسم تحته بلون الحبر، والحصة تحته (لا نص داخل اللون، لا قص) */
+function dvScale(cols,labels,shares,note){
+  return `<div class="dvScale" style="--n:${cols.length}">${cols.map((c,i)=>`<div class="c"><i style="background:${c}"></i><b>${labels[i]}</b>${shares?`<small>${shares[i]}</small>`:""}</div>`).join("")}</div>${note?`<div class="dvNote">${note}</div>`:""}`;
 }
 const hmMix=(a,b,t)=>{ const h=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16)), A=h(a), B=h(b); t=Math.max(0,Math.min(1,t)); return "#"+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,"0")).join(""); };
-const hmHeat=t=>t<.5?hmMix("#F6C343","#F08C2E",t*2):hmMix("#F08C2E","#C81E1E",(t-.5)*2);
-const hmCold=t=>hmMix("#9CC3E6","#1D4E89",t);
+const dvStep=(ramp,t)=>ramp[Math.max(0,Math.min(ramp.length-1,Math.floor((t||0)*ramp.length-1e-9)))];
+const hmHeat=t=>dvStep(DV.orange,t);
+const hmCold=t=>dvStep(DV.blue,t);
 /* المواقع: كتالوج «التفاصيل» (المشروع، وإلا متوسط مشاريع وجهته) ثم مركز المدينة */
 let hmGeoC=null;
 function hmGeo(){ if(hmGeoC) return hmGeoC;
@@ -11971,8 +11995,9 @@ const PM_VIEWS=[["ours","أسعارنا"],["market","السوق"],["gap","الف
 const PM_BASIS=[["moh","سعر الوزارة"],["full","السعر الكامل"],["sold","المباع"]];
 const PM_METRIC=[["sqm","سعر المتر"],["unit","سعر الوحدة"]];
 const PM_PER=[["w","آخر أسبوع"],["4w","4 أسابيع"],["y","كل الأسابيع"]];
-const PM_COLORS=["#2A7FB8","#5DB3C9","#A9D8C4","#F2D16B","#F0973C","#D9532B","#9E1B1B"];
-const PM_SQM=[[0,2000,"< 2,000"],[2000,3000,"2–3 ألف"],[3000,4000,"3–4 ألف"],[4000,5000,"4–5 ألف"],[5000,6000,"5–6 ألف"],[6000,8000,"6–8 ألف"],[8000,Infinity,"> 8,000"]];
+const PM_COLORS=DV.price;
+const PM_SQM=[[0,3000,"أقل من 3,000"],[3000,4000,"3,000–4,000"],[4000,5000,"4,000–5,000"],[5000,6000,"5,000–6,000"],[6000,Infinity,"6,000 فأكثر"]];
+const PM_UNIT=[[0,75e4,"أقل من 750 ألف"],[75e4,1e6,"750 ألف – 1 م"],[1e6,15e5,"1 – 1.5 م"],[15e5,2e6,"1.5 – 2 م"],[2e6,Infinity,"2 م فأكثر"]];
 let pm=(()=>{ const d={view:"gap",basis:"moh",metric:"sqm",mper:"4w"}; try{ return Object.assign(d,JSON.parse(localStorage.getItem("tv_pm")||"{}")); }catch(e){ return d; } })();
 function pmSet(k,v){ pm[k]=v; try{ localStorage.setItem("tv_pm",JSON.stringify(pm)); }catch(e){} hmRenderAll(); }
 /* السوق: التحميل (ذاكرة 10 دقائق) */
@@ -12008,10 +12033,11 @@ function pmOurVal(r){ const B=pm.basis;
   if(B==="moh") return r.moh_n?{v:r.moh_sum/r.moh_n,w:r.moh_n,p:r.moh_sum}:null;
   return r.pa_n?{v:r.pa_sum/r.pa_n,w:r.pa_n,p:r.pa_sum}:null;
 }
-function pmBands(){ return pm.metric==="sqm"?PM_SQM:M_BAND.price; }
+function pmBands(){ return pm.metric==="sqm"?PM_SQM:PM_UNIT; }
 function pmBandIdx(v){ const B=pmBands(); const i=B.findIndex(([lo,hi])=>v>=lo&&v<hi); return i<0?B.length-1:i; }
-function pmColorVal(v){ const B=pmBands(), i=pmBandIdx(v), [lo,hi]=B[i]; const f=hi===Infinity?.5:Math.max(0,Math.min(1,(v-lo)/(hi-lo))); const c0=PM_COLORS[i], c1=PM_COLORS[Math.min(PM_COLORS.length-1,i+1)]; return hmMix(c0,c1,f*.6); }
-function pmColorGap(g){ const t=Math.max(-30,Math.min(30,g))/30; return t<0?hmMix("#F3EFE4","#167A55",-t):hmMix("#F3EFE4","#C0392B",t); }
+function pmColorVal(v){ return PM_COLORS[pmBandIdx(v)]; }
+function pmGapIdx(g){ return g<=-15?0:g<-5?1:g<=5?2:g<15?3:4; }
+function pmColorGap(g){ return DV_GAP[pmGapIdx(g)]; }
 function pmCompute(){
   if(!mPS) return null;
   const MK=pmMarket(), rows=hmRows(mScopeOk), P=new Map(), C=new Map();
@@ -12065,9 +12091,11 @@ const PmHeat=typeof L!=="undefined"?L.Layer.extend({
     ctx.globalAlpha=1; }
 }):null;
 function pmLegendHtml(H){
-  const B=pmBands(), lbl=pm.metric==="sqm"?"ر/م²":"", dist=pm.view==="market"?H.distM:H.distO, tot=dist.reduce((a,b)=>a+b,0)||1;
-  if(pm.view==="gap") return `<div class="pmLg gapLg"><span><i style="background:#167A55"></i>أرخص من السوق بـ30%+</span><span><i style="background:#8FBFA6"></i>أرخص</span><span><i style="background:#F3EFE4;border:1px solid #ddd"></i>مثل السوق</span><span><i style="background:#D88A7A"></i>أغلى</span><span><i style="background:#C0392B"></i>أغلى بـ30%+</span><span class="sz">${H.withGap?`${fmt(H.withGap)} مشروعاً لها سعر سوق لمدينتها ونوعها`:"لا بيانات سوق مطابقة — ارفع ملف صفقات السوق"}</span></div>`;
-  return `<div class="pmBands">${B.map(([lo,hi,l],i)=>{ const pc=Math.round(dist[i]/tot*100); return `<div class="b" style="flex:${Math.max(9,pc)};background:${PM_COLORS[i]}" title="${l}${lbl?" "+lbl:""}: ${pc}%"><b>${pc}%</b><span>${l}</span></div>`; }).join("")}</div><div class="pmBandsNote">${pm.view==="market"?"حصة صفقات السوق":"حصة وحداتنا المتاحة"} في كل فئة${pm.metric==="sqm"?" سعرية للمتر":" سعرية"}</div>`;
+  const B=pmBands(), dist=pm.view==="market"?H.distM:H.distO, tot=dist.reduce((a,b)=>a+b,0)||1;
+  if(pm.view==="gap"){ const cnt=[0,0,0,0,0]; H.pts.forEach(o=>{ if(o.gap!=null) cnt[pmGapIdx(o.gap)]++; }); const n=cnt.reduce((a,b)=>a+b,0);
+    return dvScale(DV_GAP,["أرخص بـ15%+","أرخص 5–15%","مثل السوق ±5%","أغلى 5–15%","أغلى بـ15%+"],n?cnt.map(c=>`${fmt(c)} مشروع`):null,
+      n?`سعرنا مقابل سعر السوق لنفس المدينة والنوع · ${fmt(n)} مشروعاً لها سعر سوق`:"لا بيانات سوق مطابقة — ارفع ملف صفقات السوق"); }
+  return dvScale(PM_COLORS,B.map(b=>b[2]),dist.map(d=>Math.round(d/tot*100)+"%"),`${pm.metric==="sqm"?"سعر المتر (ر/م²)":"سعر الوحدة"} · ${pm.view==="market"?"حصة صفقات السوق":"حصة وحداتنا المتاحة"} في كل فئة`);
 }
 function pmCtlHtml(){
   const seg=(k,list,cur)=>`<span class="tvSeg hmSeg">${list.map(([v,l])=>`<button type="button" data-pm="${k}" data-v="${v}" class="${cur===v?"on":""}">${l}</button>`).join("")}</span>`;
@@ -12075,7 +12103,7 @@ function pmCtlHtml(){
 }
 const pmV=v=>v==null?"—":pm.metric==="sqm"?fmt(Math.round(v)):tvPriceShort(v);
 const pmGapTxt=g=>g==null?"—":`${g>0?"+":""}${Math.round(g)}%`;
-const pmGapCls=g=>g==null?"":g>5?"dn":g<-5?"up":"fl";
+const pmGapCls=g=>g==null?"":g>5?"gHi":g<-5?"gLo":"gMid";
 function pmWkLbl(wk){ return wk?`الأسبوع ${wk%100}`:""; }
 function pmKpiHtml(H){
   const u=pm.metric==="sqm"?"ر/م²":"", bas=PM_BASIS.find(x=>x[0]===pm.basis)[1];
@@ -12083,8 +12111,8 @@ function pmKpiHtml(H){
     <div><span>سعرنا (${bas})</span><b>${pmV(H.ours)}</b><small>${u} · ${fmt(H.pts.length)} مشروعاً</small></div>
     <div><span>السوق</span><b>${pmV(H.mkt)}</b><small>${u} · ${H.weeks.length?`${H.weeks.length} أسبوع · حتى ${pmWkLbl(H.lastWk)}`:"لا بيانات"}</small></div>
     <div><span>الفجوة</span><b class="${pmGapCls(H.gap)}">${pmGapTxt(H.gap)}</b><small>سعرنا مقابل السوق بنفس المدينة والنوع</small></div>
-    <div><span>أغلى من السوق</span><b class="dn">${fmt(H.above)}</b><small>مشروعاً (+5% فأكثر)</small></div>
-    <div><span>أرخص من السوق</span><b class="up">${fmt(H.below)}</b><small>مشروعاً (−5% فأقل)</small></div>
+    <div><span><i class="dvDot" style="background:${DV_GAP[3]}"></i>أغلى من السوق</span><b>${fmt(H.above)}</b><small>مشروعاً (+5% فأكثر)</small></div>
+    <div><span><i class="dvDot" style="background:${DV_GAP[1]}"></i>أرخص من السوق</span><b>${fmt(H.below)}</b><small>مشروعاً (−5% فأقل)</small></div>
     <div><span>قريب من السوق</span><b>${fmt(H.withGap-H.above-H.below)}</b><small>ضمن ±5%</small></div></div>`;
 }
 function pmCityRow(c,i){
@@ -12135,11 +12163,11 @@ function pmLabels(M){
   if(!M.lbl) return; M.lbl.clearLayers(); M.layer.clearLayers(); const H=M.pmH; if(!H||hmPrm.layer!=="price") return;
   const map=M.map, z=map.getZoom(), items=pmLabelItems(H,z), b=map.getBounds().pad(.08), placed=[], ch=tvMobile?5.6:6.9, LH=tvMobile?16:19;
   items.filter(i=>b.contains([i.lat,i.lon])).sort((a,b)=>b.w-a.w).forEach(i=>{
-    const dot=L.circleMarker([i.lat,i.lon],{radius:i.r,color:"#fff",weight:2,fillColor:i.col,fillOpacity:1,opacity:1}).addTo(M.layer);
+    const dot=L.circleMarker([i.lat,i.lon],i.cls==="mk"?{radius:i.r,color:"#3d3b36",weight:2.5,fillColor:"#ffffff",fillOpacity:.85,opacity:1}:{radius:Math.max(4,i.r),color:"#fff",weight:2,fillColor:i.col,fillOpacity:1,opacity:1}).addTo(M.layer);
     if(i.pop) dot.bindPopup(i.pop,{maxWidth:260}); else if(i.items) dot.on("click",()=>(RM()?map.fitBounds(L.latLngBounds(i.items.map(o=>[o.loc.lat,o.loc.lon])).pad(.3),{maxZoom:11,animate:false}):map.flyToBounds(L.latLngBounds(i.items.map(o=>[o.loc.lat,o.loc.lon])).pad(.3),{maxZoom:11,duration:.6})));
     const txt=`${i.t} ${i.n}${i.x?" "+i.x:""}`, W=Math.min(260,txt.length*ch+10), q=map.latLngToContainerPoint([i.lat,i.lon]), r={x:q.x+i.r+4,y:q.y-LH/2,w:W,h:LH};
     if(placed.some(p=>!(r.x+r.w<p.x||p.x+p.w<r.x||r.y+r.h<p.y||p.y+p.h<r.y))) return; placed.push(r);
-    const mk=L.marker([i.lat,i.lon],{icon:L.divIcon({className:"pmTxt",html:`<div class="pmTxtIn ${i.cls}"><b>${i.t}</b><span style="color:${i.cls?"":i.col}">${i.n}</span>${i.x?`<small>${i.x}</small>`:""}</div>`,iconSize:[W,LH],iconAnchor:[-(i.r+4),LH/2]}),keyboard:false,interactive:!!(i.pop||i.items)});
+    const mk=L.marker([i.lat,i.lon],{icon:L.divIcon({className:"pmTxt",html:`<div class="pmTxtIn ${i.cls==="mk"?"mk":""}"><b>${i.t}</b><span>${i.n}</span>${i.x?`<small>${i.x}</small>`:""}</div>`,iconSize:[W,LH],iconAnchor:[-(i.r+4),LH/2]}),keyboard:false,interactive:!!(i.pop||i.items)});
     if(i.pop) mk.bindPopup(i.pop,{maxWidth:260}); else if(i.items) mk.on("click",()=>(RM()?map.fitBounds(L.latLngBounds(i.items.map(o=>[o.loc.lat,o.loc.lon])).pad(.3),{maxZoom:11,animate:false}):map.flyToBounds(L.latLngBounds(i.items.map(o=>[o.loc.lat,o.loc.lon])).pad(.3),{maxZoom:11,duration:.6})));
     mk.addTo(M.lbl); });
 }
@@ -12161,14 +12189,14 @@ function hmCtlHtml(){
 }
 function hmLegendHtml(){
   const P=hmPrm;
-  if(P.layer==="gap") return [["#9F1D1D","نفد"],["#E0412F","جوع: أقل من 3 أشهر"],["#F08C2E","ضيق 3–6"],["#2E9E5B","متوازن 6–12"],["#2F6FA8","فائض: أكثر من سنة / بلا طلب"]].map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join("")+`<span class="sz">الحجم = الطلب + المتاح</span>`;
-  if(P.layer==="demand") return `<span><i style="background:#F6C343"></i>طلب أقل</span><span><i style="background:#C81E1E"></i>طلب أعلى</span><span class="sz">الحجم = عقود الفترة</span>`;
-  return `<span><i style="background:#9CC3E6"></i>متاح أقل</span><span><i style="background:#1D4E89"></i>متاح أكثر</span><span class="sz">الحجم = المتاح الآن</span>`;
+  if(P.layer==="gap") return dvScale(DV_BAL,["نفد أو أقل من 3 أشهر","3–6 أشهر","6–12 متوازن","سنة – سنتان","راكد: أكثر من سنتين"],null,"أشهر تصريف المتاح بسرعة البيع الحالية · حجم الدائرة = الطلب + المتاح");
+  if(P.layer==="demand") return dvScale(DV.orange,["الأقل","","","","الأعلى"],null,"سرعة البيع (عقود شهرياً) مقارنة بأعلى مشروع · حجم الدائرة = عقود الفترة");
+  return dvScale(DV.blue,["الأقل","","","","الأكثر"],null,"المتاح الآن مقارنة بأكبر مشروع · حجم الدائرة = المتاح");
 }
 function hmPopup(p){
   return `<div class="hmPop"><b>${p.project}</b><small>${[p.dest,p.city,p.kind==="nhc"?"NHC":""].filter(Boolean).join(" · ")}</small>
     <div><span>عقود الفترة</span><b>${fmt(p.sold)}</b></div><div><span>المتاح الآن</span><b>${fmt(p.avail)}</b></div>
-    <div><span>تصريف المتاح</span><b style="color:${p.st[2]}">${hmInvTxt(p)} · ${p.st[0]}</b></div>
+    <div><span>تصريف المتاح</span><b><i class="dvDot" style="background:${p.st[2]}"></i>${hmInvTxt(p)} · ${p.st[0]}</b></div>
     ${p.priceS||p.priceA?`<div><span>متوسط السعر</span><b>${tvPriceShort(p.priceS||p.priceA)}</b></div>`:""}
     ${p.loc&&p.loc.src!=="p"?`<em>الموقع تقريبي (${p.loc.src==="d"?"مركز الوجهة":"مركز المدينة"})</em>`:""}
     ${tvCanOpenProject()?`<button type="button" data-hmproj="${String(p.project).replace(/"/g,"&quot;")}">↗ صفحة المشروع</button>`:""}</div>`;
@@ -12179,7 +12207,7 @@ function hmMapFor(id){
   let M=hmMaps[id]; if(M&&M.el===el) return M;
   if(M){ try{ M.map.remove(); }catch(e){} }
   const rm=(()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } })();
-  const map=L.map(el,{zoomControl:true,attributionControl:true,preferCanvas:true,scrollWheelZoom:!tvMobile,zoomAnimation:!rm,fadeAnimation:!rm,markerZoomAnimation:!rm}).setView([24.2,44.5],5);
+  const map=L.map(el,{zoomControl:true,attributionControl:true,preferCanvas:true,renderer:L.canvas({tolerance:tvMobile?12:8}),scrollWheelZoom:!tvMobile,zoomAnimation:!rm,fadeAnimation:!rm,markerZoomAnimation:!rm}).setView([24.2,44.5],5);
   /* أساس رمادي فاتح بلا مفتاح (Esri) + أسماء الأماكن؛ وإن فشل التحميل نعود لخريطة OpenStreetMap العادية */
   const base=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",{maxZoom:16,attribution:"© Esri"}).addTo(map);
   const ref=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",{maxZoom:16}).addTo(map);
@@ -12197,7 +12225,7 @@ function hmDraw(id,H){
   pts.sort((a,b)=>val(b)-val(a)).forEach(p=>{
     const v=val(p), rad=5+(tvMobile?18:30)*Math.sqrt(v/mx);
     const col=P.layer==="gap"?p.st[2]:P.layer==="demand"?hmHeat(p.rate/rmx):hmCold(p.avail/mx);
-    L.circleMarker([p.loc.lat,p.loc.lon],{radius:rad,color:col,weight:1.2,fillColor:col,fillOpacity:.42,opacity:.9}).bindPopup(hmPopup(p),{maxWidth:260}).addTo(M.layer);
+    L.circleMarker([p.loc.lat,p.loc.lon],{radius:rad,color:"#ffffff",weight:2,fillColor:col,fillOpacity:.88,opacity:1}).bindPopup(hmPopup(p),{maxWidth:260}).addTo(M.layer);
   });
   const fk=(tvRegion||"all")+"|"+pts.length;
   if(pts.length&&M.fitKey!==fk){ M.map.fitBounds(L.latLngBounds(pts.map(p=>[p.loc.lat,p.loc.lon])).pad(.12),{maxZoom:10}); M.fitKey=fk; }
@@ -12205,12 +12233,12 @@ function hmDraw(id,H){
 function hmRowHtml(a,i){
   return `<div class="hmRow"><span class="rk">${i+1}</span><span class="n">${a.dest}<small>${a.type}${TV_SECTORS.includes(a.sector)?" · "+a.sector:""} · ${fmt(a.proj.size)} مشروع</small></span>
     <span class="m"><b>${fmt(a.sold)}</b><small>عقد</small></span><span class="m"><b>${fmt(a.avail)}</b><small>متاح</small></span>
-    <span class="m st" style="color:${a.st[2]}"><b>${hmInvTxt(a)}</b><small>${a.st[0]}</small></span><span class="m"><b>${a.priceS?tvPriceShort(a.priceS):a.priceA?tvPriceShort(a.priceA):"—"}</b><small>${a.priceS?"المباع":"المتاح"}</small></span></div>`;
+    <span class="m st"><b><i class="dvDot" style="background:${a.st[2]}"></i>${hmInvTxt(a)}</b><small>${a.st[0]}</small></span><span class="m"><b>${a.priceS?tvPriceShort(a.priceS):a.priceA?tvPriceShort(a.priceA):"—"}</b><small>${a.priceS?"المباع":"المتاح"}</small></span></div>`;
 }
 function hmSecHtml(H){
   const segOk=H.hasSeg;
   return `<div class="hmSec"><div class="hmSecR h"><span>المنطقة</span><span>متاح للمستفيدين</span><span>متاح لغير المستفيدين</span><span>عقود الفترة م / غ</span><span>تصريف المتاح</span></div>${H.sec.map(s=>{ const st=hmStat({rate:s.rate,avail:s.av,inv:s.inv});
-    return `<div class="hmSecR"><span class="n">${s.sector}</span><b>${segOk?fmt(s.ab):"—"}</b><b>${segOk?fmt(s.an):"—"}</b><span>${fmt(s.sb)} / ${fmt(s.sn)}</span><span style="color:${st[2]};font-weight:800">${hmInvTxt({rate:s.rate,avail:s.av,inv:s.inv})}</span></div>`; }).join("")}</div>
+    return `<div class="hmSecR"><span class="n">${s.sector}</span><b>${segOk?fmt(s.ab):"—"}</b><b>${segOk?fmt(s.an):"—"}</b><span>${fmt(s.sb)} / ${fmt(s.sn)}</span><span style="font-weight:800"><i class="dvDot" style="background:${st[2]}"></i>${hmInvTxt({rate:s.rate,avail:s.av,inv:s.inv})}</span></div>`; }).join("")}</div>
     ${segOk?"":`<div class="hmNote">المتاح حسب الشريحة يظهر بعد تشغيل tv_product_analytics.sql ورفع ملف التخصيص (عمود target_segments)</div>`}`;
 }
 function hmScopeLbl(){ const P=hmPrm; return [tvRegion?tvRegionLabel(tvRegion):"",P.seg!=="all"?HM_SEGS.find(x=>x[0]===P.seg)[1]:"",P.type!=="all"?P.type:"",P.band>=0?M_BAND.price[P.band][2]:"",HM_PERS.find(x=>x[0]===P.per)[1]].filter(Boolean).join(" · "); }
@@ -12233,7 +12261,7 @@ function tvRenderHm(){
     $("tvHmSec").innerHTML=pmSecHtml(H);
     requestAnimationFrame(()=>pmDraw("tvHmMap",H)); return;
   }
-  T(`الأعلى طلباً مقابل المتاح <small>أولويات الفتح · بالوجهة والمنتج · الأحمر = جوع</small>`,`فائض — متاح كثير وطلب ضعيف <small>الأزرق = أكثر من سنة تصريف</small>`,`المتاح حسب المنطقة والشريحة`);
+  T(`الأعلى طلباً مقابل المتاح <small>أولويات الفتح · بالوجهة والمنتج · البرتقالي الغامق = أقل من 3 أشهر</small>`,`فائض — متاح كثير وطلب ضعيف <small>الأزرق = أكثر من سنة تصريف (الغامق: أكثر من سنتين)</small>`,`المتاح حسب المنطقة والشريحة`);
   const H=hmCompute();
   if(!H){ ["tvHmHot","tvHmCold","tvHmSec"].forEach(id=>$(id).innerHTML=`<div class="tvEmpty" style="font-size:15px">${hmEmptyMsg()}</div>`); return; }
   $("tvHmTitle").innerHTML=`خريطة ${HM_LAYERS.find(x=>x[0]===hmPrm.layer)[1]==="الفجوة"?"الفجوة بين الطلب والمعروض":HM_LAYERS.find(x=>x[0]===hmPrm.layer)[1]} <small>${hmScopeLbl()}</small><span class="tot">${fmt(H.pts.length)} مشروعاً${H.approx?` · ${fmt(H.approx)} بموقع تقريبي`:""}${H.noLoc?` · ${fmt(H.noLoc)} بلا موقع`:""}</span>`;
@@ -12262,7 +12290,7 @@ function mRenderMap(){
   if(!H){ $("mHmLists").innerHTML=`<div class="mCard"><div class="mEmpty">${hmEmptyMsg()}</div></div>`; return; }
   $("mHmHd").innerHTML=`<b>${HM_LAYERS.find(x=>x[0]===hmPrm.layer)[1]==="الفجوة"?"الطلب مقابل المعروض":HM_LAYERS.find(x=>x[0]===hmPrm.layer)[1]}</b><span>${hmScopeLbl()}</span>`;
   $("mHmLeg").innerHTML=hmLegendHtml();
-  $("mHmLists").innerHTML=`<div class="mCard"><div class="mCardHd"><b>الأعلى طلباً مقابل المتاح</b><span>أولويات الفتح · الأحمر = جوع</span></div>${H.hot.length?H.hot.map(hmRowHtml).join(""):`<div class="mEmpty">لا عقود كافية بهذه المعايير والفترة</div>`}</div>
+  $("mHmLists").innerHTML=`<div class="mCard"><div class="mCardHd"><b>الأعلى طلباً مقابل المتاح</b><span>أولويات الفتح</span></div>${H.hot.length?H.hot.map(hmRowHtml).join(""):`<div class="mEmpty">لا عقود كافية بهذه المعايير والفترة</div>`}</div>
     <div class="mCard"><div class="mCardHd"><b>فائض — متاح كثير وطلب ضعيف</b></div>${H.cold.length?H.cold.map(hmRowHtml).join(""):`<div class="mEmpty">لا فائض واضح بهذه المعايير</div>`}</div>
     <div class="mCard"><div class="mCardHd"><b>المتاح حسب المنطقة والشريحة</b><span>${HM_PERS.find(x=>x[0]===hmPrm.per)[1]}</span></div>${hmSecHtml(H)}</div>`;
   requestAnimationFrame(()=>hmDraw("mHmMap",H));

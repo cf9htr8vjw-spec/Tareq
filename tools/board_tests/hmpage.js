@@ -118,7 +118,7 @@ const TODAY={ok:true,kingdom:{bookings:18,istisna:6,contracts:25},by_sector:[{se
     console.log('lists:',(await tx('#mHmLists')).slice(0,240));
     console.log('regions under map:',(await tx('#mRegions')).slice(0,80),'| docW',await page.evaluate(()=>document.documentElement.scrollWidth));
     await page.screenshot({path:D+'/m_map.png',fullPage:true});
-    await page.click('#mHmCtl button[data-hm="seg"][data-v="b"]'); await page.waitForTimeout(500);
+    await page.click('#mHmCtl button[data-hm="layer"][data-v="gap"]'); await page.waitForTimeout(800); await page.click('#mHmCtl button[data-hm="seg"][data-v="b"]'); await page.waitForTimeout(500);
     console.log('seg b sec:',(await tx('#mHmLists .hmSec')).slice(0,200));
     await page.click('#mHmCtl button[data-hm="layer"][data-v="supply"]'); await page.waitForTimeout(500);
     console.log('supply legend:',await tx('#mHmLeg'),'| docW',await page.evaluate(()=>document.documentElement.scrollWidth));
