@@ -12167,7 +12167,11 @@ function pmLabelItems(H,z){
   return items;
 }
 function pmLabels(M){
-  if(!M.lbl) return; M.lbl.clearLayers(); M.layer.clearLayers(); const H=M.pmH; if(!H||hmPrm.layer!=="price") return;
+  /* لا تمسح شيئاً إلا في طبقة الأسعار — طبقات الطلب والمعروض ترسم نقاطها بنفسها (hmDraw) */
+  if(!M.lbl) return; const H=M.pmH; if(!H||hmPrm.layer!=="price") return;
+  /* نافذة مفتوحة: تحريك الخريطة لإظهارها (autoPan) لا يعيد الرسم — وإلا تُحذف النقطة صاحبة النافذة فتُغلق فوراً؛ يُعاد الرسم عند إغلاقها */
+  if(M.map._popup&&M.map.hasLayer(M.map._popup)){ M.dirty=true; return; } M.dirty=false;
+  M.lbl.clearLayers(); M.layer.clearLayers();
   const map=M.map, z=map.getZoom(), items=pmLabelItems(H,z), b=map.getBounds().pad(.08), placed=[], ch=tvMobile?5.6:6.9, LH=tvMobile?16:19;
   items.filter(i=>b.contains([i.lat,i.lon])).sort((a,b)=>b.w-a.w).forEach(i=>{
     const dot=L.circleMarker([i.lat,i.lon],i.cls==="mk"?{radius:i.r,color:"#3d3b36",weight:2.5,fillColor:"#ffffff",fillOpacity:.85,opacity:1}:{radius:Math.max(4,i.r),color:"#fff",weight:2,fillColor:i.col,fillOpacity:1,opacity:1}).addTo(M.layer);
@@ -12181,7 +12185,7 @@ function pmLabels(M){
 function pmDraw(id,H){
   const M=hmMapFor(id); if(!M) return;
   M.map.invalidateSize(); M.layer.clearLayers(); if(M.heat){ M.map.removeLayer(M.heat); M.heat=null; }
-  if(!M.lbl){ M.lbl=L.layerGroup().addTo(M.map); M.map.on("moveend zoomend",()=>pmLabels(M)); } M.pmH=H;
+  if(!M.lbl){ M.lbl=L.layerGroup().addTo(M.map); M.map.on("moveend zoomend",()=>pmLabels(M)); M.map.on("popupclose",()=>{ if(M.dirty) setTimeout(()=>pmLabels(M),0); }); } M.pmH=H;
   pmLabels(M);
   const ours=H.pts.filter(o=>o.loc), all=ours.map(o=>[o.loc.lat,o.loc.lon]).concat(pm.view==="market"?H.mpts.map(m=>[m.lat,m.lon]):[]), fk="pm|"+(tvRegion||"all")+"|"+all.length;
   if(all.length&&M.fitKey!==fk){ M.map.fitBounds(L.latLngBounds(all).pad(.12),{maxZoom:10}); M.fitKey=fk; }
