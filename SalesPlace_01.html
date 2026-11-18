@@ -9967,7 +9967,12 @@ function tvGaugeHtml(name,prog,prodHtml,opt){
     : prog.reqDaily!=null ? `<div class="gRun">يومياً <b class="${prog.runRate>=prog.reqDaily?"ok":"no"}">${fmt(Math.round(prog.runRate))}</b> من <b>${fmt(Math.ceil(prog.reqDaily))}</b> عقد · <b>${fmt(Math.ceil(prog.reqDaily)*TV_BOOK_PER_CONTRACT)}</b> حجز</div>` : "";
   const col={good:"#009C6D",warn:"#B87516",bad:"#C2491E",none:"#767368"}[st];
   const tone=opt.tone||(opt.sec==="dev"?"dev":opt.sec?{"الأوسط":"c","الغربي":"w","الشرقي":"e"}[opt.sec]:"t");
-  return `<div class="tvGauge tone-${tone}${opt.sec?" pick":""}${opt.sel?" sel":""}"${opt.sec?` data-sec="${opt.sec}"`:""}${opt.all?` data-all="1"`:""}>
+  /* تفصيل الحساب عند تمرير المؤشر — لمعرفة مصدر أي رقم غير متوقع */
+  const dm=d=>d?`${d.getDate()}/${d.getMonth()+1}`:"";
+  const why=!opt.money&&prog.tgt&&prog.fileYtd!=null?`المحقق ${fmt(prog.ytd)} = ملف التخصيص ${fmt(prog.fileYtd)}`
+    +(prog.liveToday!=null?` − عقود اليوم بالملف ${fmt(prog.fileToday)} + عقود اليوم لحظياً ${fmt(prog.liveToday)}`:"")
+    +` · المطلوب حتى ${dm(prog.asOf)} = ${fmt(prog.tgtToDate)} (${prog.expPct}% من مستهدف السنة ${fmt(prog.tgt)}) · النسبة = ${fmt(prog.ytd)} ÷ ${fmt(prog.tgtToDate)}`:"";
+  return `<div class="tvGauge tone-${tone}${opt.sec?" pick":""}${opt.sel?" sel":""}"${opt.sec?` data-sec="${opt.sec}"`:""}${opt.all?` data-all="1"`:""}${why?` title="${why}"`:""}>
     <div class="gName">${name}</div>
     <div class="gTop">
       <div class="gDial">${tvGaugeSvg(prog.pct,st,!!prog.tgt)}</div>
@@ -10042,6 +10047,7 @@ function tvYearProg(rows,target,ctx,adj){
   const tgt=Number(target)>0?Number(target):null;
   const byM={}; (rows||[]).forEach(r=>{ const m=+String(r.period).split("-")[1]; byM[m]=(byM[m]||0)+Number(r.cnt||0); });
   /* المحقق حتى اليوم = ملف التخصيص (بدون يوم اليوم إن وُجد فيه) + عقود اليوم لحظياً من داشبورد NHC */
+  const fileYtd=Object.values(byM).reduce((a,b)=>a+b,0);
   if(adj) byM[ctx.curM]=Math.max(0,(byM[ctx.curM]||0)-(adj.fileToday||0))+(adj.liveToday||0);
   const ytd=Object.values(byM).reduce((a,b)=>a+b,0);
   /* "حتى اليوم" = حتى تاريخ آخر رفع لملف التخصيص (ctx.asOf) لا ساعة الجهاز — فالنسبة لا تتغيّر إلا
@@ -10066,7 +10072,8 @@ function tvYearProg(rows,target,ctx,adj){
   const deficit=tgt?Math.round(tgt*frac-ytd):null;
   const expPct=tgt?Math.round(frac*100):null;
   const tgtToDate=tgt?Math.round(tgt*frac):null;
-  return {ytd,tgt,tgtToDate,pct,yearPct,pacePct,expPct,qPct,qLbl,need,runRate,reqDaily,deficit,status:tvPaceStatus(pct)};
+  return {ytd,tgt,tgtToDate,pct,yearPct,pacePct,expPct,qPct,qLbl,need,runRate,reqDaily,deficit,status:tvPaceStatus(pct),
+    fileYtd,liveToday:adj?adj.liveToday||0:null,fileToday:adj?adj.fileToday||0:null,asOf:today};
 }
 
 const tvGood={};
@@ -10091,7 +10098,10 @@ async function loadTvDashboard(){
   const ytdRep=(sec,dev)=>sbCall("get_sales_report",{p_granularity:"month",p_metric:"contract",p_from:`${curY}-01-01`,p_to:`${curY}-12-31`,p_sector:sec,p_dev_kind:dev});
 
   /* كل نداء مستقل — فشل أحدها (مثلاً ملف SQL لم يُشغَّل بعد) لا يُسقط بقية الشاشة */
-  const fcP=sbCall("get_tv_contracts",{p_year:curY,p_month:curM}).then(r=>r&&r.ok?r:null).catch(()=>null);
+  /* إن فشل أول تحميل (مهلة مثلاً) ولا نسخة سابقة: محاولة ثانية بعد ثانية ونصف قبل الرجوع للمصدر الاحتياطي
+     (get_sales_report بقطاع التطبيق) — وإلا تظهر نسب القطاعات مختلفة ثم ترجع بالتحديث التالي */
+  const fcGet=()=>sbCall("get_tv_contracts",{p_year:curY,p_month:curM}).then(r=>r&&r.ok?r:null);
+  const fcP=fcGet().catch(()=>tvGood.fc?null:new Promise(z=>setTimeout(z,1500)).then(fcGet).catch(()=>null));
   const pr=tvLeadRange(now);
   const calls={
     live:   sbCall("get_live_board",{}),
@@ -12776,80 +12786,47 @@ function tvAllocAggregate(rows,appNameOf){
 }
 /* رفع التجميع: call(fn,body) يضيف بيانات الأدمن (adminCall بالتطبيق، أو sbCall مع بيانات الدخول بالشاشة) */
 /* سبب الفشل كما هو: «شغّل الملف» فقط إن كانت الدالة/الجدول غير موجودة فعلاً، وإلا نص الخطأ من السيرفر */
-function tvUpErrTxt(e,sqlFile){ const m=String((e&&e.message)||e||""); return /404|Could not find|does not exist|API_NOFN/i.test(m)?`شغّل ${sqlFile} على القاعدة`:`السبب: ${m.replace(/^HTTP \d+ — /,"").slice(0,160)}`; }
+function tvUpErrTxt(e,sqlFile){ const m=String((e&&e.message)||e||""); return /404|Could not find|does not exist|API_NOFN/i.test(m)?`شغّل ${sqlFile} على القاعدة`:/statement timeout|57014/i.test(m)?"انتهت مهلة القاعدة حتى بأصغر دفعة — شغّل tv_stable.sql (يرفع المهلة) ثم أعد الرفع":`السبب: ${m.replace(/^HTTP \d+ — /,"").slice(0,160)}`; }
+/* رفع قائمة بدفعات: أول دفعة تفرّغ الجدول (p_reset). إن انتهت مهلة القاعدة (statement timeout) فالدفعة أُلغيت
+   كلها بالقاعدة (لا شيء حُفظ منها) — نعيدها بنصف الحجم حتى 150 صفاً. أي خطأ آخر يوقف الرفع كما هو.
+   noEmpty: لا نداء إن كانت القائمة فارغة (بدل نداء تفريغ واحد) */
+const tvIsTmo=e=>/statement timeout|57014/i.test(String((e&&e.message)||e||""));
+async function tvLoadChunks(call,fn,base,list,CH,onStatus,label,noEmpty){
+  list=list||[]; const n=list.length; if(!n&&noEmpty) return;
+  let i=0, ch=CH, first=true;
+  while(first||i<n){
+    const part=list.slice(i,i+ch);
+    if(onStatus) onStatus(n>ch||i?`${label} — ${fmt(Math.min(n,i+part.length))} من ${fmt(n)}…`:`${label}…`);
+    let r;
+    try{ r=await call(fn,Object.assign({},base,{p_rows:part,p_reset:first})); }
+    catch(e){ if(tvIsTmo(e)&&ch>150){ ch=Math.max(150,Math.floor(ch/2)); await new Promise(z=>setTimeout(z,700)); continue; } throw e; }
+    if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
+    i+=part.length; first=false;
+  }
+}
 async function tvAllocUpload(agg,call,onStatus){
   for(const tbl of ["contracts","status"]){
-    const list=agg[tbl]||[], CH=3000;
-    for(let i=0;i===0||i<list.length;i+=CH){
-      if(onStatus) onStatus(`جارٍ تحديث بيانات الشاشة (${tbl==="contracts"?"العقود":"حالات الوحدات"}) — ${Math.min(list.length,i+CH)} من ${list.length}…`);
-      const r=await call("admin_load_tv_alloc",{p_table:tbl,p_rows:list.slice(i,i+CH),p_reset:i===0});
-      if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف — شغّل tv_destinations.sql على القاعدة");
-    }
+    try{ await tvLoadChunks(call,"admin_load_tv_alloc",{p_table:tbl},agg[tbl],3000,onStatus,`جارٍ تحديث بيانات الشاشة (${tbl==="contracts"?"العقود":"حالات الوحدات"})`); }
+    catch(e){ throw new Error(/غير مصرح/.test(String(e&&e.message))?e.message:"تعذّر تحديث بيانات الشاشة — "+tvUpErrTxt(e,"tv_revenue.sql")); }
   }
   let note="";
-  if(agg.value){
-    try{
-      const list=agg.value, CH=3000;
-      for(let i=0;i===0||i<list.length;i+=CH){
-        if(onStatus) onStatus("جارٍ تحديث قيمة العقود التراكمية (للإيراد)…");
-        const r=await call("admin_load_tv_alloc",{p_table:"value",p_rows:list.slice(i,i+CH),p_reset:i===0});
-        if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
-      }
-    }catch(e){ note+=" · تعذّر تحديث الإيراد — شغّل tv_revenue.sql على القاعدة"; }
-  }
-  if(agg.prices&&agg.prices.length){
-    try{
-      const list=agg.prices, CH=4000;
-      for(let i=0;i<list.length;i+=CH){
-        if(onStatus) onStatus("جارٍ تحديث منحنى قيمة العقود…");
-        const r=await call("admin_load_tv_prices",{p_rows:list.slice(i,i+CH),p_reset:i===0});
-        if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
-      }
-    }catch(e){ note+=" · تعذّر تحديث منحنى قيمة العقود — شغّل tv_sales_force.sql على القاعدة"; }
-  }
+  const step=async(lbl,sqlFile,fn,base,list,CH,stLbl,noEmpty)=>{
+    try{ await tvLoadChunks(call,fn,base,list,CH,onStatus,stLbl,noEmpty); return true; }
+    catch(e){ note+=` · تعذّر تحديث ${lbl} — ${tvUpErrTxt(e,sqlFile)}`; return false; } };
+  if(agg.value) await step("الإيراد","tv_revenue.sql","admin_load_tv_alloc",{p_table:"value"},agg.value,3000,"جارٍ تحديث قيمة العقود التراكمية (للإيراد)");
+  if(agg.prices&&agg.prices.length) await step("منحنى قيمة العقود","tv_sales_force.sql","admin_load_tv_prices",{},agg.prices,4000,"جارٍ تحديث منحنى قيمة العقود",true);
   for(const [tbl,list] of [["avail",agg.availTypes],["channels",agg.channels],["employees",agg.employees]]){
     if(!list) continue;
-    try{
-      const CH=4000;
-      for(let i=0;i===0||i<list.length;i+=CH){
-        if(onStatus) onStatus(tbl==="channels"?"جارٍ تحديث قنوات البيع…":"جارٍ تحديث أداء الموظفين…");
-        const r=await call("admin_load_tv_force",{p_table:tbl,p_rows:list.slice(i,i+CH),p_reset:i===0});
-        if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
-      }
-    }catch(e){ note+=" · تعذّر تحديث القنوات/الموظفين — شغّل tv_sales_force.sql على القاعدة"; break; }
+    if(!await step(tbl==="channels"?"قنوات البيع":tbl==="employees"?"أداء الموظفين":"المتاح حسب النوع","tv_sales_force.sql","admin_load_tv_force",{p_table:tbl},list,4000,
+      tbl==="channels"?"جارٍ تحديث قنوات البيع":"جارٍ تحديث أداء الموظفين")) break;
   }
   if(agg.opsDaily){
-    try{
-      for(const [tbl,list,lbl] of [["daily",agg.opsDaily,"عقود الصفحة التشغيلية"],["book",agg.opsBook||[],"الحجوزات"]]){
-        const CH=3000;
-        for(let i=0;i===0||i<list.length;i+=CH){
-          if(onStatus) onStatus(`جارٍ تحديث الصفحة التشغيلية (${lbl}) — ${Math.min(list.length,i+CH)} من ${list.length}…`);
-          const r=await call("admin_load_tv_ops",{p_table:tbl,p_rows:list.slice(i,i+CH),p_reset:i===0});
-          if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
-        }
-      }
-    }catch(e){ note+=" · تعذّر تحديث الصفحة التشغيلية — "+tvUpErrTxt(e,"tv_ops.sql"); }
+    for(const [tbl,list,lbl] of [["daily",agg.opsDaily,"عقود الصفحة التشغيلية"],["book",agg.opsBook||[],"الحجوزات"]]){
+      if(!await step("الصفحة التشغيلية ("+lbl+")","tv_ops.sql","admin_load_tv_ops",{p_table:tbl},list,3000,`جارٍ تحديث الصفحة التشغيلية (${lbl})`)) break;
+    }
   }
-  if(agg.products&&agg.products.length){
-    try{
-      const list=agg.products, CH=2500;
-      for(let i=0;i<list.length;i+=CH){
-        if(onStatus) onStatus(`جارٍ تحديث تحليل المنتجات والنماذج — ${Math.min(list.length,i+CH)} من ${list.length}…`);
-        const r=await call("admin_load_tv_products",{p_rows:list.slice(i,i+CH),p_reset:i===0});
-        if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
-      }
-    }catch(e){ note+=" · تعذّر تحديث تحليل المنتجات — "+tvUpErrTxt(e,"tv_product_analytics.sql"); }
-  }
-  if(agg.banks){
-    try{
-      const list=agg.banks, CH=4000;
-      for(let i=0;i===0||i<list.length;i+=CH){
-        if(onStatus) onStatus("جارٍ تحديث البنوك المنفّذة…");
-        const r=await call("admin_load_tv_banks",{p_rows:list.slice(i,i+CH),p_reset:i===0});
-        if(!r||!r.ok) throw new Error((r&&r.msg)||"خطأ غير معروف");
-      }
-    }catch(e){ note+=" · تعذّر تحديث البنوك — شغّل tv_region_banks.sql على القاعدة"; }
-  }
+  if(agg.products&&agg.products.length) await step("تحليل المنتجات","tv_product_analytics.sql","admin_load_tv_products",{},agg.products,2500,"جارٍ تحديث تحليل المنتجات والنماذج",true);
+  if(agg.banks) await step("البنوك","tv_region_banks.sql","admin_load_tv_banks",{},agg.banks,4000,"جارٍ تحديث البنوك المنفّذة");
   return note;
 }
 /* دفعة واحدة عادةً (الملف ~800 مشروع) — تجنّب لقطة نصفية لو فشلت دفعة لاحقة */
